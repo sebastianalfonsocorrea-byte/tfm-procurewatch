@@ -1,0 +1,75 @@
+{
+  "generated_at_utc": "2026-05-31T15:49:21.545448+00:00",
+  "source": {
+    "path": "data\\synthetic\\agent1_sample\\boe_sample.csv",
+    "file_name": "boe_sample.csv",
+    "size_bytes": 685270,
+    "sha256": "15a44e6117d21f5176cdd21013c60326a80d5d7943ef164dab8346577c28643b"
+  },
+  "outputs": {
+    "contracts_boe": "data\\processed_sample\\contracts_boe.parquet",
+    "contracts_boe_cpv71": "data\\processed_sample\\contracts_boe_cpv71.parquet",
+    "cpv71_preview_csv": "data\\processed_sample\\contracts_boe_cpv71_preview.csv"
+  },
+  "rows": {
+    "total_data_lines": 1000,
+    "parsed_rows": 1000,
+    "parse_errors": 0,
+    "parse_success_rate": 1.0,
+    "cpv71_rows": 1000,
+    "repaired_rows": 372,
+    "lines_with_replacement_char": 0
+  },
+  "raw_field_counts": {
+    "15": 628,
+    "18": 5,
+    "16": 271,
+    "44": 2,
+    "23": 9,
+    "32": 6,
+    "25": 5,
+    "31": 5,
+    "28": 3,
+    "17": 10,
+    "42": 1,
+    "30": 4,
+    "21": 6,
+    "36": 1,
+    "46": 2,
+    "24": 8,
+    "19": 5,
+    "27": 7,
+    "56": 2,
+    "37": 2,
+    "35": 5,
+    "26": 6,
+    "20": 2,
+    "29": 2,
+    "45": 1,
+    "34": 1,
+    "22": 1
+  },
+  "top_procedures": {
+    "Abierto": 969,
+    "Negociado sin publicidad": 21,
+    "Restringido": 6,
+    "Negociado con publicidad": 4
+  },
+  "top_contract_natures": {
+    "Servicios": 975,
+    "Obras": 16,
+    "Suministros": 7,
+    "Gestión de Servicios Públicos": 1,
+    "Mixto - Suministros": 1
+  },
+  "rows_by_year": {
+    "2016": 332,
+    "2014": 320,
+    "2015": 259,
+    "2017": 89
+  },
+  "missing_values": {
+    "cpv_code_list": 0
+  },
+  "error_samples": []
+}

@@ -307,3 +307,12 @@ Si tienes que enseñarlo en una entrevista, prepara una demo de 5 minutos:
 ## Resumen Final para Memorizar
 
 ProcureWatch Analytics es mi TFM y consiste en construir un prototipo de analítica de riesgo para contratación pública española. Uso Python para limpiar y transformar datos, diseño red flags explicables basadas en literatura, aplico análisis de redes para detectar relaciones organismo-proveedor, exploro web scraping/NLP sobre documentos contractuales reutilizables y orquesto agentes con LangChain y LangGraph para coordinar análisis, validación y explicación. El proyecto está alineado con mi perfil de Data Analyst / Data & AI Consultant porque combina datos reales, KPIs, automatización, visualización, RAG, agentes y comunicación de insights, pero además me permite crecer hacia analítica avanzada, grafos, machine learning interpretable e IA generativa aplicada.
+## Estado demo tecnica 31/05/2026
+
+Para explicar el avance real sin sobredimensionar:
+
+- Agente 1 ya esta operativo con BOE, PLACE y OpenTender.
+- El pipeline genera Parquet, reportes JSON, cobertura entre fuentes y dataset canonico para Agent2.
+- La corrida normal de Agent1 reutiliza cache y tarda alrededor de 23 segundos cuando las fuentes ya estan procesadas.
+- La calidad de la salida de Agent1 queda en estado `ok`.
+- Lo que aun no debe presentarse como resuelto es el matching entre fuentes: la cobertura por `contract_key_canon` existe, pero las intersecciones actuales son 0 y requieren una fase de normalizacion/enlace mas fina.

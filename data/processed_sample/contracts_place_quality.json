@@ -1,0 +1,55 @@
+{
+  "generated_at_utc": "2026-05-31T15:49:24.424138+00:00",
+  "source_files": [
+    "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+    "data\\synthetic\\agent1_sample\\PlataformasAgregadasSinMenores_2024_sample.zip"
+  ],
+  "outputs": {
+    "contracts_place": "data\\processed_sample\\contracts_place.parquet",
+    "contracts_place_cpv71": "data\\processed_sample\\contracts_place_cpv71.parquet",
+    "preview_csv": "data\\processed_sample\\contracts_place_cpv71_preview.csv"
+  },
+  "rows": {
+    "zip_files": 2,
+    "entries_seen": 2000,
+    "entries_parsed": 1992,
+    "entries_deleted": 0,
+    "deduped_rows": 1588,
+    "cpv71_rows": 1588,
+    "output_rows": 1588
+  },
+  "top_procedure_codes": {
+    "1": 810,
+    "9": 592,
+    "999": 54,
+    "7": 49,
+    "3": 39,
+    "8": 26,
+    "2": 11,
+    "100": 6,
+    "4": 1
+  },
+  "top_buyer_regions": {
+    "Infraestructures de la Generalitat de Catalunya, SAU": 176,
+    "ADIF - Presidencia": 25,
+    "Canal de Isabel II, S.A.": 17,
+    "Alcalde": 16,
+    "Ens d'Abastament d'Aigua Ter-Llobregat (ATL)": 16,
+    "Àrea Metropolitana de Barcelona": 15,
+    "Agència Catalana de l'Aigua (ACA)": 14,
+    "Institut Català del Sòl (INCASÒL)": 13,
+    "Presidencia de la Diputación Provincial de Alicante": 12,
+    "Junta de Gobierno Local": 12,
+    "Ferrocarrils de la Generalitat de Catalunya": 11,
+    "Metro de Madrid, S.A.": 11,
+    "Consejo de Administración de Aguas de las Cuencas Mediterráneas, S.M.E., S.A. (ACUAMED)": 10,
+    "Barcelona de Serveis Municipals SA": 10,
+    "Gerencia de la Empresa Municipal de la Vivienda, Suelo y Equipamiento de Sevilla S.A. (EMVISESA)": 9,
+    "Empresa de Transformación Agraria S.A.,S.M.E., M.P., (TRAGSA)": 9,
+    "Comisión Delegada en Materia de Contratación de ETS": 9,
+    "Intendente de Ferrol": 8,
+    "Consejería de Movilidad y Transformación Digital": 8,
+    "Diputació de Barcelona": 8
+  },
+  "error_samples": []
+}

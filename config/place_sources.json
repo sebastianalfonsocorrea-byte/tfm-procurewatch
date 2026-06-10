@@ -1,0 +1,90 @@
+{
+  "generated_for": "ProcureWatch Analytics",
+  "source_family": "Hacienda / Plataforma de Contratacion del Sector Publico",
+  "base_index": "https://www.hacienda.gob.es/es-ES/GobiernoAbierto/Datos%20Abiertos/Paginas/licitaciones_plataforma_contratacion.aspx",
+  "datasets": [
+    {
+      "id": "place_profiles",
+      "name": "Licitaciones en perfiles del contratante ubicados en PLACSP, excluyendo contratos menores",
+      "priority": "alta",
+      "role": "Fuente oficial principal para contrastar BOE y enriquecer expedientes",
+      "landing_page": "https://www.hacienda.gob.es/es-es/gobiernoabierto/datos%20abiertos/paginas/licitacionescontratante.aspx",
+      "first_year": 2012,
+      "annual_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3_{year}.zip",
+      "monthly_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3_{year}{month:02d}.zip",
+      "root_atom": "licitacionesPerfilesContratanteCompleto3.atom",
+      "raw_subdir": "place/profiles"
+    },
+    {
+      "id": "place_aggregation",
+      "name": "Licitaciones publicadas mediante mecanismos de agregacion, excluyendo contratos menores",
+      "priority": "media-alta",
+      "role": "Contraste de entidades no alojadas directamente en PLACSP",
+      "landing_page": "https://www.hacienda.gob.es/es-es/gobiernoabierto/datos%20abiertos/paginas/licitacionesagregacion.aspx",
+      "first_year": 2016,
+      "annual_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1044/PlataformasAgregadasSinMenores_{year}.zip",
+      "monthly_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1044/PlataformasAgregadasSinMenores_{year}{month:02d}.zip",
+      "root_atom": "PlataformasAgregadasSinMenores.atom",
+      "raw_subdir": "place/aggregation"
+    },
+    {
+      "id": "place_minors",
+      "name": "Contratos menores publicados en perfiles del contratante ubicados en PLACSP",
+      "priority": "media",
+      "role": "Red flags especificas de recurrencia y fraccionamiento potencial",
+      "landing_page": "https://www.hacienda.gob.es/es-es/gobiernoabierto/datos%20abiertos/paginas/contratosmenores.aspx",
+      "first_year": 2018,
+      "annual_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1143/contratosMenoresPerfilesContratantes_{year}.zip",
+      "monthly_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1143/contratosMenoresPerfilesContratantes_{year}{month:02d}.zip",
+      "root_atom": "contratosMenoresPerfilesContratantes.atom",
+      "raw_subdir": "place/minors"
+    },
+    {
+      "id": "place_inhouse",
+      "name": "Encargos a medios propios",
+      "priority": "baja-media",
+      "role": "Contexto adicional, no prioritario para la primera demo CPV 71",
+      "landing_page": "https://www.hacienda.gob.es/es-es/gobiernoabierto/datos%20abiertos/paginas/encargosmediospropios.aspx",
+      "first_year": 2022,
+      "annual_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1383/EMP_SectorPublico_{year}.zip",
+      "monthly_url_pattern": null,
+      "root_atom": "EMP_SectorPublico.atom",
+      "raw_subdir": "place/inhouse"
+    },
+    {
+      "id": "place_market_consultations",
+      "name": "Consultas preliminares de mercado",
+      "priority": "baja-media",
+      "role": "Contexto documental y senales tempranas, no prioritario para scoring v1",
+      "landing_page": "https://www.hacienda.gob.es/es-es/gobiernoabierto/datos%20abiertos/paginas/consultaspreliminaresmercado.aspx",
+      "first_year": 2022,
+      "annual_url_pattern": "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1403/CPM_SectorPublico_{year}.zip",
+      "monthly_url_pattern": null,
+      "root_atom": "CPM_SectorPublico.atom",
+      "raw_subdir": "place/market_consultations"
+    },
+    {
+      "id": "place_buyer_profiles",
+      "name": "Perfiles de contratante de organos alojados en PLACSP",
+      "priority": "alta",
+      "role": "Dimension de organismos contratantes para normalizar nombres y enriquecer compradores",
+      "landing_page": "https://www.hacienda.gob.es/es-ES/GobiernoAbierto/Datos%20Abiertos/Paginas/licitaciones_plataforma_contratacion.aspx",
+      "file_url": "https://contrataciondelsectorpublico.gob.es/datosabiertos/OrganosContratacion.xlsx",
+      "raw_subdir": "place/buyer_profiles"
+    }
+  ],
+  "reference_documents": [
+    {
+      "id": "place_open_data_summary",
+      "name": "Resumen de contenido en conjuntos de datos abiertos",
+      "url": "https://contrataciondelsectorpublico.gob.es/datosabiertos/DGPE_PLACSP_ResumenDatosAbiertos.pdf",
+      "raw_subdir": "reference_docs"
+    },
+    {
+      "id": "place_syndication_spec",
+      "name": "Formato de sindicacion y reutilizacion de datos sobre publicaciones en PLACSP",
+      "url": "https://contrataciondelsectorpublico.gob.es/datosabiertos/especificacion-sindicacion.pdf",
+      "raw_subdir": "reference_docs"
+    }
+  ]
+}

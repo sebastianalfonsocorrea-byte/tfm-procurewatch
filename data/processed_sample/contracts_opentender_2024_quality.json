@@ -1,0 +1,106 @@
+{
+  "generated_at_utc": "2026-05-31T15:49:24.857623+00:00",
+  "source": {
+    "path": "data\\synthetic\\agent1_sample\\opentender_2024_sample.zip",
+    "file_name": "opentender_2024_sample.zip",
+    "size_bytes": 509120,
+    "sha256": "4ed1463373f5cdc370b43896dc16270051283c461773d0592147842659218e1f",
+    "requested_year": 2024
+  },
+  "outputs": {
+    "contracts_opentender": "data\\processed_sample\\contracts_opentender_2024.parquet",
+    "contracts_opentender_cpv": "data\\processed_sample\\contracts_opentender_2024_cpv71.parquet",
+    "preview_csv": "data\\processed_sample\\contracts_opentender_2024_cpv71_preview.csv"
+  },
+  "rows": {
+    "raw_lines_read": 1000,
+    "parsed_records": 1000,
+    "parse_errors": 0,
+    "output_rows": 874,
+    "success_rate": 0.874,
+    "cpv71_rows": 874
+  },
+  "error_samples": [],
+  "top_procedure_codes": [
+    [
+      "6",
+      415
+    ],
+    [
+      "open",
+      214
+    ],
+    [
+      "9",
+      90
+    ],
+    [
+      "1",
+      83
+    ],
+    [
+      "999",
+      19
+    ],
+    [
+      NaN,
+      12
+    ],
+    [
+      "3",
+      9
+    ],
+    [
+      "neg-wo-call",
+      8
+    ],
+    [
+      "restricted",
+      5
+    ],
+    [
+      "7",
+      3
+    ],
+    [
+      "2",
+      3
+    ],
+    [
+      "100",
+      3
+    ],
+    [
+      "neg-w-call",
+      2
+    ],
+    [
+      "pt_open",
+      2
+    ],
+    [
+      "9:Abierto simplificado",
+      1
+    ],
+    [
+      "comp-dial",
+      1
+    ],
+    [
+      "8",
+      1
+    ],
+    [
+      "4",
+      1
+    ],
+    [
+      "100:Normas Internas",
+      1
+    ],
+    [
+      "1:Abierto",
+      1
+    ]
+  ]
+}

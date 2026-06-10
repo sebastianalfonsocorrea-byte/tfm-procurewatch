@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tfm-procurewatch"
+version = "0.1.0"
+description = "Prototipo analitico para detectar patrones de riesgo en contratacion publica abierta."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Sebastian Alfonso Correa" },
+  { name = "Saturia Maria Hurtado Alvarez" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+data = [
+  "beautifulsoup4>=4.12",
+  "lxml>=5.2",
+  "pandas>=2.2",
+  "polars>=1.0",
+  "pyarrow>=15.0",
+  "requests>=2.32",
+  "scikit-learn>=1.5"
+]
+db = [
+  "alembic>=1.13",
+  "psycopg[binary]>=3.2",
+  "sqlalchemy>=2.0"
+]
+graph = [
+  "neo4j>=5.21",
+  "networkx>=3.3",
+  "python-louvain>=0.16"
+]
+rag = [
+  "langchain>=0.2",
+  "langgraph>=0.2",
+  "ollama>=0.3",
+  "qdrant-client>=1.10",
+  "ragas>=0.1",
+  "spacy>=3.7"
+]
+frontend = [
+  "plotly>=5.22",
+  "pyvis>=0.3",
+  "streamlit>=1.37"
+]
+dev = [
+  "mypy>=1.10",
+  "pytest>=8.2",
+  "ruff>=0.5"
+]
+all = [
+  "alembic>=1.13",
+  "beautifulsoup4>=4.12",
+  "langchain>=0.2",
+  "langgraph>=0.2",
+  "lxml>=5.2",
+  "mypy>=1.10",
+  "neo4j>=5.21",
+  "networkx>=3.3",
+  "ollama>=0.3",
+  "pandas>=2.2",
+  "plotly>=5.22",
+  "polars>=1.0",
+  "psycopg[binary]>=3.2",
+  "pyarrow>=15.0",
+  "pytest>=8.2",
+  "python-louvain>=0.16",
+  "pyvis>=0.3",
+  "qdrant-client>=1.10",
+  "ragas>=0.1",
+  "requests>=2.32",
+  "ruff>=0.5",
+  "scikit-learn>=1.5",
+  "spacy>=3.7",
+  "sqlalchemy>=2.0",
+  "streamlit>=1.37"
+]
+
+[project.scripts]
+procurewatch = "procurewatch.cli:main"
+
+[tool.setuptools.package-dir]
+"" = "scr"
+
+[tool.setuptools.packages.find]
+where = ["scr"]
+include = ["procurewatch*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scr"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["api", "scr", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["procurewatch"]
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = "pandas"
+ignore_missing_imports = true

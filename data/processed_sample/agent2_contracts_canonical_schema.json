@@ -1,0 +1,51 @@
+{
+  "dataset": "agent2_contracts_canonical",
+  "description": "Contrato estricto entre Agent1 y Agent2 para scoring/red flags.",
+  "primary_key": [
+    "source",
+    "source_record_id",
+    "contract_key_canon"
+  ],
+  "null_policy": {
+    "not_null": [
+      "contract_key_canon",
+      "source",
+      "buyer_name",
+      "publication_date",
+      "cpv_codes_raw"
+    ],
+    "nullable": [
+      "source_record_id",
+      "source_dataset",
+      "buyer_id",
+      "supplier_name",
+      "supplier_id",
+      "contract_title",
+      "procedure",
+      "award_date",
+      "estimated_value_eur",
+      "awarded_value_eur",
+      "cpv_code_list",
+      "source_file"
+    ]
+  },
+  "columns": {
+    "contract_key_canon": "Clave normalizada para cobertura y deduplicacion entre fuentes.",
+    "source": "Fuente normalizada: boe, place u opentender.",
+    "source_record_id": "Identificador original del registro en la fuente.",
+    "source_dataset": "Dataset o subfuente de procedencia.",
+    "buyer_name": "Organismo contratante normalizado por la fuente.",
+    "buyer_id": "Identificador de organismo si existe: DIR3, NIF, institucion u otro.",
+    "supplier_name": "Adjudicatario/proveedor si existe.",
+    "supplier_id": "Identificador fiscal o equivalente del adjudicatario si existe.",
+    "contract_title": "Objeto o titulo contractual.",
+    "procedure": "Procedimiento contractual normalizado por la fuente.",
+    "publication_date": "Fecha de publicacion disponible.",
+    "award_date": "Fecha de adjudicacion si existe.",
+    "estimated_value_eur": "Valor estimado numerico en euros si existe.",
+    "awarded_value_eur": "Valor adjudicado numerico en euros si existe.",
+    "cpv_codes_raw": "CPV en formato textual trazable.",
+    "cpv_code_list": "Lista de codigos CPV si la fuente la proporciona.",
+    "source_file": "Archivo fisico de origen."
+  }
+}

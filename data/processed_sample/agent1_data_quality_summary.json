@@ -1,0 +1,48 @@
+{
+  "generated_at_utc": "2026-05-31T15:49:25.779533+00:00",
+  "status": "ok",
+  "canonical_rows": 3437,
+  "coverage": {
+    "contract_key_coverage_path": "data\\processed_sample\\agent1_contract_key_coverage.parquet",
+    "boe_contract_keys": 976,
+    "place_contract_keys": 1587,
+    "op_contract_keys": 874,
+    "intersection_boe_place": 0,
+    "intersection_boe_opentender": 0,
+    "intersection_place_opentender": 0,
+    "universe_contract_keys": 3437,
+    "only_in_boe": 976,
+    "only_in_place": 1587,
+    "only_in_opentender": 874,
+    "present_in_all": 0
+  },
+  "field_quality": {
+    "contract_key_canon": {
+      "missing": 0,
+      "coverage_ratio": 1.0
+    },
+    "source": {
+      "missing": 0,
+      "coverage_ratio": 1.0
+    },
+    "buyer_name": {
+      "missing": 0,
+      "coverage_ratio": 1.0
+    },
+    "publication_date": {
+      "missing": 1623,
+      "coverage_ratio": 0.527786
+    },
+    "cpv_codes_raw": {
+      "missing": 0,
+      "coverage_ratio": 1.0
+    }
+  },
+  "duplicate_source_contract_keys": 0,
+  "acceptance_criteria": {
+    "agent1_run_report": true,
+    "coverage_artifact": true,
+    "canonical_agent2_dataset": true,
+    "schema_documented": true
+  }
+}
