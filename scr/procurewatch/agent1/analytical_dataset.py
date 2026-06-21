@@ -12,11 +12,20 @@ def build_analytical_datasets(
     *,
     canonical_path: Path,
     output_dir: Path,
+    buyer_catalog_path: Path | None = None,
 ) -> dict[str, Any]:
     import pandas as pd
 
     canonical = pd.read_parquet(canonical_path)
     contracts = map_contracts_to_analytical_schema(canonical)
+    buyer_catalog_report = None
+    if buyer_catalog_path is not None:
+        from .buyer_catalog import enrich_contracts_with_buyer_catalog
+
+        contracts, buyer_catalog_report = enrich_contracts_with_buyer_catalog(
+            contracts,
+            buyer_catalog_path=buyer_catalog_path,
+        )
     suppliers = build_supplier_analytical_table(contracts)
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -29,6 +38,13 @@ def build_analytical_datasets(
     contracts.head(500).to_csv(contracts_preview_path, index=False, encoding="utf-8")
     suppliers.to_parquet(suppliers_path, index=False)
     suppliers.head(500).to_csv(suppliers_preview_path, index=False, encoding="utf-8")
+    if buyer_catalog_report is not None:
+        from .buyer_catalog import write_buyer_catalog_report
+
+        write_buyer_catalog_report(
+            buyer_catalog_report,
+            output_dir / "buyer_catalog_enrichment_report.json",
+        )
 
     return {
         "contracts_path": str(contracts_path),
@@ -37,6 +53,11 @@ def build_analytical_datasets(
         "suppliers_path": str(suppliers_path),
         "suppliers_preview_path": str(suppliers_preview_path),
         "suppliers_rows": int(len(suppliers)),
+        "buyer_catalog_path": str(buyer_catalog_path) if buyer_catalog_path else None,
+        "buyer_catalog_report_path": str(output_dir / "buyer_catalog_enrichment_report.json")
+        if buyer_catalog_report is not None
+        else None,
+        "buyer_catalog_report": buyer_catalog_report,
     }
 
 

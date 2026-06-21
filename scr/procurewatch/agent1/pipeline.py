@@ -17,6 +17,9 @@ def run_agent1(
     boe_input: Path,
     open_tender_input: Path,
     place_inputs: list[Path],
+    buyer_catalog_path: Path | None = None,
+    raw_dir: Path = Path("data/raw"),
+    cleanup_downloads: bool = False,
     output_dir: Path = Path("data/processed"),
     cpv_prefix: str = "71",
     year: int = 2024,
@@ -35,8 +38,8 @@ def run_agent1(
 
     if not boe_input.exists():
         raise FileNotFoundError(f"No existe BOE input: {boe_input}")
-    if not open_tender_input.exists():
-        raise FileNotFoundError(f"No existe OpenTender input: {open_tender_input}")
+    if buyer_catalog_path is not None and not buyer_catalog_path.exists():
+        raise FileNotFoundError(f"No existe buyer catalog input: {buyer_catalog_path}")
     if not place_inputs and not place_download:
         raise ValueError(
             "Debes indicar al menos un fichero PLACE de entrada o usar --place-download."
@@ -78,6 +81,9 @@ def run_agent1(
             _input_artifact_metadata(path, compute_sha=force_rebuild or limit_place is not None)
             for path in selected_place_inputs
         ],
+        "buyer_catalog": _input_artifact_metadata(buyer_catalog_path, compute_sha=force_rebuild)
+        if buyer_catalog_path is not None
+        else None,
     }
     reports["inputs"] = {
         "boe_input": str(boe_input),
@@ -176,6 +182,7 @@ def run_agent1(
     analytical = build_analytical_datasets(
         canonical_path=Path(canonical["path"]),
         output_dir=output_dir,
+        buyer_catalog_path=buyer_catalog_path,
     )
     quality_summary = build_agent1_quality_summary(
         output_dir=output_dir,

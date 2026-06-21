@@ -156,6 +156,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--year", type=int, default=2024)
     agent1_parser.add_argument("--place-download", action="store_true")
     agent1_parser.add_argument("--place-datasets", nargs="*")
+    agent1_parser.add_argument(
+        "--buyer-catalog",
+        type=Path,
+        default=None,
+        help="Excel oficial de organos contratantes para enriquecer codigo_organismo y nivel_administracion.",
+    )
+    agent1_parser.add_argument(
+        "--raw-dir",
+        type=Path,
+        default=Path("data/raw"),
+        help="Directorio donde descargar temporalmente las fuentes brutas.",
+    )
+    agent1_parser.add_argument(
+        "--cleanup-downloads",
+        action="store_true",
+        help="Borra los archivos descargados por el pipeline al terminar.",
+    )
     agent1_parser.add_argument("--limit-boe", type=int, default=None)
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
@@ -344,6 +361,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             year=args.year,
             place_download=args.place_download,
             place_datasets=args.place_datasets,
+            buyer_catalog_path=args.buyer_catalog,
+            raw_dir=args.raw_dir,
+            cleanup_downloads=args.cleanup_downloads,
             limit_boe=args.limit_boe,
             limit_place=args.limit_place,
             limit_ot=args.limit_opentender,

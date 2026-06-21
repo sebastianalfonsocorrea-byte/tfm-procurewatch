@@ -13,6 +13,7 @@ from .analytical_dataset import (
     build_supplier_analytical_table,
     map_contracts_to_analytical_schema,
 )
+from .buyer_catalog import enrich_contracts_with_buyer_catalog
 from .coverage_report import build_agent1_coverage_report
 from .pipeline import (
     build_agent1_quality_summary,
@@ -41,6 +42,7 @@ __all__ = [
     "build_agent2_canonical_dataset",
     "build_source_coverage",
     "build_supplier_analytical_table",
+    "enrich_contracts_with_buyer_catalog",
     "main",
     "map_contracts_to_analytical_schema",
     "run_agent1",
