@@ -1,0 +1,39 @@
+# Modelo de datos analítico
+
+Fuente de requisitos: apartado 5.4 de `Propuesta Técnica_SASM.pdf`.
+
+La definición ejecutable y versionada se encuentra en
+`scr/procurewatch/agent1/analytical_schema.py`. El esquema declara todos los campos mínimos de
+las entidades `CONTRATO` y `ADJUDICATARIO`.
+
+## Responsabilidad por agente
+
+| Responsable | Campos |
+|---|---|
+| Agent1 | Identificadores, organismo, contrato, procedimiento, CPV, importes, fechas, ofertas, adjudicatario, agregados básicos y fuentes cruzadas |
+| Agent2 | Red flags, scores, niveles de riesgo y métricas de recurrencia o concentración |
+| Agent3 | Centralidad y comunidades del grafo |
+| Agent4 | Referencias a fragmentos documentales recuperados |
+| Front-end | Estado de revisión humana |
+
+## Política de valores ausentes
+
+- Todos los campos exigidos forman parte del esquema aunque todavía no puedan rellenarse.
+- Cuando una fuente no proporciona un dato, se conserva como `null`.
+- No se inventan ni imputan valores para aparentar una mayor cobertura.
+- La cobertura se medirá por campo y por fuente.
+- Los campos producidos por Agent2, Agent3, Agent4 o el front-end permanecerán nulos hasta que se
+  ejecute el componente responsable.
+
+## Salidas de Agent1
+
+Agent1 materializa:
+
+- `data/processed/contracts_analytical.parquet`
+- `data/processed/contracts_analytical_preview.csv`
+- `data/processed/suppliers_analytical.parquet`
+- `data/processed/suppliers_analytical_preview.csv`
+
+El canónico técnico anterior se conserva como frontera trazable. Las nuevas tablas aplican el
+modelo del apartado 5.4 y dejan como `null` los campos que dependen de información no disponible o
+de otros agentes.

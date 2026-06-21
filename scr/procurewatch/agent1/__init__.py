@@ -1,6 +1,18 @@
 from __future__ import annotations
 
 from . import pipeline as _pipeline
+from .analytical_schema import (
+    ANALYTICAL_SCHEMA,
+    CONTRACT_REQUIRED_FIELDS,
+    CONTRACT_SCHEMA,
+    SUPPLIER_REQUIRED_FIELDS,
+    SUPPLIER_SCHEMA,
+)
+from .analytical_dataset import (
+    build_analytical_datasets,
+    build_supplier_analytical_table,
+    map_contracts_to_analytical_schema,
+)
 from .pipeline import (
     build_agent1_quality_summary,
     build_agent2_canonical_dataset,
@@ -17,9 +29,17 @@ def run_agent1(*args, **kwargs):
 
 
 __all__ = [
+    "ANALYTICAL_SCHEMA",
+    "CONTRACT_REQUIRED_FIELDS",
+    "CONTRACT_SCHEMA",
+    "SUPPLIER_REQUIRED_FIELDS",
+    "SUPPLIER_SCHEMA",
+    "build_analytical_datasets",
     "build_agent1_quality_summary",
     "build_agent2_canonical_dataset",
     "build_source_coverage",
+    "build_supplier_analytical_table",
     "main",
+    "map_contracts_to_analytical_schema",
     "run_agent1",
 ]

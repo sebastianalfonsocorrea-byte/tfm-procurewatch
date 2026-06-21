@@ -5,6 +5,9 @@ Objetivo: dejar una base reproducible para el `agent1` que consuma varias fuente
 Ubicacion de codigo: `scr/procurewatch/agent1/pipeline.py`, reexportado desde
 `scr/procurewatch/agent1/__init__.py` para conservar `from procurewatch.agent1 import run_agent1`.
 
+Modelo analítico objetivo: `scr/procurewatch/agent1/analytical_schema.py`, documentado en
+`docs/MODELO_DATOS_ANALITICO.md`.
+
 ## Estado al 31/05/2026
 
 Resumen de lo hecho en la sesion del 31/05/2026:
@@ -44,6 +47,7 @@ Checklist de cierre del ciclo:
 - [ ] `data_quality_report.json` presente para BOE/PLACE/OCDS en la misma corrida.
 - [ ] `agent1_contract_key_coverage.parquet` y `agent1_contract_key_coverage_preview.csv` regeneran de forma estable.
 - [ ] Política de normalizacion de texto para `contract_key_canon` documentada en el informe de método.
+- [x] `agent1_data_quality_summary.json` mide completitud OCDS, validez fiscal y coherencia temporal.
 
 ## 1) Formato recomendado para ingesta interna
 

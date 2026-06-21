@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -170,6 +171,12 @@ def run_agent1(
         cpv_prefix=cpv_prefix,
         year=year,
     )
+    from .analytical_dataset import build_analytical_datasets
+
+    analytical = build_analytical_datasets(
+        canonical_path=Path(canonical["path"]),
+        output_dir=output_dir,
+    )
     quality_summary = build_agent1_quality_summary(
         output_dir=output_dir,
         coverage=coverage,
@@ -184,6 +191,7 @@ def run_agent1(
     reports["agent1_run_report_path"] = str(output_dir / "agent1_run_report.json")
     reports["coverage"] = coverage
     reports["canonical_agent2"] = canonical
+    reports["analytical_datasets"] = analytical
     reports["quality_summary"] = quality_summary
 
     (output_dir / "agent1_run_report.json").write_text(
@@ -427,6 +435,7 @@ def build_agent1_quality_summary(
     coverage: dict[str, Any],
     canonical: dict[str, Any],
 ) -> dict[str, Any]:
+    import pandas as pd
 
     canonical_path = Path(canonical["path"])
     critical_fields = [
@@ -436,9 +445,10 @@ def build_agent1_quality_summary(
         "publication_date",
         "cpv_codes_raw",
     ]
+    quality_columns = [*critical_fields, "supplier_id", "award_date"]
     dataframe = _read_parquet_columns(
         canonical_path,
-        critical_fields,
+        quality_columns,
     )
     field_quality = {}
     for field in critical_fields:
@@ -456,13 +466,116 @@ def build_agent1_quality_summary(
             else None,
         }
 
+    total_rows = int(len(dataframe))
+    complete_critical_rows = 0
+    if total_rows:
+        critical_present = dataframe[critical_fields].notna()
+        for field in critical_fields:
+            critical_present[field] &= dataframe[field].astype("string").str.strip() != ""
+        complete_critical_rows = int(critical_present.all(axis=1).sum())
+
+    critical_cells = total_rows * len(critical_fields)
+    present_critical_cells = sum(
+        total_rows - int(field_quality[field]["missing"] or 0) for field in critical_fields
+    )
+    completeness = {
+        "critical_fields": critical_fields,
+        "present_cells": present_critical_cells,
+        "total_cells": critical_cells,
+        "coverage_ratio": round(present_critical_cells / critical_cells, 6)
+        if critical_cells
+        else None,
+        "complete_rows": complete_critical_rows,
+        "complete_rows_ratio": round(complete_critical_rows / total_rows, 6)
+        if total_rows
+        else None,
+        "target_ratio": 0.90,
+    }
+    completeness["target_met"] = bool(
+        completeness["coverage_ratio"] is not None
+        and completeness["coverage_ratio"] > completeness["target_ratio"]
+    )
+
+    supplier_ids = (
+        dataframe["supplier_id"].astype("string").fillna("").str.strip()
+        if "supplier_id" in dataframe.columns
+        else None
+    )
+    supplier_ids_present = int((supplier_ids != "").sum()) if supplier_ids is not None else 0
+    valid_supplier_ids = (
+        sum(_is_valid_spanish_tax_id(value) for value in supplier_ids.tolist())
+        if supplier_ids is not None
+        else 0
+    )
+    nif_quality = {
+        "valid": valid_supplier_ids,
+        "invalid": supplier_ids_present - valid_supplier_ids,
+        "missing": total_rows - supplier_ids_present,
+        "coverage_ratio": round(supplier_ids_present / total_rows, 6) if total_rows else None,
+        "valid_ratio_total": round(valid_supplier_ids / total_rows, 6) if total_rows else None,
+        "valid_ratio_present": round(valid_supplier_ids / supplier_ids_present, 6)
+        if supplier_ids_present
+        else None,
+        "target_ratio_total": 0.85,
+    }
+    nif_quality["target_met"] = bool(
+        nif_quality["valid_ratio_total"] is not None
+        and nif_quality["valid_ratio_total"] > nif_quality["target_ratio_total"]
+    )
+
+    publication_dates = (
+        dataframe["publication_date"].astype("string").fillna("").str.strip()
+        if "publication_date" in dataframe.columns
+        else None
+    )
+    award_dates = (
+        dataframe["award_date"].astype("string").fillna("").str.strip()
+        if "award_date" in dataframe.columns
+        else None
+    )
+    comparable_dates = 0
+    coherent_dates = 0
+    invalid_date_values = 0
+    if publication_dates is not None and award_dates is not None and total_rows:
+        date_candidates = (publication_dates != "") & (award_dates != "")
+        parsed_publication = pd.to_datetime(
+            publication_dates.where(date_candidates), errors="coerce", utc=True
+        )
+        parsed_award = pd.to_datetime(award_dates.where(date_candidates), errors="coerce", utc=True)
+        parsed_pairs = date_candidates & parsed_publication.notna() & parsed_award.notna()
+        comparable_dates = int(parsed_pairs.sum())
+        coherent_dates = int((parsed_pairs & (parsed_publication <= parsed_award)).sum())
+        invalid_date_values = int((date_candidates & ~parsed_pairs).sum())
+
+    temporal_quality = {
+        "comparable_rows": comparable_dates,
+        "coherent_rows": coherent_dates,
+        "incoherent_rows": comparable_dates - coherent_dates,
+        "invalid_or_unparseable_rows": invalid_date_values,
+        "not_evaluable_rows": total_rows - comparable_dates - invalid_date_values,
+        "coverage_ratio": round(comparable_dates / total_rows, 6) if total_rows else None,
+        "coherence_ratio": round(coherent_dates / comparable_dates, 6)
+        if comparable_dates
+        else None,
+        "target_ratio": 0.98,
+    }
+    temporal_quality["target_met"] = bool(
+        temporal_quality["coherence_ratio"] is not None
+        and temporal_quality["coherence_ratio"] > temporal_quality["target_ratio"]
+    )
+
     duplicate_keys = (
         int(dataframe.duplicated(subset=["source", "contract_key_canon"]).sum())
         if not dataframe.empty and {"source", "contract_key_canon"}.issubset(dataframe.columns)
         else 0
     )
     status = "ok"
-    if not dataframe.empty and duplicate_keys:
+    if not dataframe.empty and (
+        duplicate_keys
+        or not completeness["target_met"]
+        or not nif_quality["target_met"]
+        or not temporal_quality["target_met"]
+    ):
         status = "warning"
     if int(canonical.get("rows", 0)) == 0:
         status = "error"
@@ -473,6 +586,11 @@ def build_agent1_quality_summary(
         "canonical_rows": int(canonical.get("rows", 0)),
         "coverage": coverage,
         "field_quality": field_quality,
+        "quality_metrics": {
+            "ocds_critical_completeness": completeness,
+            "supplier_tax_id": nif_quality,
+            "temporal_coherence": temporal_quality,
+        },
         "duplicate_source_contract_keys": duplicate_keys,
         "acceptance_criteria": {
             "agent1_run_report": True,
@@ -487,6 +605,36 @@ def build_agent1_quality_summary(
     path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     summary["path"] = str(path)
     return summary
+
+
+def _is_valid_spanish_tax_id(value: Any) -> bool:
+    normalized = re.sub(r"[^A-Z0-9]", "", str(value).upper())
+    if re.fullmatch(r"\d{8}[A-Z]", normalized):
+        letters = "TRWAGMYFPDXBNJZSQVHLCKE"
+        return normalized[-1] == letters[int(normalized[:8]) % 23]
+    if re.fullmatch(r"[XYZ]\d{7}[A-Z]", normalized):
+        letters = "TRWAGMYFPDXBNJZSQVHLCKE"
+        number = f"{'XYZ'.index(normalized[0])}{normalized[1:8]}"
+        return normalized[-1] == letters[int(number) % 23]
+    if not re.fullmatch(r"[ABCDEFGHJKLMNPQRSUVW]\d{7}[0-9A-J]", normalized):
+        return False
+
+    initial = normalized[0]
+    digits = normalized[1:8]
+    even_sum = sum(int(digits[index]) for index in (1, 3, 5))
+    odd_sum = sum(
+        sum(divmod(int(digits[index]) * 2, 10))
+        for index in (0, 2, 4, 6)
+    )
+    control = (10 - (even_sum + odd_sum) % 10) % 10
+    expected_digit = str(control)
+    expected_letter = "JABCDEFGHI"[control]
+    actual = normalized[-1]
+    if initial in "ABEH":
+        return actual == expected_digit
+    if initial in "KPQS":
+        return actual == expected_letter
+    return actual in {expected_digit, expected_letter}
 
 
 CANONICAL_AGENT2_COLUMNS = [

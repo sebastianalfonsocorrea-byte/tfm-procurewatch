@@ -223,6 +223,15 @@ class Agent1Tests(unittest.TestCase):
                 mock.patch.dict("sys.modules", fake_modules),
                 mock.patch("procurewatch.agent1.build_source_coverage", return_value={"contract_key_coverage_path": str(processed / "coverage.parquet")}),
                 mock.patch("procurewatch.agent1.build_agent2_canonical_dataset", return_value={"path": str(processed / "agent2.parquet"), "schema_path": str(processed / "schema.json"), "rows": 1}),
+                mock.patch(
+                    "procurewatch.agent1.analytical_dataset.build_analytical_datasets",
+                    return_value={
+                        "contracts_path": str(processed / "contracts_analytical.parquet"),
+                        "contracts_rows": 1,
+                        "suppliers_path": str(processed / "suppliers_analytical.parquet"),
+                        "suppliers_rows": 1,
+                    },
+                ),
                 mock.patch("procurewatch.agent1.build_agent1_quality_summary", return_value={"status": "ok"}),
             ):
                 report = run_agent1(
@@ -235,6 +244,68 @@ class Agent1Tests(unittest.TestCase):
             self.assertTrue(report["boe"]["cached"])
             self.assertTrue(report["place"]["cached"])
             self.assertTrue(report["opentender"]["cached"])
+
+    def test_agent1_quality_summary_reports_required_tfm_metrics(self) -> None:
+        import pandas as pd
+
+        with TemporaryDirectory() as temp:
+            processed = Path(temp)
+            canonical_path = processed / "agent2_contracts_canonical.parquet"
+            schema_path = processed / "agent2_contracts_canonical_schema.json"
+            coverage_path = processed / "agent1_contract_key_coverage.parquet"
+            schema_path.write_text("{}")
+            coverage_path.write_bytes(b"coverage")
+            pd.DataFrame(
+                [
+                    {
+                        "contract_key_canon": "contract-1",
+                        "source": "place",
+                        "buyer_name": "Organismo A",
+                        "publication_date": "2024-01-01",
+                        "award_date": "2024-01-15",
+                        "supplier_id": "B99286320",
+                        "cpv_codes_raw": "71300000",
+                    },
+                    {
+                        "contract_key_canon": "contract-2",
+                        "source": "place",
+                        "buyer_name": "Organismo A",
+                        "publication_date": "2024-02-10",
+                        "award_date": "2024-02-01",
+                        "supplier_id": "INVALIDO",
+                        "cpv_codes_raw": "71300000",
+                    },
+                    {
+                        "contract_key_canon": "contract-3",
+                        "source": "boe",
+                        "buyer_name": "Organismo B",
+                        "publication_date": "",
+                        "award_date": "",
+                        "supplier_id": "",
+                        "cpv_codes_raw": "71300000",
+                    },
+                ]
+            ).to_parquet(canonical_path, index=False)
+
+            summary = build_agent1_quality_summary(
+                output_dir=processed,
+                coverage={"contract_key_coverage_path": str(coverage_path)},
+                canonical={
+                    "path": str(canonical_path),
+                    "schema_path": str(schema_path),
+                    "rows": 3,
+                },
+            )
+
+            metrics = summary["quality_metrics"]
+            self.assertEqual(metrics["ocds_critical_completeness"]["complete_rows"], 2)
+            self.assertEqual(metrics["supplier_tax_id"]["valid"], 1)
+            self.assertEqual(metrics["supplier_tax_id"]["invalid"], 1)
+            self.assertEqual(metrics["supplier_tax_id"]["missing"], 1)
+            self.assertEqual(metrics["temporal_coherence"]["comparable_rows"], 2)
+            self.assertEqual(metrics["temporal_coherence"]["coherent_rows"], 1)
+            self.assertEqual(metrics["temporal_coherence"]["incoherent_rows"], 1)
+            self.assertEqual(summary["status"], "warning")
 
 
 if __name__ == "__main__":
