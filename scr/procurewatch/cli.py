@@ -160,6 +160,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
     agent1_parser.add_argument("--force-rebuild", action="store_true")
+    agent2_parser = subparsers.add_parser(
+        "run-agent2",
+        help="Ejecuta las red flags y el scoring determinista del agente 2.",
+    )
+    agent2_parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("data/processed/agent2_contracts_canonical.parquet"),
+    )
+    agent2_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    agent2_parser.add_argument(
+        "--deviation-threshold",
+        type=float,
+        default=0.10,
+        help="Desviacion relativa minima para activar RF-05 (por defecto: 0.10).",
+    )
     batch_parser = subparsers.add_parser(
         "run-batch",
         help="Orquesta ingesta semanal o mensual y estado de batch para cadenas futuras.",
@@ -324,6 +340,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "run-agent2":
+        from .agent2 import run_agent2
+
+        report = run_agent2(
+            input_path=args.input,
+            output_dir=args.output_dir,
+            deviation_threshold=args.deviation_threshold,
+        )
+        print("Agente 2 ejecutado")
+        print(f"- Contratos de entrada: {report['rows']}")
+        print(f"- Contratos evaluables: {report['evaluable_rows']}")
+        print(f"- RF-05 activadas: {report['activated_flags']}")
+        print(f"- Reporte: {report['report_path']}")
         return 0
     if args.command == "run-batch":
         from .batch import run_batch

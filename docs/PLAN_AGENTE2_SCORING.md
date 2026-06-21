@@ -50,6 +50,23 @@ Prioridad inicial:
 - RF-06: patrones temporales anomalos.
 - RF-07: repeticion de CPV, titulos o importes entre contratos cercanos.
 
+### Primera implementación: RF-05
+
+La primera regla ejecutable compara `awarded_value_eur` con `estimated_value_eur`:
+
+- solo se evalúa cuando ambos importes están disponibles y el estimado es mayor que cero;
+- se activa cuando la desviación positiva supera el 10 %;
+- el umbral es una decisión operativa inicial, configurable y pendiente de análisis de
+  sensibilidad; no se presenta como un umbral normativo ni como prueba de fraude;
+- una fila sin los importes necesarios queda como `no_evaluable`, no recibe artificialmente un
+  score cero.
+
+Ejecución:
+
+```bash
+procurewatch run-agent2
+```
+
 Cada red flag debe producir:
 
 - `risk_flag_id`
