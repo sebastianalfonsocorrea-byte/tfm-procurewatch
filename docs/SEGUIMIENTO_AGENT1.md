@@ -6,6 +6,21 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
+- Se integra `OrganosContratacion.xlsx` como enriquecimiento opcional del Agente 1 mediante
+  `procurewatch run-agent1 --buyer-catalog <ruta>` y se genera
+  `buyer_catalog_enrichment_report.json`.
+- `run-agent1` y `run-batch` aceptan `--raw-dir` para descargar fuentes en un directorio temporal
+  y `--cleanup-downloads` para borrar solo los archivos descargados por el pipeline al terminar.
+- OpenTender admite `--opentender-download-url` para bajar el fichero desde la página española
+  `https://opentender.eu/es/download`; si esa página no expone el enlace directo en HTML, el
+  conector usa un fallback técnico al registro de OCP para resolver la descarga.
+- El cruce es determinista y conservador: solo rellena `codigo_organismo` y
+  `nivel_administracion` cuando la coincidencia por nombre es segura.
+- Validacion sobre un preview real de BOE CPV 71:
+  - 174/200 filas con `codigo_organismo` rellenado;
+  - 173/200 filas con `nivel_administracion` rellenado;
+  - 26 filas siguen sin cruce oficial;
+  - 52 nombres del catalogo quedan ambiguos y se excluyen del relleno automatico.
 - Se incorpora un informe reproducible que separa presencia de columnas, cobertura real y
   cumplimiento de requisitos:
   - `agent1_coverage_report.json`;
@@ -138,7 +153,7 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 - Definir una clave de expediente/lote y una política de deduplicación que permita reproducir el
   universo de contratos adjudicados descrito en la memoria.
 - Ejecutar el Agente 1 con las fuentes completas dentro del alcance BOE 2014-2024, PLACE 2024 y
-  OpenTender España, manteniendo el filtrado CPV 71.
+  OpenTender desde la página oficial de OCP, manteniendo el filtrado CPV 71.
 - Revisar los resultados reales de estas métricas y documentar cualquier objetivo no alcanzado.
 - Resolver la disponibilidad de almacenamiento antes de descargar PLACE: quedan aproximadamente
   4,6 GB libres y el ZIP anual principal ocupa alrededor de 1,8 GB.

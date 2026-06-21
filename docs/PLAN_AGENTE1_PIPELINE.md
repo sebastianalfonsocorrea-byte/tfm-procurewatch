@@ -72,7 +72,8 @@ Para este proyecto el formato de salida recomendado es:
 ### Fuente principal ya descargada
 
 - BOE: `data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv`
-- OpenTender: `data/raw/opentender/data-es-ocds-json.zip`.
+- OpenTender: descarga directa desde `https://opentender.eu/es/download`
+  y almacenamiento temporal en `data/raw/opentender/` durante la ejecución.
 - PLACE: `data/raw/place/` con:
   - `profiles/licitacionesPerfilesContratanteCompleto3_2024.zip`
   - `aggregation/PlataformasAgregadasSinMenores_2024.zip`
