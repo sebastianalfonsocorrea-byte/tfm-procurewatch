@@ -20,6 +20,8 @@ class Agent1AnalyticalDatasetTests(unittest.TestCase):
                     "contract_key_canon": "contract-1",
                     "source": "place",
                     "source_record_id": "licitacion-1",
+                    "source_notice_id": "aviso-1",
+                    "source_tender_id": "expediente-1",
                     "buyer_name": "Ayuntamiento Norte",
                     "buyer_id": "L010000",
                     "supplier_name": "Proveedor Á",
@@ -35,6 +37,8 @@ class Agent1AnalyticalDatasetTests(unittest.TestCase):
                     "contract_key_canon": "contract-2",
                     "source": "opentender",
                     "source_record_id": "licitacion-2",
+                    "source_notice_id": "aviso-2",
+                    "source_tender_id": "expediente-2",
                     "buyer_name": "Ayuntamiento Sur",
                     "buyer_id": "",
                     "supplier_name": "Proveedor A",
@@ -49,7 +53,9 @@ class Agent1AnalyticalDatasetTests(unittest.TestCase):
                 {
                     "contract_key_canon": "contract-3",
                     "source": "boe",
-                    "source_record_id": "boe-3",
+                    "source_record_id": "adjudicacion-3",
+                    "source_notice_id": "boe-3",
+                    "source_tender_id": "expediente-3",
                     "buyer_name": "Ministerio",
                     "buyer_id": "ADMINISTRACION GENERAL DEL ESTADO",
                     "supplier_name": "Proveedor B",
@@ -69,6 +75,9 @@ class Agent1AnalyticalDatasetTests(unittest.TestCase):
 
         self.assertEqual(list(contracts.columns), list(CONTRACT_REQUIRED_FIELDS))
         self.assertEqual(contracts.loc[0, "cpv_codigo"], "71300000")
+        self.assertEqual(contracts.loc[0, "id_licitacion"], "expediente-1")
+        self.assertEqual(contracts.loc[2, "id_contrato"], "contract-3")
+        self.assertEqual(contracts.loc[2, "id_licitacion"], "expediente-3")
         self.assertEqual(contracts.loc[0, "cpv_descripcion"], "Servicios de ingeniería")
         self.assertEqual(contracts.loc[0, "procedimiento"], "abierto")
         self.assertEqual(contracts.loc[0, "ratio_desviacion_importe"], -0.1)

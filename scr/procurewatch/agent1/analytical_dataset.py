@@ -45,7 +45,9 @@ def map_contracts_to_analytical_schema(canonical: Any) -> Any:
 
     result = pd.DataFrame(index=canonical.index)
     result["id_contrato"] = _string_series(canonical, "contract_key_canon")
-    result["id_licitacion"] = _nullable_string_series(canonical, "source_record_id")
+    result["id_licitacion"] = _nullable_string_series(
+        canonical, "source_tender_id"
+    ).combine_first(_nullable_string_series(canonical, "source_record_id"))
     result["organismo_contratante"] = _string_series(canonical, "buyer_name")
     sources = _nullable_string_series(canonical, "source")
     buyer_ids = _nullable_string_series(canonical, "buyer_id")

@@ -44,6 +44,10 @@ de otros agentes.
 - `id_expediente`: agrupa publicaciones y líneas que comparten organismo y número de expediente.
 - `id_linea_adjudicacion`: distingue adjudicatarios/importes dentro de un anuncio y expediente.
 
+En la tabla `CONTRATO`, `id_contrato` usa la línea de adjudicación y `id_licitacion` usa el
+expediente. El identificador del aviso se conserva en la capa canónica como
+`source_notice_id`.
+
 El BOE no siempre publica un identificador explícito de lote. Por ello,
 `id_linea_adjudicacion` es una clave técnica trazable, no una afirmación de que la fila sea un
 contrato jurídico independiente.

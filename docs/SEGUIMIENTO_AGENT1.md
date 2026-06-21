@@ -6,6 +6,18 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
+- La tabla analítica `CONTRATO` deja de construirse con todos los avisos BOE y utiliza la salida
+  conservadora de líneas de adjudicación cuando está disponible.
+- `id_contrato` representa la línea de adjudicación y `id_licitacion` representa el expediente.
+- La capa canónica conserva `source_notice_id` y `source_tender_id` para mantener trazabilidad y
+  preparar el mismo contrato de datos para PLACE y OpenTender.
+- La reconstrucción completa con los datos BOE disponibles genera:
+  - 4.062 contratos analíticos/líneas de adjudicación;
+  - 3.607 licitaciones o expedientes distintos;
+  - 2.086 adjudicatarios agregados por el identificador disponible;
+  - 2.182,547 millones de euros de importe adjudicado.
+- Estas cifras son resultados reproducibles del pipeline actual y no se fuerzan para coincidir con
+  las cifras descriptivas de la memoria.
 - Se implementan identificadores estables para las unidades de análisis BOE:
   - aviso;
   - expediente;

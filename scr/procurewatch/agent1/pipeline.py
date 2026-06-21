@@ -209,7 +209,12 @@ def build_source_coverage(
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_path = output_dir / "contracts_boe_cpv71.parquet"
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
     place_path = output_dir / "contracts_place_cpv71.parquet"
     op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
@@ -312,12 +317,18 @@ def build_agent2_canonical_dataset(
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_path = output_dir / "contracts_boe_cpv71.parquet"
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
     place_path = output_dir / "contracts_place_cpv71.parquet"
     op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
     boe_columns = [
         "contract_id",
+        "notice_id",
         "file_number",
         "institution",
         "buyer_name",
@@ -387,6 +398,8 @@ def build_agent2_canonical_dataset(
             "contract_key_canon",
             "source",
             "source_record_id",
+            "source_notice_id",
+            "source_tender_id",
             "source_dataset",
             "buyer_name",
             "buyer_id",
@@ -641,6 +654,8 @@ CANONICAL_AGENT2_COLUMNS = [
     "contract_key_canon",
     "source",
     "source_record_id",
+    "source_notice_id",
+    "source_tender_id",
     "source_dataset",
     "buyer_name",
     "buyer_id",
@@ -663,15 +678,16 @@ def _canonical_from_boe(dataframe: Any) -> pd.DataFrame:
 
     if dataframe.empty:
         return pd.DataFrame(columns=CANONICAL_AGENT2_COLUMNS)
+    from .boe_units import add_boe_unit_ids
+
+    dataframe = add_boe_unit_ids(dataframe)
     return pd.DataFrame(
         {
-            "contract_key_canon": _build_contract_keys(
-                dataframe,
-                source="boe",
-                id_columns=("file_number", "institution", "buyer_name", "publication_date"),
-            ),
+            "contract_key_canon": _series_or_empty(dataframe, "id_linea_adjudicacion"),
             "source": "boe",
-            "source_record_id": _series_or_empty(dataframe, "contract_id"),
+            "source_record_id": _series_or_empty(dataframe, "id_linea_adjudicacion"),
+            "source_notice_id": _series_or_empty(dataframe, "id_aviso"),
+            "source_tender_id": _series_or_empty(dataframe, "id_expediente"),
             "source_dataset": "boe_2014_2024",
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "institution"),
@@ -710,6 +726,8 @@ def _canonical_from_place(dataframe: Any) -> pd.DataFrame:
             ),
             "source": "place",
             "source_record_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_notice_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_tender_id": _series_or_empty(dataframe, "contract_folder_id"),
             "source_dataset": _series_or_empty(dataframe, "source_dataset"),
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "buyer_dir3"),
@@ -742,6 +760,8 @@ def _canonical_from_opentender(dataframe: Any) -> pd.DataFrame:
             ),
             "source": "opentender",
             "source_record_id": _series_or_empty(dataframe, "source_record_id"),
+            "source_notice_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_tender_id": _series_or_empty(dataframe, "source_record_id"),
             "source_dataset": _series_or_empty(dataframe, "source_file"),
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "buyer_id"),
@@ -783,6 +803,8 @@ def _agent2_schema() -> dict[str, Any]:
             ],
             "nullable": [
                 "source_record_id",
+                "source_notice_id",
+                "source_tender_id",
                 "source_dataset",
                 "buyer_id",
                 "supplier_name",
@@ -800,6 +822,8 @@ def _agent2_schema() -> dict[str, Any]:
             "contract_key_canon": "Clave normalizada para cobertura y deduplicacion entre fuentes.",
             "source": "Fuente normalizada: boe, place u opentender.",
             "source_record_id": "Identificador original del registro en la fuente.",
+            "source_notice_id": "Identificador del aviso o publicación de origen.",
+            "source_tender_id": "Identificador de licitación o expediente dentro de la fuente.",
             "source_dataset": "Dataset o subfuente de procedencia.",
             "buyer_name": "Organismo contratante normalizado por la fuente.",
             "buyer_id": "Identificador de organismo si existe: DIR3, NIF, institucion u otro.",

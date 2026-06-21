@@ -167,6 +167,9 @@ class Agent1Tests(unittest.TestCase):
             self.assertTrue((processed / "agent2_contracts_canonical.parquet").exists())
             self.assertTrue((processed / "agent2_contracts_canonical_schema.json").exists())
             self.assertEqual(canonical["rows"], 3)
+            canonical_df = pd.read_parquet(processed / "agent2_contracts_canonical.parquet")
+            self.assertIn("source_notice_id", canonical_df.columns)
+            self.assertIn("source_tender_id", canonical_df.columns)
             self.assertIn(quality["status"], {"ok", "warning"})
 
     def test_run_agent1_reuses_cached_source_outputs(self) -> None:
@@ -244,6 +247,49 @@ class Agent1Tests(unittest.TestCase):
             self.assertTrue(report["boe"]["cached"])
             self.assertTrue(report["place"]["cached"])
             self.assertTrue(report["opentender"]["cached"])
+
+    def test_agent2_canonical_prefers_boe_award_lines_when_available(self) -> None:
+        import pandas as pd
+
+        with TemporaryDirectory() as temp:
+            processed = Path(temp)
+            common = {
+                "contract_id": "BOE-1",
+                "notice_id": "BOE-1",
+                "file_number": "EXP-1",
+                "institution": "Ministerio",
+                "buyer_name": "Organismo",
+                "publication_date": "2024-01-01",
+                "supplier_name": "Proveedor A",
+                "object": "Servicio",
+                "procedure": "Abierto",
+                "estimated_value_eur": 100.0,
+                "awarded_value_eur": 90.0,
+                "cpv_codes_raw": "71300000 Servicios",
+                "cpv_code_list": ["71300000"],
+                "source_file": "boe.csv",
+            }
+            pd.DataFrame(
+                [
+                    common,
+                    {**common, "contract_id": "BOE-2", "notice_id": "BOE-2"},
+                ]
+            ).to_parquet(processed / "contracts_boe_cpv71.parquet", index=False)
+            pd.DataFrame([common]).to_parquet(
+                processed / "contracts_boe_award_lines_cpv71.parquet",
+                index=False,
+            )
+
+            result = build_agent2_canonical_dataset(
+                output_dir=processed,
+                cpv_prefix="71",
+                year=2024,
+            )
+            canonical = pd.read_parquet(result["path"])
+
+            self.assertEqual(result["rows"], 1)
+            self.assertEqual(canonical.loc[0, "source_notice_id"], "BOE-1")
+            self.assertTrue(canonical.loc[0, "source_tender_id"].startswith("expediente:"))
 
     def test_agent1_quality_summary_reports_required_tfm_metrics(self) -> None:
         import pandas as pd
