@@ -6,6 +6,20 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
+- Se implementan identificadores estables para las unidades de análisis BOE:
+  - aviso;
+  - expediente;
+  - línea de adjudicación.
+- Se genera `boe_analysis_units_report.json` con recuentos, organismos, adjudicatarios e importes
+  para cada unidad.
+- Resultado reproducible:
+  - 8.097 filas CPV 71 y 7.929 avisos identificados;
+  - 4.452 filas de tipo contratación y 4.284 anuncios identificados;
+  - 4.062 líneas de adjudicación con CPV principal 71;
+  - 3.607 expedientes normalizados con CPV principal 71.
+- La normalización básica de nombres produce 355 organismos y 1.990 adjudicatarios en las líneas
+  de adjudicación. Estas cifras no sustituyen una resolución de entidades basada en identificadores
+  oficiales.
 - Se separa una salida BOE específica de líneas de adjudicación:
   `contracts_boe_award_lines_cpv71.parquet`.
 - La selección exige tipo de aviso `Contratación` y CPV principal con prefijo 71.

@@ -37,3 +37,19 @@ Agent1 materializa:
 El canónico técnico anterior se conserva como frontera trazable. Las nuevas tablas aplican el
 modelo del apartado 5.4 y dejan como `null` los campos que dependen de información no disponible o
 de otros agentes.
+
+## Unidades de análisis BOE
+
+- `id_aviso`: identifica una publicación BOE.
+- `id_expediente`: agrupa publicaciones y líneas que comparten organismo y número de expediente.
+- `id_linea_adjudicacion`: distingue adjudicatarios/importes dentro de un anuncio y expediente.
+
+El BOE no siempre publica un identificador explícito de lote. Por ello,
+`id_linea_adjudicacion` es una clave técnica trazable, no una afirmación de que la fila sea un
+contrato jurídico independiente.
+
+El informe se regenera con:
+
+```bash
+python -m procurewatch.agent1.boe_units
+```
