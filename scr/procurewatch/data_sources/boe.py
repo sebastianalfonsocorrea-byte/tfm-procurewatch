@@ -172,19 +172,27 @@ def normalize_boe_file(
     contracts_path = output_dir / "contracts_boe.parquet"
     cpv71_path = output_dir / "contracts_boe_cpv71.parquet"
     csv_preview_path = output_dir / "contracts_boe_cpv71_preview.csv"
+    award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    award_lines_preview_path = output_dir / "contracts_boe_award_lines_cpv71_preview.csv"
     report_path = output_dir / "data_quality_report.json"
 
     dataframe.to_parquet(contracts_path, index=False)
     cpv71_dataframe.to_parquet(cpv71_path, index=False)
     cpv71_dataframe.head(200).to_csv(csv_preview_path, index=False, encoding="utf-8")
+    award_lines = build_boe_award_lines(cpv71_dataframe)
+    award_lines.to_parquet(award_lines_path, index=False)
+    award_lines.head(200).to_csv(award_lines_preview_path, index=False, encoding="utf-8")
 
     report = build_quality_report(
         input_path=input_path,
         contracts_path=contracts_path,
         cpv71_path=cpv71_path,
         csv_preview_path=csv_preview_path,
+        award_lines_path=award_lines_path,
+        award_lines_preview_path=award_lines_preview_path,
         dataframe=dataframe,
         cpv71_dataframe=cpv71_dataframe,
+        award_lines_dataframe=award_lines,
         total_data_lines=total_data_lines,
         errors=errors,
         raw_field_counts=raw_field_counts,
@@ -193,6 +201,43 @@ def normalize_boe_file(
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
     return report
+
+
+def build_boe_award_lines(dataframe: pd.DataFrame) -> pd.DataFrame:
+    if dataframe.empty:
+        return dataframe.copy()
+
+    record_type = dataframe["record_type"].astype("string").str.strip().str.casefold()
+    primary_cpv_71 = dataframe["cpv_code_list"].map(_primary_cpv_starts_with_71)
+    selected = dataframe[record_type.eq("contratación") & primary_cpv_71].copy()
+
+    deduplication_fields = [
+        "notice_id",
+        "institution",
+        "buyer_name",
+        "file_number",
+        "object",
+        "supplier_name",
+        "estimated_value_eur",
+        "awarded_value_eur",
+        "cpv_codes_raw",
+    ]
+    available_fields = [
+        field for field in deduplication_fields if field in selected.columns
+    ]
+    if available_fields:
+        selected = selected.drop_duplicates(subset=available_fields, keep="first")
+
+    return selected.reset_index(drop=True)
+
+
+def _primary_cpv_starts_with_71(value: Any) -> bool:
+    if value is None:
+        return False
+    try:
+        return len(value) > 0 and str(value[0]).startswith("71")
+    except TypeError:
+        return False
 
 
 def parse_raw_line(raw_line: str) -> list[str]:
@@ -469,8 +514,11 @@ def build_quality_report(
     contracts_path: Path,
     cpv71_path: Path,
     csv_preview_path: Path,
+    award_lines_path: Path,
+    award_lines_preview_path: Path,
     dataframe: pd.DataFrame,
     cpv71_dataframe: pd.DataFrame,
+    award_lines_dataframe: pd.DataFrame,
     total_data_lines: int,
     errors: list[dict[str, Any]],
     raw_field_counts: Counter[int],
@@ -501,6 +549,8 @@ def build_quality_report(
             "contracts_boe": str(contracts_path),
             "contracts_boe_cpv71": str(cpv71_path),
             "cpv71_preview_csv": str(csv_preview_path),
+            "contracts_boe_award_lines_cpv71": str(award_lines_path),
+            "award_lines_cpv71_preview_csv": str(award_lines_preview_path),
         },
         "rows": {
             "total_data_lines": total_data_lines,
@@ -510,6 +560,19 @@ def build_quality_report(
             if total_data_lines
             else None,
             "cpv71_rows": int(len(cpv71_dataframe)),
+            "cpv71_award_lines": int(len(award_lines_dataframe)),
+            "cpv71_award_lines_before_exact_deduplication": int(
+                (
+                    cpv71_dataframe["record_type"]
+                    .astype("string")
+                    .str.strip()
+                    .str.casefold()
+                    .eq("contratación")
+                    & cpv71_dataframe["cpv_code_list"].map(_primary_cpv_starts_with_71)
+                ).sum()
+            )
+            if not cpv71_dataframe.empty
+            else 0,
             "repaired_rows": int(dataframe["repaired_columns"].sum()) if not dataframe.empty else 0,
             "lines_with_replacement_char": replacement_lines,
         },

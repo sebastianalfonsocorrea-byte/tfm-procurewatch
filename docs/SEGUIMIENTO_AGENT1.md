@@ -2,6 +2,34 @@
 
 Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibilidad de decisiones.
 
+## 21/06/2026
+
+### Hecho
+
+- Se separa una salida BOE específica de líneas de adjudicación:
+  `contracts_boe_award_lines_cpv71.parquet`.
+- La selección exige tipo de aviso `Contratación` y CPV principal con prefijo 71.
+- La deduplicación elimina únicamente repeticiones exactas del mismo anuncio, expediente,
+  adjudicatario, importes, objeto y CPV.
+- Se conservan varias líneas del mismo expediente cuando representan adjudicatarios o importes
+  distintos, porque pueden corresponder a lotes o premios legítimos.
+- Resultado sobre el BOE completo disponible:
+  - 4.063 líneas de adjudicación antes de deduplicar;
+  - 4.062 líneas tras eliminar una repetición exacta;
+  - 3.931 anuncios BOE distintos;
+  - 3.601 números de expediente distintos;
+  - importe adjudicado agregado: 2.182,547 millones de euros.
+
+### Decisiones
+
+- La salida se denomina `award_lines` y no `contracts` para no afirmar que cada fila representa
+  necesariamente un contrato independiente.
+- No se fuerza la cifra de 3.443 contratos escrita en la memoria. Con el fichero disponible, la
+  selección reproducible produce un universo diferente, aunque el importe agregado es cercano a
+  los 2.179 millones citados.
+- La diferencia se revisará contra la metodología exacta del dataset original y se documentará o
+  corregirá en la memoria si no puede reproducirse.
+
 ## 20/06/2026
 
 ### Hecho
