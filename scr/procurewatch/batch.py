@@ -30,12 +30,14 @@ def run_batch(
     include_datos_gob: bool = True,
     boe_input: Path = DEFAULT_BOE_INPUT,
     open_tender_input: Path = DEFAULT_OPEN_TENDER_INPUT,
-    raw_dir: Path = DEFAULT_RAW_DIR,
+    open_tender_download_url: str | None = None,
     processed_dir: Path = DEFAULT_PROCESSED_DIR,
     manifest_path: Path = DEFAULT_PLACE_MANIFEST,
     batch_state_path: Path = DEFAULT_BATCH_STATE_PATH,
     batch_manifest_dir: Path = DEFAULT_BATCH_MANIFEST_DIR,
     datos_gob_dir: Path = DEFAULT_DATOS_GOB_DIR,
+    raw_dir: Path = DEFAULT_RAW_DIR,
+    cleanup_downloads: bool = False,
 ) -> dict[str, Any]:
     from .data_sources import place as place_module
     if run_mode not in {"weekly", "monthly"}:
@@ -111,7 +113,10 @@ def run_batch(
         run_agent1_report = run_agent1(
             boe_input=boe_input,
             open_tender_input=open_tender_input,
+            open_tender_download_url=open_tender_download_url,
             place_inputs=place_inputs,
+            raw_dir=raw_dir,
+            cleanup_downloads=cleanup_downloads,
             output_dir=processed_dir,
             cpv_prefix=cpv_prefix,
             year=year,
@@ -250,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-datos-gob", action="store_true")
     parser.add_argument("--boe-input", type=Path, default=DEFAULT_BOE_INPUT)
     parser.add_argument("--opentender-input", type=Path, default=DEFAULT_OPEN_TENDER_INPUT)
+    parser.add_argument("--opentender-download-url", type=str, default=None)
+    parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
+    parser.add_argument("--cleanup-downloads", action="store_true")
     args = parser.parse_args(argv)
 
     result = run_batch(
@@ -262,6 +270,9 @@ def main(argv: list[str] | None = None) -> int:
         include_datos_gob=not args.no_datos_gob,
         boe_input=args.boe_input,
         open_tender_input=args.opentender_input,
+        open_tender_download_url=args.opentender_download_url,
+        raw_dir=args.raw_dir,
+        cleanup_downloads=args.cleanup_downloads,
     )
 
     status = result["status"]

@@ -150,6 +150,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("data/raw/opentender/data-es-ocds-json.zip"),
     )
+    agent1_parser.add_argument(
+        "--opentender-download-url",
+        type=str,
+        default=None,
+        help="URL de OpenTender para bajar el fichero temporalmente; prioriza la página española y usa fallback técnico si hace falta.",
+    )
     agent1_parser.add_argument("--place-inputs", nargs="*", type=Path)
     agent1_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
     agent1_parser.add_argument("--cpv-prefix", default="71")
@@ -355,6 +361,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         reports = run_agent1(
             boe_input=args.boe_input,
             open_tender_input=args.opentender_input,
+            open_tender_download_url=args.opentender_download_url,
             place_inputs=place_inputs,
             output_dir=args.output_dir,
             cpv_prefix=args.cpv_prefix,

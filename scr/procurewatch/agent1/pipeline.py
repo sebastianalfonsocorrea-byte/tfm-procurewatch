@@ -16,6 +16,7 @@ def run_agent1(
     *,
     boe_input: Path,
     open_tender_input: Path,
+    open_tender_download_url: str | None = None,
     place_inputs: list[Path],
     buyer_catalog_path: Path | None = None,
     raw_dir: Path = Path("data/raw"),
@@ -49,6 +50,24 @@ def run_agent1(
     reports: dict[str, Any] = {}
     selected_place_inputs = list(place_inputs)
     downloaded_targets: list[Path] = []
+    downloaded_opentender_inputs: list[Path] = []
+    effective_open_tender_input = open_tender_input
+
+    if open_tender_download_url:
+        from ..data_sources.opentender import download_opentender_zip
+
+        effective_open_tender_input = raw_dir / "opentender" / "data-es-ocds-json.zip"
+        opentender_download_report = download_opentender_zip(
+            url=open_tender_download_url,
+            output_path=effective_open_tender_input,
+            overwrite=True,
+        )
+        reports["opentender_download"] = opentender_download_report
+        effective_open_tender_input = Path(opentender_download_report["output_path"])
+        if opentender_download_report.get("downloaded"):
+            downloaded_opentender_inputs = [effective_open_tender_input]
+    if not effective_open_tender_input.exists():
+        raise FileNotFoundError(f"No existe OpenTender input: {effective_open_tender_input}")
 
     if place_download:
         manifest = load_manifest(DEFAULT_MANIFEST)
@@ -58,12 +77,13 @@ def run_agent1(
             dataset_ids=set(place_datasets) if place_datasets else None,
             include_docs=False,
             include_data=True,
-            raw_dir=Path("data/raw"),
+            raw_dir=raw_dir,
         )
-        download_targets(targets, overwrite=True)
+        download_report = download_targets(targets, overwrite=True)
         downloaded_targets = [target.output_path for target in targets if target.kind == "dataset"]
         if not place_inputs:
             selected_place_inputs = downloaded_targets
+        reports["place_download"] = download_report
 
     for path in selected_place_inputs:
         if not path.exists():
@@ -74,7 +94,7 @@ def run_agent1(
             boe_input, compute_sha=force_rebuild or limit_boe is not None
         ),
         "opentender": _input_artifact_metadata(
-            open_tender_input,
+            effective_open_tender_input,
             compute_sha=force_rebuild or limit_ot is not None,
         ),
         "place_files": [
@@ -87,9 +107,11 @@ def run_agent1(
     }
     reports["inputs"] = {
         "boe_input": str(boe_input),
-        "open_tender_input": str(open_tender_input),
+        "open_tender_input": str(effective_open_tender_input),
+        "open_tender_download_url": open_tender_download_url,
         "place_inputs": [str(path) for path in selected_place_inputs],
         "downloaded_targets": [str(path) for path in downloaded_targets],
+        "downloaded_opentender_inputs": [str(path) for path in downloaded_opentender_inputs],
         "year": year,
         "cpv_prefix": cpv_prefix,
         "limits": {"boe": limit_boe, "place": limit_place, "opentender": limit_ot},
@@ -157,10 +179,10 @@ def run_agent1(
         _hydrate_artifact_from_report(input_artifacts["opentender"], reports["opentender"])
     else:
         input_artifacts["opentender"] = _input_artifact_metadata(
-            open_tender_input, compute_sha=True
+            effective_open_tender_input, compute_sha=True
         )
         reports["opentender"] = normalize_opentender_file(
-            input_path=open_tender_input,
+            input_path=effective_open_tender_input,
             output_dir=output_dir,
             year=year,
             cpv_prefix=cpv_prefix,
@@ -205,6 +227,16 @@ def run_agent1(
         json.dumps(reports, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+
+    if cleanup_downloads and (downloaded_targets or downloaded_opentender_inputs):
+        for path in downloaded_targets:
+            if path.exists():
+                path.unlink()
+        _cleanup_empty_parents(downloaded_targets, stop_dir=raw_dir)
+        for path in downloaded_opentender_inputs:
+            if path.exists():
+                path.unlink()
+        _cleanup_empty_parents(downloaded_opentender_inputs, stop_dir=raw_dir)
     return reports
 
 
@@ -1099,6 +1131,20 @@ def _load_json_dict(path: Path) -> dict[str, Any]:
         return raw if isinstance(raw, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def _cleanup_empty_parents(paths: list[Path], *, stop_dir: Path) -> None:
+    roots = sorted({path.parent for path in paths}, key=lambda item: len(item.parts), reverse=True)
+    for start in roots:
+        current = start
+        while current != stop_dir.parent:
+            try:
+                current.rmdir()
+            except OSError:
+                break
+            if current == stop_dir:
+                break
+            current = current.parent
 
 
 def _jsonish(value: Any) -> str:

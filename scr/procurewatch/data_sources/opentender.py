@@ -4,21 +4,29 @@ from collections import Counter
 from dataclasses import dataclass, asdict
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 import hashlib
+import gzip
 import io
 import json
 import re
 import zipfile
+from urllib.parse import urljoin
 
+import requests
 import pandas as pd
 
-PARSER_VERSION = "1.0.0"
+PARSER_VERSION = "1.2.0"
 
 
 DEFAULT_INPUT = Path("data/raw/opentender/data-es-ocds-json.zip")
+DEFAULT_REGISTRY_PAGE = "https://opentender.eu/es/download"
+DEFAULT_REGISTRY_FALLBACK_PAGE = "https://data.open-contracting.org/en/publication/94"
 DEFAULT_OUTPUT_DIR = Path("data/processed")
+DEFAULT_TIMEOUT_SECONDS = 60
+CHUNK_SIZE = 1024 * 1024
 
 
 AMOUNT_RE = re.compile(r"[^0-9.,-]")
@@ -71,45 +79,42 @@ def normalize_opentender_file(
     parsed_records = 0
 
     if not input_path.exists():
-        raise FileNotFoundError(f"No existe el archivo ZIP de OpenTender: {input_path}")
+        raise FileNotFoundError(f"No existe el archivo de OpenTender: {input_path}")
 
-    with zipfile.ZipFile(input_path, "r") as zf:
-        for entry_name in sorted(_iter_opentender_entries(input_path, year=year)):
-            year_str = entry_name.removeprefix("data-es-ocds-").replace(".json", "")
-            source_year = int(year_str) if year_str.isdigit() else None
-            with zf.open(entry_name, "r") as raw:
-                for line_number, raw_line in enumerate(io.TextIOWrapper(raw, encoding="utf-8"), start=1):
-                    if limit is not None and total_lines >= limit:
-                        break
-                    total_lines += 1
-                    if not raw_line.strip():
+    for entry_name, raw_lines, source_year in _iter_opentender_records(input_path, year=year):
+        with raw_lines:
+            for line_number, raw_line in enumerate(raw_lines, start=1):
+                if limit is not None and total_lines >= limit:
+                    break
+                total_lines += 1
+                if not raw_line.strip():
+                    continue
+                if cpv_prefix != "all" and not _raw_line_may_contain_cpv_prefix(raw_line, cpv_prefix):
+                    continue
+
+                try:
+                    record = parse_opentender_record(
+                        json.loads(raw_line),
+                        source_year=source_year,
+                        source_file=entry_name,
+                    )
+                    parsed_records += 1
+                    if cpv_prefix != "all" and not record.is_cpv_71:
                         continue
-                    if cpv_prefix != "all" and not _raw_line_may_contain_cpv_prefix(raw_line, cpv_prefix):
-                        continue
+                    old_record = latest_records.get(record.source_record_id)
+                    if old_record is None or _prefer_newer(old_record.publication_date, record.publication_date):
+                        latest_records[record.source_record_id] = record
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(
+                        {
+                            "file": entry_name,
+                            "line": line_number,
+                            "error": str(exc),
+                        }
+                    )
 
-                    try:
-                        record = parse_opentender_record(
-                            json.loads(raw_line),
-                            source_year=source_year,
-                            source_file=entry_name,
-                        )
-                        parsed_records += 1
-                        if cpv_prefix != "all" and not record.is_cpv_71:
-                            continue
-                        old_record = latest_records.get(record.source_record_id)
-                        if old_record is None or _prefer_newer(old_record.publication_date, record.publication_date):
-                            latest_records[record.source_record_id] = record
-                    except Exception as exc:  # noqa: BLE001
-                        errors.append(
-                            {
-                                "file": entry_name,
-                                "line": line_number,
-                                "error": str(exc),
-                            }
-                        )
-
-            if limit is not None and total_lines >= limit:
-                break
+        if limit is not None and total_lines >= limit:
+            break
 
     if not latest_records:
         dataframe = pd.DataFrame()
@@ -148,6 +153,147 @@ def normalize_opentender_file(
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
     return report
+
+
+def download_opentender_zip(
+    *,
+    url: str,
+    output_path: Path = DEFAULT_INPUT,
+    year: int | None = None,
+    overwrite: bool = False,
+) -> dict[str, Any]:
+    resolved_url = resolve_opentender_download_url(url, year=year)
+    output_path = _download_output_path_for_url(output_path, resolved_url)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.exists() and not overwrite:
+        return {
+            "url": url,
+            "resolved_url": resolved_url,
+            "output_path": str(output_path),
+            "downloaded": False,
+            "skipped": True,
+            "reason": "exists",
+            "size_bytes": output_path.stat().st_size,
+            "sha256": sha256_file(output_path),
+        }
+
+    temp_path = output_path.with_suffix(f"{output_path.suffix}.tmp" if output_path.suffix else ".tmp")
+    try:
+        response = requests.get(
+            resolved_url,
+            stream=True,
+            timeout=DEFAULT_TIMEOUT_SECONDS,
+            headers={"User-Agent": "ProcureWatchAnalytics/0.1"},
+        )
+        response.raise_for_status()
+        digest = hashlib.sha256()
+        size = 0
+        with temp_path.open("wb") as handle:
+            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                if not chunk:
+                    continue
+                handle.write(chunk)
+                digest.update(chunk)
+                size += len(chunk)
+        temp_path.replace(output_path)
+        return {
+            "url": url,
+            "resolved_url": resolved_url,
+            "output_path": str(output_path),
+            "downloaded": True,
+            "skipped": False,
+            "status_code": response.status_code,
+            "content_type": response.headers.get("content-type"),
+            "size_bytes": size,
+            "sha256": digest.hexdigest(),
+        }
+    except requests.RequestException as exc:
+        if temp_path.exists():
+            temp_path.unlink()
+        return {
+            "url": url,
+            "resolved_url": resolved_url,
+            "output_path": str(output_path),
+            "downloaded": False,
+            "skipped": False,
+            "status_code": None,
+            "content_type": None,
+            "size_bytes": 0,
+            "sha256": None,
+            "error": str(exc),
+        }
+
+
+def _download_output_path_for_url(output_path: Path, resolved_url: str) -> Path:
+    resolved_lower = resolved_url.lower()
+    if resolved_lower.endswith(".jsonl.gz"):
+        if output_path.name.endswith(".jsonl.gz"):
+            return output_path
+        return output_path.with_suffix("").with_suffix(".jsonl.gz")
+    if resolved_lower.endswith(".zip"):
+        if output_path.suffix == ".zip":
+            return output_path
+        return output_path.with_suffix(".zip")
+    if resolved_lower.endswith(".gz"):
+        if output_path.suffix == ".gz":
+            return output_path
+        return output_path.with_suffix(".gz")
+    return output_path
+
+
+def resolve_opentender_download_url(url: str, *, year: int | None = None, preferred_format: str = "json") -> str:
+    if url.lower().endswith((".zip", ".gz", ".csv", ".json")):
+        return url
+    if "opentender.eu/es/download" in url:
+        try:
+            return discover_opentender_download_url(page_url=url, year=year, preferred_format=preferred_format)
+        except Exception:  # noqa: BLE001
+            return discover_opentender_download_url(
+                page_url=DEFAULT_REGISTRY_FALLBACK_PAGE,
+                year=year,
+                preferred_format=preferred_format,
+            )
+    if "data.open-contracting.org/en/publication/94" in url:
+        return discover_opentender_download_url(page_url=url, year=year, preferred_format=preferred_format)
+    return url
+
+
+def discover_opentender_download_url(
+    *,
+    page_url: str = DEFAULT_REGISTRY_PAGE,
+    year: int | None = None,
+    preferred_format: str = "json",
+) -> str:
+    response = requests.get(
+        page_url,
+        timeout=DEFAULT_TIMEOUT_SECONDS,
+        headers={"User-Agent": "ProcureWatchAnalytics/0.1"},
+    )
+    response.raise_for_status()
+    candidates = _extract_links(response.text, base_url=response.url)
+    if not candidates:
+        raise ValueError(f"No se encontraron enlaces de descarga en {page_url}")
+
+    year_text = str(year) if year is not None else ""
+    preferred_suffix = ".jsonl.gz" if preferred_format == "json" else f".{preferred_format}"
+    ranked: list[str] = []
+    for candidate in candidates:
+        candidate_lower = candidate.lower()
+        if preferred_suffix in candidate_lower and (not year_text or year_text in candidate_lower):
+            ranked.append(candidate)
+    if ranked:
+        return ranked[0]
+
+    for candidate in candidates:
+        candidate_lower = candidate.lower()
+        if year_text and year_text in candidate_lower:
+            return candidate
+
+    for candidate in candidates:
+        if preferred_suffix in candidate.lower():
+            return candidate
+
+    return candidates[0]
 
 
 def parse_opentender_record(
@@ -308,18 +454,92 @@ def extract_identifier(party: dict[str, Any], scheme: str) -> str | None:
     return None
 
 
-def _iter_opentender_entries(input_path: Path, *, year: int | None) -> list[str]:
-    with zipfile.ZipFile(input_path, "r") as zf:
-        names = [name for name in zf.namelist() if name.startswith("data-es-ocds-") and name.endswith(".json")]
+def _iter_opentender_records(
+    input_path: Path,
+    *,
+    year: int | None,
+):
+    suffixes = input_path.suffixes
+    if suffixes[-2:] == [".jsonl", ".gz"] or suffixes[-1:] == [".gz"] and input_path.name.endswith(".jsonl.gz"):
+        with gzip.open(input_path, "rb") as raw:
+            yield input_path.name, io.TextIOWrapper(raw, encoding="utf-8"), year
+        return
+
+    if suffixes[-1:] == [".zip"]:
+        with zipfile.ZipFile(input_path, "r") as zf:
+            for entry_name in sorted(_iter_opentender_entries_from_zip(zf, year=year)):
+                extracted_year = _extract_year_from_entry_name(entry_name)
+                with zf.open(entry_name, "r") as raw:
+                    yield entry_name, io.TextIOWrapper(raw, encoding="utf-8"), extracted_year
+        return
+
+    raise ValueError(f"Formato OpenTender no soportado: {input_path}")
+
+
+def _iter_opentender_entries_from_zip(zf: zipfile.ZipFile, *, year: int | None) -> list[str]:
+    names = [name for name in zf.namelist() if name.startswith("data-es-ocds-") and name.endswith(".json")]
     selected = []
     for name in sorted(names):
-        try:
-            extracted_year = int(name.replace("data-es-ocds-", "").split(".json")[0][:4])
-        except ValueError:
+        extracted_year = _extract_year_from_entry_name(name)
+        if extracted_year is None:
             continue
         if year is None or extracted_year == year or name.endswith("data-es-ocds-year-unavailable.json"):
             selected.append(name)
     return selected
+
+
+def _extract_year_from_entry_name(name: str) -> int | None:
+    try:
+        extracted = int(name.replace("data-es-ocds-", "").split(".json")[0][:4])
+        return extracted
+    except ValueError:
+        return None
+
+
+class _HrefCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.links: list[tuple[str, str]] = []
+        self._current_href: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "a":
+            return
+        attr_map = {key: value for key, value in attrs}
+        href = attr_map.get("href")
+        if href:
+            self._current_href = href
+            self.links.append((href, ""))
+
+    def handle_data(self, data: str) -> None:
+        if self._current_href is None or not self.links:
+            return
+        href, text = self.links[-1]
+        self.links[-1] = (href, f"{text}{data}")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "a":
+            self._current_href = None
+
+
+def _extract_links(html: str, *, base_url: str) -> list[str]:
+    parser = _HrefCollector()
+    parser.feed(html)
+    links: list[str] = []
+    for href, text in parser.links:
+        absolute = urljoin(base_url, href)
+        if "download" in absolute.lower() or ".jsonl.gz" in absolute.lower() or ".csv.gz" in absolute.lower():
+            links.append(absolute)
+        elif text and ("2024" in text or "json" in text.lower() or "csv" in text.lower()):
+            links.append(absolute)
+    seen: set[str] = set()
+    unique_links: list[str] = []
+    for link in links:
+        if link in seen:
+            continue
+        seen.add(link)
+        unique_links.append(link)
+    return unique_links
 
 
 def _raw_line_may_contain_cpv_prefix(raw_line: str, cpv_prefix: str) -> bool:
