@@ -6,6 +6,21 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
+- Se incorpora un informe reproducible que separa presencia de columnas, cobertura real y
+  cumplimiento de requisitos:
+  - `agent1_coverage_report.json`;
+  - `agent1_coverage_report.md`.
+- El informe se regenera con `procurewatch report-agent1-coverage` y no interpreta campos nulos
+  como requisitos cumplidos.
+- Resultado sobre las 4.062 líneas de adjudicación BOE:
+  - los 27 campos obligatorios de `CONTRATO` existen en el esquema;
+  - completitud de los siete campos OCDS críticos medibles: 99,79 %;
+  - 4.018 filas tienen completos esos siete campos;
+  - cobertura de NIF del adjudicatario: 0 %, objetivo no alcanzado;
+  - coherencia temporal: no evaluable por ausencia de fecha de adjudicación;
+  - 0 identificadores de contrato duplicados y 0 importes negativos detectados.
+- El estado global permanece `partial`: faltan integración efectiva de PLACE/OpenTender, carga en
+  PostgreSQL y actualización incremental por registros.
 - La tabla analítica `CONTRATO` deja de construirse con todos los avisos BOE y utiliza la salida
   conservadora de líneas de adjudicación cuando está disponible.
 - `id_contrato` representa la línea de adjudicación y `id_licitacion` representa el expediente.

@@ -160,6 +160,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
     agent1_parser.add_argument("--force-rebuild", action="store_true")
+    agent1_report_parser = subparsers.add_parser(
+        "report-agent1-coverage",
+        help="Genera el informe de cobertura y requisitos pendientes del agente 1.",
+    )
+    agent1_report_parser.add_argument(
+        "--contracts",
+        type=Path,
+        default=Path("data/processed/contracts_analytical.parquet"),
+    )
+    agent1_report_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed"),
+    )
     agent2_parser = subparsers.add_parser(
         "run-agent2",
         help="Ejecuta las red flags y el scoring determinista del agente 2.",
@@ -340,6 +354,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "report-agent1-coverage":
+        from .agent1 import build_agent1_coverage_report
+
+        report = build_agent1_coverage_report(
+            contracts_path=args.contracts,
+            output_dir=args.output_dir,
+        )
+        metrics = report["quality_metrics"]
+        print("Informe de cobertura del Agente 1 generado")
+        print(f"- Estado global: {report['overall_status']}")
+        print(f"- Contratos analizados: {report['scope']['rows']}")
+        print(
+            "- Completitud OCDS crítica: "
+            f"{metrics['ocds_critical_completeness']['coverage_ratio']:.2%}"
+        )
+        print(f"- Cobertura NIF: {metrics['supplier_nif_coverage']['coverage_ratio']:.2%}")
+        temporal = metrics["temporal_coherence"]["coherence_ratio"]
+        temporal_text = "no evaluable" if temporal is None else f"{temporal:.2%}"
+        print(f"- Coherencia temporal: {temporal_text}")
+        print(f"- Informe: {report['outputs']['markdown']}")
         return 0
     if args.command == "run-agent2":
         from .agent2 import run_agent2

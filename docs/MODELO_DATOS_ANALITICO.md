@@ -33,6 +33,8 @@ Agent1 materializa:
 - `data/processed/contracts_analytical_preview.csv`
 - `data/processed/suppliers_analytical.parquet`
 - `data/processed/suppliers_analytical_preview.csv`
+- `data/processed/agent1_coverage_report.json`
+- `data/processed/agent1_coverage_report.md`
 
 El canónico técnico anterior se conserva como frontera trazable. Las nuevas tablas aplican el
 modelo del apartado 5.4 y dejan como `null` los campos que dependen de información no disponible o

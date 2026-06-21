@@ -13,6 +13,7 @@ from .analytical_dataset import (
     build_supplier_analytical_table,
     map_contracts_to_analytical_schema,
 )
+from .coverage_report import build_agent1_coverage_report
 from .pipeline import (
     build_agent1_quality_summary,
     build_agent2_canonical_dataset,
@@ -35,6 +36,7 @@ __all__ = [
     "SUPPLIER_REQUIRED_FIELDS",
     "SUPPLIER_SCHEMA",
     "build_analytical_datasets",
+    "build_agent1_coverage_report",
     "build_agent1_quality_summary",
     "build_agent2_canonical_dataset",
     "build_source_coverage",
