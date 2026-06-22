@@ -208,6 +208,45 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("data/processed"),
     )
+    mvp_parser = subparsers.add_parser(
+        "run-mvp",
+        help="Ejecuta el MVP de Agent1 y persiste en PostgreSQL si el DSN está configurado.",
+    )
+    mvp_parser.add_argument("--year", type=int, default=2024)
+    mvp_parser.add_argument("--cpv-prefix", default="71")
+    mvp_parser.add_argument(
+        "--postgres-dsn",
+        type=str,
+        default=None,
+        help="Sobrescribe el DSN de PostgreSQL del entorno si es necesario.",
+    )
+    mvp_parser.add_argument(
+        "--boe-input",
+        type=Path,
+        default=Path("data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv"),
+    )
+    mvp_parser.add_argument(
+        "--opentender-input",
+        type=Path,
+        default=Path("data/raw/opentender/data-es-ocds-json.zip"),
+    )
+    mvp_parser.add_argument("--place-inputs", nargs="*", type=Path)
+    mvp_parser.add_argument("--buyer-catalog", type=Path, default=None)
+    mvp_parser.add_argument(
+        "--raw-dir",
+        type=Path,
+        default=Path("data/raw"),
+    )
+    mvp_parser.add_argument("--place-download", action="store_true")
+    mvp_parser.add_argument("--place-datasets", nargs="*")
+    mvp_parser.add_argument("--cleanup-downloads", action="store_true")
+    mvp_parser.add_argument("--force-rebuild", action="store_true")
+    mvp_parser.add_argument(
+        "--opentender-download-url",
+        type=str,
+        default=None,
+        help="URL de OpenTender para descargar el fichero temporalmente.",
+    )
     agent2_parser = subparsers.add_parser(
         "run-agent2",
         help="Ejecuta las red flags y el scoring determinista del agente 2.",
@@ -393,6 +432,39 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Agente 1 ejecutado")
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
+        print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "run-mvp":
+        from .agent1 import run_agent1
+
+        settings = Settings.from_env()
+        postgres_dsn = args.postgres_dsn or settings.postgres_dsn
+        if args.place_download:
+            place_inputs: list[Path] = list(args.place_inputs) if args.place_inputs else []
+        else:
+            place_inputs = args.place_inputs or [
+                Path("data/raw/place/profiles/licitacionesPerfilesContratanteCompleto3_2024.zip"),
+                Path("data/raw/place/aggregation/PlataformasAgregadasSinMenores_2024.zip"),
+            ]
+        reports = run_agent1(
+            boe_input=args.boe_input,
+            open_tender_input=args.opentender_input,
+            open_tender_download_url=args.opentender_download_url,
+            place_inputs=place_inputs,
+            output_dir=Path("data/processed"),
+            cpv_prefix=args.cpv_prefix,
+            year=args.year,
+            place_download=args.place_download,
+            place_datasets=args.place_datasets,
+            buyer_catalog_path=args.buyer_catalog,
+            raw_dir=args.raw_dir,
+            cleanup_downloads=args.cleanup_downloads,
+            force_rebuild=args.force_rebuild,
+            postgres_dsn=postgres_dsn,
+            write_postgres=postgres_dsn is not None,
+        )
+        print("MVP ejecutado")
+        print(f"- PostgreSQL: {'si' if postgres_dsn else 'no'}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")
         return 0
     if args.command == "report-agent1-coverage":

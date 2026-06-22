@@ -6,6 +6,9 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
+- Se añade `procurewatch run-mvp` como envoltorio mínimo para el borrador:
+  ejecuta Agent 1 y activa la persistencia en PostgreSQL cuando `PROCUREWATCH_POSTGRES_DSN`
+  está configurado en el entorno.
 - Se añade la persistencia mínima de Agent 1 a PostgreSQL para el MVP:
   `procurewatch run-agent1 --write-postgres`.
 - El pipeline guarda las tablas analíticas `CONTRATO` y `ADJUDICATARIO` en la base de datos

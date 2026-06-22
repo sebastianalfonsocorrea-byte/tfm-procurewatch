@@ -172,6 +172,15 @@ procurewatch run-agent1 --year 2024 --cpv-prefix 71 --write-postgres
 Eso escribe las tablas analíticas de `CONTRATO` y `ADJUDICATARIO` en PostgreSQL además de los
 artefactos Parquet.
 
+También existe un envoltorio más corto para el borrador del TFM:
+
+```powershell
+procurewatch run-mvp
+```
+
+Ese comando usa el `PROCUREWATCH_POSTGRES_DSN` del entorno si está definido y activa la
+persistencia en PostgreSQL automáticamente.
+
 ## 10. Siguiente foco: Agent2 y Agent4
 
 Despues de validar Agent1:
