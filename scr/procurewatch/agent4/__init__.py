@@ -14,6 +14,7 @@ from .embeddings import (
     EmbeddingMetadata,
     OllamaEmbeddingClient,
 )
+from .graph import build_agent4_graph, run_agent4_case_flow, run_agent4_graph
 from .indexing import Agent4IndexReport, index_corpus_to_qdrant
 from .qdrant_store import QdrantSearchFilters, QdrantVectorStore
 from .retrieval import keyword_retrieve
@@ -32,6 +33,7 @@ __all__ = [
     "QdrantSearchFilters",
     "QdrantVectorStore",
     "RetrievalResult",
+    "build_agent4_graph",
     "chunk_text",
     "index_corpus_to_qdrant",
     "load_corpus_documents",
@@ -40,5 +42,7 @@ __all__ = [
     "load_markdown_document",
     "load_text_document",
     "keyword_retrieve",
+    "run_agent4_case_flow",
+    "run_agent4_graph",
     "write_documents_manifest",
 ]

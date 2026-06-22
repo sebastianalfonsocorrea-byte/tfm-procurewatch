@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from pathlib import Path
+from typing import Any, TypedDict
 
 from .schemas import DocumentChunk, DocumentRef, RetrievalResult
 
@@ -10,6 +11,11 @@ class Agent4State(TypedDict, total=False):
     contract_key_canon: str
     source_record_id: str
     question: str
+    corpus_index: Path
+    output_path: Path
+    chunk_size: int
+    overlap: int
+    retrieval_limit: int
     contract_context: dict[str, object]
     document_refs: list[DocumentRef]
     chunks: list[DocumentChunk]
@@ -17,3 +23,8 @@ class Agent4State(TypedDict, total=False):
     answer: str
     citations: list[str]
     warnings: list[str]
+    embedding_client: Any
+    vector_store: Any
+    embedding_metadata: dict[str, object]
+    vector_upsert_report: dict[str, object]
+    agent_output: dict[str, object]

@@ -85,6 +85,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent4_index_parser.add_argument("--contract-key", default=None)
     agent4_index_parser.add_argument("--source", default=None)
     agent4_index_parser.add_argument("--document-type", default=None)
+    agent4_flow_parser = subparsers.add_parser(
+        "agent4-run-flow",
+        help="Ejecuta el flujo documental de Agent4 sobre el corpus local.",
+    )
+    agent4_flow_parser.add_argument("--contract-key", default="PW-2024-0001")
+    agent4_flow_parser.add_argument("--question", default="evidencia documental")
+    agent4_flow_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    agent4_flow_parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/processed/agent4_case_context.json"),
+    )
+    agent4_flow_parser.add_argument("--chunk-size", type=int, default=900)
+    agent4_flow_parser.add_argument("--overlap", type=int, default=120)
+    agent4_flow_parser.add_argument("--limit", type=int, default=5)
     sample_parser = subparsers.add_parser(
         "make-agent1-sample",
         help="Genera muestras pequenas de BOE, PLACE y OpenTender para pruebas rapidas.",
@@ -302,6 +321,27 @@ def main(argv: Sequence[str] | None = None) -> int:
                     f"  - {result.chunk.chunk_id} "
                     f"score={result.score:.4f} contract={result.chunk.contract_key_canon}"
                 )
+        return 0
+    if args.command == "agent4-run-flow":
+        from .agent4 import run_agent4_case_flow
+
+        state = run_agent4_case_flow(
+            contract_key_canon=args.contract_key,
+            question=args.question,
+            corpus_index=args.corpus_index,
+            output_path=args.output,
+            chunk_size=args.chunk_size,
+            overlap=args.overlap,
+            retrieval_limit=args.limit,
+        )
+        print("Flujo documental Agent4 ejecutado")
+        print(f"- Run ID: {state.get('run_id')}")
+        print(f"- Contrato: {state.get('contract_key_canon')}")
+        print(f"- Documentos: {len(state.get('document_refs', []))}")
+        print(f"- Chunks: {len(state.get('chunks', []))}")
+        print(f"- Evidencias: {len(state.get('retrieved_context', []))}")
+        print(f"- Citas: {len(state.get('citations', []))}")
+        print(f"- Output: {args.output}")
         return 0
     if args.command == "make-agent1-sample":
         from .samples import make_agent1_sample

@@ -22,6 +22,7 @@ from procurewatch.agent4 import (
     load_corpus_documents,
     load_html_document,
     load_text_document,
+    run_agent4_case_flow,
     write_documents_manifest,
 )
 from procurewatch.agent4.qdrant_store import build_filter_conditions, build_qdrant_points
@@ -369,6 +370,52 @@ class Agent4Tests(unittest.TestCase):
         self.assertIn("Corpus Agent4 indexado en Qdrant", output.getvalue())
         self.assertIn("Resultados query: 1", output.getvalue())
         self.assertEqual(mocked.call_args.kwargs["filters"].contract_key_canon, "contract-1")
+
+    def test_agent4_case_flow_runs_local_poc_and_persists_output(self) -> None:
+        output_path = _test_workspace("case-flow") / "agent4_case_context.json"
+
+        state = run_agent4_case_flow(
+            contract_key_canon="PW-2024-0001",
+            question="evidencia documental",
+            output_path=output_path,
+            retrieval_limit=3,
+        )
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(state["contract_key_canon"], "PW-2024-0001")
+        self.assertGreaterEqual(len(state["document_refs"]), 1)
+        self.assertGreaterEqual(len(state["chunks"]), 1)
+        self.assertGreaterEqual(len(state["retrieved_context"]), 1)
+        self.assertGreaterEqual(len(state["citations"]), 1)
+        self.assertIn("No se declara fraude", state["answer"])
+        self.assertEqual(payload["contract_key_canon"], "PW-2024-0001")
+        self.assertTrue(payload["citations"])
+
+    def test_cli_agent4_run_flow_command_uses_case_flow(self) -> None:
+        output = io.StringIO()
+        state = {
+            "run_id": "run-test",
+            "contract_key_canon": "PW-2024-0001",
+            "document_refs": [DocumentRef(document_id="doc", source="test", text="texto")],
+            "chunks": [
+                DocumentChunk(
+                    chunk_id="doc:0",
+                    document_id="doc",
+                    text="texto",
+                    chunk_index=0,
+                )
+            ],
+            "retrieved_context": [],
+            "citations": [],
+        }
+
+        with patch("procurewatch.agent4.run_agent4_case_flow", return_value=state) as mocked:
+            with redirect_stdout(output):
+                exit_code = main(["agent4-run-flow", "--contract-key", "PW-2024-0001"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Flujo documental Agent4 ejecutado", output.getvalue())
+        self.assertEqual(mocked.call_args.kwargs["contract_key_canon"], "PW-2024-0001")
 
 
 class _FakeQdrantClient:

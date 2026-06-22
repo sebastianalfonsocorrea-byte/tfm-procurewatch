@@ -150,7 +150,17 @@ Tecnologias:
 
 ## Hito 4 - LangGraph documental
 
-TODO:
+Estado:
+
+- Flujo documental completo preparado con fallback local si LangGraph no esta instalado.
+- El flujo ejecuta una PoC de punta a punta sobre documentos locales del corpus sintetico.
+- CLI demo disponible:
+
+```powershell
+procurewatch agent4-run-flow --contract-key PW-2024-0001 --question "evidencia documental"
+```
+
+Implementado:
 
 - Completar flujo LangGraph:
   - `load_contract_context`
@@ -177,6 +187,8 @@ TODO:
 Criterio de cierre:
 
 - El grafo de Agent4 ejecuta una PoC de punta a punta con documentos locales.
+- Hito cerrado cuando el commit `feat(agent4): complete langgraph case flow` quede subido a
+  `sebas`.
 
 Tecnologias:
 
