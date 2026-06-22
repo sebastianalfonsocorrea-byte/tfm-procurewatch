@@ -6,6 +6,12 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
+- Se añade la persistencia mínima de Agent 1 a PostgreSQL para el MVP:
+  `procurewatch run-agent1 --write-postgres`.
+- El pipeline guarda las tablas analíticas `CONTRATO` y `ADJUDICATARIO` en la base de datos
+  configurada por `PROCUREWATCH_POSTGRES_DSN`, manteniendo los Parquet como salida principal.
+- Se incorpora una prueba de integración con SQLite para verificar que la exportación SQL escribe
+  filas reales sin depender de tener PostgreSQL levantado durante los tests.
 - Se corrige el parser de OpenTender para el formato real descargado desde la página española:
   el JSONL es OCDS compilado en la raíz, no un contenedor con `releases`.
 - La normalización de OpenTender deja de producir una salida vacía y, sobre una muestra real,
