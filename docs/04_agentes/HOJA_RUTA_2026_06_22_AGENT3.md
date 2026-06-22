@@ -34,11 +34,15 @@ Regla de decision: los `.md` del repositorio mandan. SASM y maqueta solo corrige
 
 ## Commits previstos
 
-1. `docs: add daily roadmap for agent3 session`
-2. `feat(agent3): add graph schemas and canonical input`
-3. `feat(agent3): generate procurement graph tables`
-4. `feat(agent3): compute graph metrics for scoring`
-5. `test(agent3): cover graph tables and metrics`
+1. `86239c9 feat(agent3): add graph foundation and organize docs`
+2. `feat(agent3): add local artifact export command`
+
+## Avance de sesion
+
+- Hito 0 cerrado: base importable de Agent3, schemas, loader, grafo en memoria, metricas v1, tests y docs ordenados.
+- Hito 1 implementado: `run_agent3`, CLI `run-agent3`, exportacion Parquet/JSON y tests de escritura/reporte.
+- Pendiente inmediato: commit y push del Hito 1 a `sebas`.
+- Siguiente bloque tecnico: Hito 2, grafo Neo4j minimo e idempotente.
 
 ## Tecnologias a estudiar durante el avance
 

@@ -160,6 +160,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
     agent1_parser.add_argument("--force-rebuild", action="store_true")
+    agent3_parser = subparsers.add_parser(
+        "run-agent3",
+        help="Genera nodos, aristas y metricas locales del agente 3 desde el canonico.",
+    )
+    agent3_parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("data/processed/agent2_contracts_canonical.parquet"),
+    )
+    agent3_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
     batch_parser = subparsers.add_parser(
         "run-batch",
         help="Orquesta ingesta semanal o mensual y estado de batch para cadenas futuras.",
@@ -324,6 +334,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "run-agent3":
+        from .agent3 import run_agent3
+
+        report = run_agent3(input_path=args.input, output_dir=args.output_dir)
+        print("Agente 3 ejecutado")
+        print(f"- Nodos: {report['nodes_rows']}")
+        print(f"- Aristas: {report['edges_rows']}")
+        print(f"- Metricas contrato: {report['contract_metrics_rows']}")
+        print(f"- Reporte agente: {report['outputs']['report']}")
         return 0
     if args.command == "run-batch":
         from .batch import run_batch

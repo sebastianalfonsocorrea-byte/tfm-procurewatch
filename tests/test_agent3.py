@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
+from pathlib import Path
 
 from procurewatch.agent3 import (
     build_graph_tables,
     compute_contract_graph_metrics,
+    run_agent3,
     validate_canonical_columns,
 )
+from procurewatch.cli import main
 
 
 class Agent3Tests(unittest.TestCase):
@@ -54,6 +59,51 @@ class Agent3Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "contract_key_canon"):
             validate_canonical_columns(["source", "buyer_name", "supplier_name", "cpv_codes_raw"])
 
+    def test_run_agent3_writes_artifacts_and_report(self) -> None:
+        import pandas as pd
+
+        temp_path = _test_workspace("pipeline")
+        input_path = temp_path / "canonical.parquet"
+        output_dir = temp_path / "processed"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(_contracts()).to_parquet(input_path, index=False)
+
+        report = run_agent3(input_path=input_path, output_dir=output_dir)
+
+        self.assertEqual(report["input_rows"], 3)
+        self.assertEqual(report["nodes_by_type"]["Contract"], 3)
+        self.assertEqual(report["edges_by_type"]["AWARDED_TO"], 2)
+        self.assertEqual(report["contracts_without_supplier"], 1)
+        self.assertTrue((output_dir / "agent3_nodes.parquet").exists())
+        self.assertTrue((output_dir / "agent3_edges.parquet").exists())
+        self.assertTrue((output_dir / "agent3_contract_metrics.parquet").exists())
+        self.assertTrue((output_dir / "agent3_graph_report.json").exists())
+
+    def test_cli_run_agent3_command(self) -> None:
+        import pandas as pd
+
+        temp_path = _test_workspace("cli")
+        input_path = temp_path / "canonical.parquet"
+        output_dir = temp_path / "processed"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(_contracts()).to_parquet(input_path, index=False)
+        output = StringIO()
+
+        with redirect_stdout(output):
+            exit_code = main(
+                [
+                    "run-agent3",
+                    "--input",
+                    str(input_path),
+                    "--output-dir",
+                    str(output_dir),
+                ]
+            )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Agente 3 ejecutado", output.getvalue())
+        self.assertTrue((output_dir / "agent3_graph_report.json").exists())
+
 
 def _contracts() -> list[dict[str, object]]:
     return [
@@ -94,6 +144,12 @@ def _contracts() -> list[dict[str, object]]:
             "cpv_code_list": "",
         },
     ]
+
+
+def _test_workspace(name: str) -> Path:
+    path = Path("data/processed/agent3_test_artifacts") / name
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 if __name__ == "__main__":

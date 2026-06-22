@@ -8,13 +8,13 @@ Estado:
 
 - Existe `scr/procurewatch/agent3/` con schemas, loader, generacion de nodos/aristas y metricas basicas.
 - Existe `tests/test_agent3.py`.
+- Trabajo base commiteado en `86239c9 feat(agent3): add graph foundation and organize docs`.
 - Validacion actual:
   - `python -m pytest -p no:cacheprovider tests\test_agent3.py`
   - `python -m ruff check --no-cache scr\procurewatch\agent3 tests\test_agent3.py`
 
 Pendiente:
 
-- Hacer commits atomicos del trabajo actual.
 - No mezclar cambios de `data/` ni PDFs no trackeados con commits de codigo.
 
 Criterio de cierre:
@@ -23,16 +23,16 @@ Criterio de cierre:
 
 ## Hito 1 - Agent3 ejecutable local
 
-TODO:
+Estado:
 
-- Crear funcion de orquestacion `run_agent3`.
-- Leer `data/processed/agent2_contracts_canonical.parquet`.
-- Exportar artefactos:
+- Implementada funcion de orquestacion `run_agent3`.
+- Lectura de `data/processed/agent2_contracts_canonical.parquet` o ruta equivalente por parametro.
+- Exportacion de artefactos:
   - `data/processed/agent3_nodes.parquet`
   - `data/processed/agent3_edges.parquet`
   - `data/processed/agent3_contract_metrics.parquet`
   - `data/processed/agent3_graph_report.json`
-- Incluir reporte con:
+- Reporte JSON con:
   - filas de entrada;
   - nodos por tipo;
   - aristas por tipo;
@@ -40,13 +40,18 @@ TODO:
   - contratos sin CPV;
   - fecha de ejecucion;
   - version de Agent3.
-- Anadir CLI:
+- CLI anadida:
   - `procurewatch run-agent3 --input data/processed/agent2_contracts_canonical.parquet --output-dir data/processed`
+- Tests anadidos para lectura, escritura, reporte y comando CLI.
+
+Validacion:
+
+- `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_cli.py`
+- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\cli.py tests\test_agent3.py tests\test_cli.py`
 
 Criterio de cierre:
 
-- `run-agent3` genera outputs locales reproducibles sin Neo4j.
-- Tests cubren lectura, escritura y reporte.
+- Cerrado cuando el commit del hito quede subido a `sebas`.
 
 Tecnologias:
 
