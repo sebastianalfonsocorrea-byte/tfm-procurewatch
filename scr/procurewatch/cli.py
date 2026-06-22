@@ -183,6 +183,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
     agent1_parser.add_argument("--force-rebuild", action="store_true")
+    agent1_parser.add_argument(
+        "--postgres-dsn",
+        type=str,
+        default=None,
+        help="DSN de PostgreSQL para persistir las tablas analíticas mínimas del MVP.",
+    )
+    agent1_parser.add_argument(
+        "--write-postgres",
+        action="store_true",
+        help="Guarda CONTRACTO y ADJUDICATARIO en PostgreSQL tras generar los Parquet.",
+    )
     agent1_report_parser = subparsers.add_parser(
         "report-agent1-coverage",
         help="Genera el informe de cobertura y requisitos pendientes del agente 1.",
@@ -375,6 +386,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             limit_place=args.limit_place,
             limit_ot=args.limit_opentender,
             force_rebuild=args.force_rebuild,
+            postgres_dsn=args.postgres_dsn,
+            write_postgres=args.write_postgres,
         )
 
         print("Agente 1 ejecutado")

@@ -21,6 +21,7 @@ from .pipeline import (
     build_source_coverage,
     main,
 )
+from ..db import write_agent1_analytical_tables_to_postgres
 
 
 def run_agent1(*args, **kwargs):
@@ -46,4 +47,5 @@ __all__ = [
     "main",
     "map_contracts_to_analytical_schema",
     "run_agent1",
+    "write_agent1_analytical_tables_to_postgres",
 ]

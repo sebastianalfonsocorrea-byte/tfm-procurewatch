@@ -13,6 +13,8 @@ def build_analytical_datasets(
     canonical_path: Path,
     output_dir: Path,
     buyer_catalog_path: Path | None = None,
+    postgres_dsn: str | None = None,
+    write_postgres: bool = False,
 ) -> dict[str, Any]:
     import pandas as pd
 
@@ -45,6 +47,17 @@ def build_analytical_datasets(
             buyer_catalog_report,
             output_dir / "buyer_catalog_enrichment_report.json",
         )
+    postgres_report = None
+    if write_postgres:
+        if postgres_dsn is None:
+            raise ValueError("Se indicó write_postgres=True pero no se proporcionó postgres_dsn.")
+        from ..db import write_agent1_analytical_tables_to_postgres
+
+        postgres_report = write_agent1_analytical_tables_to_postgres(
+            contracts=contracts,
+            suppliers=suppliers,
+            postgres_dsn=postgres_dsn,
+        )
 
     return {
         "contracts_path": str(contracts_path),
@@ -58,6 +71,8 @@ def build_analytical_datasets(
         if buyer_catalog_report is not None
         else None,
         "buyer_catalog_report": buyer_catalog_report,
+        "postgres_dsn_configured": postgres_dsn is not None,
+        "postgres_write": postgres_report,
     }
 
 

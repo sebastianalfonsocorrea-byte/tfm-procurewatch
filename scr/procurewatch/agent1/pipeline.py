@@ -30,6 +30,8 @@ def run_agent1(
     limit_place: int | None = None,
     limit_ot: int | None = None,
     force_rebuild: bool = False,
+    postgres_dsn: str | None = None,
+    write_postgres: bool = False,
 ) -> dict[str, Any]:
     if place_download:
         from ..data_sources.place import build_targets, download_targets, load_manifest
@@ -205,6 +207,8 @@ def run_agent1(
         canonical_path=Path(canonical["path"]),
         output_dir=output_dir,
         buyer_catalog_path=buyer_catalog_path,
+        postgres_dsn=postgres_dsn,
+        write_postgres=write_postgres,
     )
     quality_summary = build_agent1_quality_summary(
         output_dir=output_dir,
@@ -222,6 +226,8 @@ def run_agent1(
     reports["canonical_agent2"] = canonical
     reports["analytical_datasets"] = analytical
     reports["quality_summary"] = quality_summary
+    if analytical.get("postgres_write") is not None:
+        reports["postgres_write"] = analytical["postgres_write"]
 
     (output_dir / "agent1_run_report.json").write_text(
         json.dumps(reports, indent=2, ensure_ascii=False),
