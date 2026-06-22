@@ -10,11 +10,17 @@ from unittest.mock import MagicMock, patch
 from procurewatch.agent3 import (
     build_agent2_feature_records,
     build_agent2_features_schema,
+    build_demo_kpis,
+    build_demo_subgraph,
     build_graph_tables,
     compute_contract_graph_metrics,
     compute_network_metrics,
+    load_agent3_demo_data,
     load_graph_records_to_neo4j,
     run_agent3,
+    select_explainable_cases,
+    top_communities,
+    top_entities,
     validate_canonical_columns,
 )
 from procurewatch.agent3.neo4j_store import prepare_edge_batches, prepare_node_batches
@@ -147,6 +153,36 @@ class Agent3Tests(unittest.TestCase):
         self.assertGreaterEqual(report["community_count"], 1)
         schema = json.loads((output_dir / "agent3_agent2_features_schema.json").read_text())
         self.assertEqual(schema["dataset"], "agent3_agent2_features")
+
+    def test_agent3_demo_helpers_load_outputs_and_select_cases(self) -> None:
+        import pandas as pd
+
+        temp_path = _test_workspace("demo")
+        input_path = temp_path / "canonical.parquet"
+        output_dir = temp_path / "processed"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(_contracts()).to_parquet(input_path, index=False)
+        run_agent3(input_path=input_path, output_dir=output_dir)
+
+        data = load_agent3_demo_data(output_dir)
+        kpis = build_demo_kpis(data)
+        cases = select_explainable_cases(data)
+        nodes, edges = build_demo_subgraph(
+            data,
+            max_nodes=5,
+            node_types={"Buyer", "Supplier", "Contract"},
+        )
+
+        self.assertEqual(kpis["contracts"], 3)
+        self.assertEqual(kpis["agent2_features"], 3)
+        self.assertEqual(len(cases), 3)
+        self.assertEqual(len({item["contract_key_canon"] for item in cases}), 3)
+        self.assertFalse(nodes.empty)
+        self.assertTrue(set(nodes["node_type"]).issubset({"Buyer", "Supplier", "Contract"}))
+        self.assertLessEqual(len(nodes), 5)
+        self.assertIsNotNone(edges)
+        self.assertFalse(top_communities(data).empty)
+        self.assertFalse(top_entities(data, node_type="Buyer").empty)
 
     def test_cli_run_agent3_command(self) -> None:
         import pandas as pd

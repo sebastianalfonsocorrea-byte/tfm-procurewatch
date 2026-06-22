@@ -45,6 +45,7 @@ Planes, seguimiento y hojas de ruta de Agent2, Agent3 y Agent4.
 - [Plan Agent4 RAG LangGraph](04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md)
 - [Hoja de ruta diaria Agent3 2026-06-22](04_agentes/HOJA_RUTA_2026_06_22_AGENT3.md)
 - [Hoja de ruta Agent3 grafos](04_agentes/HOJA_RUTA_AGENT3_GRAFOS.md)
+- [Resultados demo Agent3](04_agentes/RESULTADOS_AGENT3_DEMO.md)
 - [Hoja de ruta Agent4 RAG](04_agentes/HOJA_RUTA_AGENT4_RAG.md)
 
 ## 05_referencias

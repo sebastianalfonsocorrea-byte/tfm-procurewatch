@@ -154,32 +154,39 @@ Tecnologias:
 
 - pandas joins, feature engineering, scoring explicable.
 
-## Hito 5 - Integracion con dashboard y memoria
+## Hito 5 - Demostrador y documentacion de Agent3
 
-TODO:
+Decision de alcance:
 
-- Preparar dataset para visualizacion:
+- Este hito se realizara como cierre demostrable propio de Agent3.
+- No depende de que Agent2, Agent4 o el dashboard global esten terminados.
+- El dashboard final integrado queda fuera de este hito; aqui se prepara una demo tecnica reutilizable.
+
+Estado:
+
+- Preparada demo Streamlit propia de Agent3:
   - nodos filtrables;
   - aristas filtrables;
   - comunidades;
   - top entidades.
-- Preparar 2 o 3 casos explicables:
+- Preparados 3 casos explicables:
   - contrato con proveedor recurrente;
   - comprador concentrado;
   - subgrafo/comunidad interesante.
-- Documentar en memoria:
+- Documentado para memoria/demo:
   - modelo de grafo;
   - metricas calculadas;
   - limitaciones;
   - no declaracion de fraude.
+- Se deja claro que las salidas de Agent3 son senales relacionales, no scoring final.
 
 Criterio de cierre:
 
-- Agent3 puede demostrarse con grafo, metricas y narrativa defendible.
+- Cerrado cuando el commit del hito quede subido a `sebas`.
 
 Tecnologias:
 
-- PyVis/Sigma.js futuro, Streamlit, Plotly, Neo4j Browser.
+- Streamlit/Plotly o Neo4j Browser para demo tecnica; PyVis/Sigma.js queda como opcion futura.
 
 ## Orden recomendado de commits
 
@@ -189,4 +196,4 @@ Tecnologias:
 4. `feat(agent3): load graph into neo4j`
 5. `feat(agent3): compute advanced network metrics`
 6. `feat(agent2): consume agent3 graph metrics`
-7. `docs: document agent3 graph results`
+7. `feat(agent3): add standalone graph demo`

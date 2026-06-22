@@ -45,7 +45,9 @@ Regla de decision: los `.md` del repositorio mandan. SASM y maqueta solo corrige
 - Validacion real Hito 2: dos cargas consecutivas contra Neo4j local mantienen conteos sin duplicar nodos ni aristas.
 - Hito 3 implementado: metricas avanzadas con NetworkX, comunidades Louvain, resumen de red y artefactos Parquet/JSON.
 - Hito 4 implementado: contrato `agent3_agent2_features` para integracion futura con Agent2 sin recalcular grafo.
-- Siguiente bloque tecnico: Hito 5, integracion con dashboard y memoria tecnica.
+- Decision Hito 5: se reformula como demostrador y documentacion propia de Agent3, independiente del cierre de Agent2, Agent4 o dashboard global.
+- Hito 5 implementado: demo Streamlit independiente, casos explicables y documento `RESULTADOS_AGENT3_DEMO.md`.
+- Estado final: Agent3 queda listo como MVP tecnico y demostrable.
 
 ## Tecnologias a estudiar durante el avance
 
