@@ -1,0 +1,27 @@
+{
+  "corpus_id": "agent4_synthetic_minimal_v1",
+  "description": "Corpus documental sintetico y trazable para cerrar el Hito 1 de Agent4.",
+  "documents": [
+    {
+      "path": "pw-2024-0001-adjudicacion.txt",
+      "contract_key_canon": "PW-2024-0001",
+      "source": "synthetic",
+      "source_record_id": "SYN-AG4-0001-TXT",
+      "document_type": "text"
+    },
+    {
+      "path": "pw-2024-0001-pliego.html",
+      "contract_key_canon": "PW-2024-0001",
+      "source": "synthetic",
+      "source_record_id": "SYN-AG4-0001-HTML",
+      "document_type": "html"
+    },
+    {
+      "path": "pw-2024-0002-informe.md",
+      "contract_key_canon": "PW-2024-0002",
+      "source": "synthetic",
+      "source_record_id": "SYN-AG4-0002-MD",
+      "document_type": "markdown"
+    }
+  ]
+}

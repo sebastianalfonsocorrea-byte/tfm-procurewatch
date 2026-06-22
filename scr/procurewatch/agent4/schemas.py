@@ -11,7 +11,19 @@ class DocumentRef:
     contract_key_canon: str | None = None
     source_record_id: str | None = None
     document_type: str = "text"
+    text_hash: str | None = None
     metadata: dict[str, str] = field(default_factory=dict)
+
+    def manifest_record(self) -> dict[str, str | None]:
+        return {
+            "document_id": self.document_id,
+            "contract_key_canon": self.contract_key_canon,
+            "source": self.source,
+            "source_record_id": self.source_record_id,
+            "document_type": self.document_type,
+            "text_hash": self.text_hash,
+            "path": self.metadata.get("path"),
+        }
 
 
 @dataclass(frozen=True, slots=True)

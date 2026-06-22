@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from .chunking import chunk_text
-from .document_loader import load_text_document
+from .corpus import load_corpus_documents, write_documents_manifest
+from .document_loader import (
+    load_document,
+    load_html_document,
+    load_markdown_document,
+    load_text_document,
+)
 from .schemas import DocumentChunk, DocumentRef, RetrievalResult
 from .state import Agent4State
 
@@ -11,5 +17,10 @@ __all__ = [
     "DocumentRef",
     "RetrievalResult",
     "chunk_text",
+    "load_corpus_documents",
+    "load_document",
+    "load_html_document",
+    "load_markdown_document",
     "load_text_document",
+    "write_documents_manifest",
 ]

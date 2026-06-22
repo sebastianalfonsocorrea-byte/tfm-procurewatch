@@ -22,6 +22,8 @@ data/synthetic/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/synthetic/.gitkeep
+!data/synthetic/agent4_corpus/
+!data/synthetic/agent4_corpus/**
 
 models/*
 !models/.gitkeep

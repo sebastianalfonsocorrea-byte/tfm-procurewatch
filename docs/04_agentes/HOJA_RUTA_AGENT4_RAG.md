@@ -27,18 +27,31 @@ Criterio de cierre:
 
 ## Hito 1 - Corpus documental minimo
 
-TODO:
+Estado:
 
-- Definir corpus de prueba:
+- Corpus sintetico minimo definido en `data/synthetic/agent4_corpus/`.
+- Loaders ampliados para TXT, HTML y Markdown.
+- Manifiesto generable con:
+
+```powershell
+procurewatch agent4-build-manifest
+```
+
+- Salida local esperada:
+  - `data/processed/agent4_documents_manifest.json`
+
+Implementado:
+
+- Corpus de prueba:
   - TXT locales;
   - HTML simple;
-  - documentos PLACE/BOE seleccionados si ya existen enlaces o archivos.
-- Ampliar loaders:
+  - Markdown como texto plano.
+- Loaders:
   - TXT;
-  - HTML con BeautifulSoup;
-  - Markdown si se usa Docling mas adelante;
-  - PDF solo cuando Docling este incorporado.
-- Crear manifiesto:
+  - HTML con BeautifulSoup si esta instalado y fallback con `html.parser`;
+  - Markdown como texto plano;
+  - PDF queda fuera hasta incorporar Docling.
+- Manifiesto:
   - `data/processed/agent4_documents_manifest.json`
 - Metadatos obligatorios:
   - `document_id`
@@ -52,6 +65,8 @@ TODO:
 Criterio de cierre:
 
 - Agent4 puede cargar un corpus pequeno y documentar sus metadatos.
+- Hito cerrado cuando el commit `feat(agent4): add document corpus manifest` quede subido a
+  `sebas`.
 
 Tecnologias:
 

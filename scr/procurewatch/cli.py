@@ -51,6 +51,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Comprueba Qdrant y Ollama en los endpoints configurados o localhost.",
     )
+    agent4_manifest_parser = subparsers.add_parser(
+        "agent4-build-manifest",
+        help="Carga el corpus documental de Agent4 y genera su manifiesto.",
+    )
+    agent4_manifest_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    agent4_manifest_parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/processed/agent4_documents_manifest.json"),
+    )
     sample_parser = subparsers.add_parser(
         "make-agent1-sample",
         help="Genera muestras pequenas de BOE, PLACE y OpenTender para pruebas rapidas.",
@@ -217,6 +231,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         from .agent4.smoke import run_agent4_smoke
 
         return run_agent4_smoke(check_services=args.check_services)
+    if args.command == "agent4-build-manifest":
+        from .agent4 import load_corpus_documents, write_documents_manifest
+
+        documents = load_corpus_documents(args.corpus_index)
+        manifest = write_documents_manifest(
+            documents,
+            args.output,
+            corpus_index_path=args.corpus_index,
+        )
+        print("Manifiesto Agent4 generado")
+        print(f"- Documentos: {manifest['documents_count']}")
+        print(f"- Corpus index: {args.corpus_index}")
+        print(f"- Output: {args.output}")
+        return 0
     if args.command == "make-agent1-sample":
         from .samples import make_agent1_sample
 
