@@ -8,6 +8,7 @@ from .document_loader import (
     load_markdown_document,
     load_text_document,
 )
+from .retrieval import keyword_retrieve
 from .schemas import DocumentChunk, DocumentRef, RetrievalResult
 from .state import Agent4State
 
@@ -22,5 +23,6 @@ __all__ = [
     "load_html_document",
     "load_markdown_document",
     "load_text_document",
+    "keyword_retrieve",
     "write_documents_manifest",
 ]

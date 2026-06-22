@@ -8,7 +8,9 @@ from pathlib import Path
 from uuid import uuid4
 
 from procurewatch.agent4 import (
+    DocumentChunk,
     chunk_text,
+    keyword_retrieve,
     load_corpus_documents,
     load_html_document,
     load_text_document,
@@ -40,6 +42,54 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(chunks[0].chunk_id, "doc-1:0")
         self.assertEqual(chunks[0].contract_key_canon, "contract-1")
         self.assertIn("text_hash", chunks[0].payload())
+
+    def test_chunk_text_returns_empty_for_blank_text(self) -> None:
+        document = DocumentRef(document_id="doc-empty", source="test", text=" \n\t ")
+
+        self.assertEqual(chunk_text(document), [])
+
+    def test_chunk_text_short_text_keeps_complete_payload(self) -> None:
+        document = DocumentRef(
+            document_id="doc-short",
+            source="synthetic",
+            text=" contrato menor ",
+            contract_key_canon="contract-short",
+            source_record_id="record-short",
+            document_type="text",
+        )
+
+        chunks = chunk_text(document, chunk_size=100, overlap=10)
+        payload = chunks[0].payload()
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(chunks[0].text, "contrato menor")
+        self.assertEqual(payload["chunk_id"], "doc-short:0")
+        self.assertEqual(payload["document_id"], "doc-short")
+        self.assertEqual(payload["contract_key_canon"], "contract-short")
+        self.assertEqual(payload["source"], "synthetic")
+        self.assertEqual(payload["source_record_id"], "record-short")
+        self.assertEqual(payload["document_type"], "text")
+        self.assertEqual(len(str(payload["text_hash"])), 64)
+
+    def test_chunk_text_long_text_uses_deterministic_overlap(self) -> None:
+        document = DocumentRef(document_id="doc-long", source="test", text="abcdefghij")
+
+        first_run = chunk_text(document, chunk_size=5, overlap=2)
+        second_run = chunk_text(document, chunk_size=5, overlap=2)
+
+        self.assertEqual([chunk.text for chunk in first_run], [chunk.text for chunk in second_run])
+        self.assertEqual(first_run[0].text[-2:], first_run[1].text[:2])
+        self.assertEqual(first_run[1].text[-2:], first_run[2].text[:2])
+
+    def test_chunk_text_rejects_invalid_parameters(self) -> None:
+        document = DocumentRef(document_id="doc-invalid", source="test", text="contenido")
+
+        with self.assertRaises(ValueError):
+            chunk_text(document, chunk_size=0)
+        with self.assertRaises(ValueError):
+            chunk_text(document, overlap=-1)
+        with self.assertRaises(ValueError):
+            chunk_text(document, chunk_size=10, overlap=10)
 
     def test_load_text_document_builds_stable_document_ref(self) -> None:
         temp = _test_workspace("loader")
@@ -91,6 +141,48 @@ class Agent4Tests(unittest.TestCase):
             self.assertTrue(item["document_type"])
             self.assertTrue(item["text_hash"])
             self.assertTrue(item["path"])
+
+    def test_keyword_retrieve_returns_empty_for_empty_or_unmatched_inputs(self) -> None:
+        chunk = DocumentChunk(
+            chunk_id="doc-1:0",
+            document_id="doc-1",
+            text="evidencia documental",
+            chunk_index=0,
+        )
+
+        self.assertEqual(keyword_retrieve([], "evidencia"), [])
+        self.assertEqual(keyword_retrieve([chunk], ""), [])
+        self.assertEqual(keyword_retrieve([chunk], "!!!"), [])
+        self.assertEqual(keyword_retrieve([chunk], "contrato", limit=0), [])
+        self.assertEqual(keyword_retrieve([chunk], "contrato"), [])
+
+    def test_keyword_retrieve_scores_orders_and_limits_results(self) -> None:
+        chunks = [
+            DocumentChunk(
+                chunk_id="doc-b:0",
+                document_id="doc-b",
+                text="riesgo contrato",
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="doc-a:0",
+                document_id="doc-a",
+                text="riesgo evidencia contrato",
+                chunk_index=0,
+            ),
+            DocumentChunk(
+                chunk_id="doc-c:0",
+                document_id="doc-c",
+                text="evidencia riesgo adicional",
+                chunk_index=0,
+            ),
+        ]
+
+        results = keyword_retrieve(chunks, "riesgo evidencia", limit=2)
+
+        self.assertEqual([result.chunk.chunk_id for result in results], ["doc-a:0", "doc-c:0"])
+        self.assertEqual(results[0].score, 1.0)
+        self.assertEqual(results[1].score, 1.0)
 
     def test_agent4_smoke_without_services_returns_ok(self) -> None:
         output = io.StringIO()

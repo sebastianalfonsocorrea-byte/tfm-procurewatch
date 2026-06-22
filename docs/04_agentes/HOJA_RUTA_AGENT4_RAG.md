@@ -74,7 +74,14 @@ Tecnologias:
 
 ## Hito 2 - Chunking y retrieval local
 
-TODO:
+Estado:
+
+- Chunking endurecido para desarrollo local sin Qdrant.
+- Retrieval local por keyword mantenido como fallback offline.
+- Export `keyword_retrieve` disponible desde `procurewatch.agent4`.
+- Ollama/modelo local y Qdrant quedan para Hito 3+.
+
+Implementado:
 
 - Mejorar chunking:
   - chunks deterministas;
@@ -93,6 +100,8 @@ TODO:
 Criterio de cierre:
 
 - Agent4 funciona sin Qdrant para desarrollo y tests unitarios.
+- Hito cerrado cuando el commit `feat(agent4): harden chunking and local retrieval` quede subido
+  a `sebas`.
 
 Tecnologias:
 
