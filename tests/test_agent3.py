@@ -4,13 +4,16 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from procurewatch.agent3 import (
     build_graph_tables,
     compute_contract_graph_metrics,
+    load_graph_records_to_neo4j,
     run_agent3,
     validate_canonical_columns,
 )
+from procurewatch.agent3.neo4j_store import prepare_edge_batches, prepare_node_batches
 from procurewatch.cli import main
 
 
@@ -103,6 +106,94 @@ class Agent3Tests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("Agente 3 ejecutado", output.getvalue())
         self.assertTrue((output_dir / "agent3_graph_report.json").exists())
+
+    def test_prepare_neo4j_batches_groups_allowed_nodes_and_edges(self) -> None:
+        graph = build_graph_tables(_contracts())
+
+        node_batches = prepare_node_batches(graph.node_records())
+        edge_batches = prepare_edge_batches(graph.edge_records())
+
+        self.assertEqual(len(node_batches["Buyer"]), 1)
+        self.assertEqual(len(node_batches["Contract"]), 3)
+        self.assertEqual(len(edge_batches["PUBLISHED"]), 3)
+        self.assertEqual(len(edge_batches["AWARDED_TO"]), 2)
+        self.assertEqual(node_batches["Buyer"][0]["properties"]["node_type"], "Buyer")
+        self.assertEqual(edge_batches["PUBLISHED"][0]["properties"]["edge_type"], "PUBLISHED")
+
+    def test_prepare_neo4j_batches_rejects_unknown_types(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Tipo de nodo Agent3 no permitido"):
+            prepare_node_batches([{"node_id": "x:1", "node_type": "Unsafe", "label": "x"}])
+
+        with self.assertRaisesRegex(ValueError, "Tipo de arista Agent3 no permitido"):
+            prepare_edge_batches(
+                [
+                    {
+                        "edge_id": "rel:1",
+                        "source_node_id": "a",
+                        "target_node_id": "b",
+                        "edge_type": "DROP",
+                    }
+                ]
+            )
+
+    def test_load_graph_records_dispatches_neo4j_writes(self) -> None:
+        graph = build_graph_tables(_contracts())
+        driver = MagicMock()
+        session = MagicMock()
+        driver.session.return_value.__enter__.return_value = session
+
+        report = load_graph_records_to_neo4j(
+            driver=driver,
+            nodes=graph.node_records(),
+            edges=graph.edge_records(),
+            run_controls=False,
+        )
+
+        self.assertEqual(report["nodes_processed"], 10)
+        self.assertEqual(report["edges_processed"], 11)
+        self.assertEqual(report["nodes_by_type_input"]["Contract"], 3)
+        write_names = [call.args[0].__name__ for call in session.execute_write.call_args_list]
+        self.assertEqual(write_names[0], "_create_constraints")
+        self.assertIn("_merge_nodes", write_names)
+        self.assertIn("_merge_edges", write_names)
+
+    def test_cli_agent3_load_neo4j_command(self) -> None:
+        output = StringIO()
+        expected_report = {
+            "nodes_processed": 8,
+            "edges_processed": 10,
+            "controls": {
+                "nodes_by_type": {"Contract": 3},
+                "edges_by_type": {"PUBLISHED": 3},
+            },
+        }
+
+        with patch(
+            "procurewatch.agent3.neo4j_store.load_graph_to_neo4j",
+            return_value=expected_report,
+        ) as loader:
+            with redirect_stdout(output):
+                exit_code = main(
+                    [
+                        "agent3-load-neo4j",
+                        "--nodes",
+                        "data/processed/agent3_nodes.parquet",
+                        "--edges",
+                        "data/processed/agent3_edges.parquet",
+                        "--uri",
+                        "bolt://neo4j-test:7687",
+                        "--user",
+                        "neo4j",
+                        "--password",
+                        "secret",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Agente 3 cargado en Neo4j", output.getvalue())
+        self.assertEqual(loader.call_args.kwargs["uri"], "bolt://neo4j-test:7687")
+        self.assertEqual(loader.call_args.kwargs["user"], "neo4j")
+        self.assertEqual(loader.call_args.kwargs["password"], "secret")
 
 
 def _contracts() -> list[dict[str, object]]:

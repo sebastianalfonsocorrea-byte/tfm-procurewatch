@@ -41,8 +41,9 @@ Regla de decision: los `.md` del repositorio mandan. SASM y maqueta solo corrige
 
 - Hito 0 cerrado: base importable de Agent3, schemas, loader, grafo en memoria, metricas v1, tests y docs ordenados.
 - Hito 1 implementado: `run_agent3`, CLI `run-agent3`, exportacion Parquet/JSON y tests de escritura/reporte.
-- Pendiente inmediato: commit y push del Hito 1 a `sebas`.
-- Siguiente bloque tecnico: Hito 2, grafo Neo4j minimo e idempotente.
+- Hito 2 implementado: carga Neo4j idempotente con constraints, `MERGE`, CLI `agent3-load-neo4j` y consultas de control.
+- Validacion real Hito 2: dos cargas consecutivas contra Neo4j local mantienen conteos sin duplicar nodos ni aristas.
+- Siguiente bloque tecnico: Hito 3, metricas avanzadas de red con NetworkX.
 
 ## Tecnologias a estudiar durante el avance
 

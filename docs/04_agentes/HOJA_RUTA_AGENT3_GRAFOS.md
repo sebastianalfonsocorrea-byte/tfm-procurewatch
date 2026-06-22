@@ -59,35 +59,42 @@ Tecnologias:
 
 ## Hito 2 - Grafo Neo4j minimo
 
-TODO:
+Estado:
 
-- Crear modulo `neo4j_store.py`.
-- Definir constraints:
+- Implementado modulo `neo4j_store.py`.
+- Definidos constraints:
   - `Buyer(node_id)`
   - `Supplier(node_id)`
-  - `Contract(node_id)` o `Contract(contract_key_canon)`
+  - `Contract(node_id)`
   - `CPV(node_id)`
   - `Source(node_id)`
-- Cargar nodos con `MERGE`.
-- Cargar aristas con `MERGE`.
-- Conservar propiedades:
+- Carga de nodos con `MERGE`.
+- Carga de aristas con `MERGE` por `edge_id`.
+- Conservadas propiedades:
   - `contract_key_canon`
   - `source`
   - `source_record_id`
   - `edge_type`
-- Anadir CLI:
+- CLI anadida:
   - `procurewatch agent3-load-neo4j --nodes ... --edges ...`
-- Crear consultas de control:
+- Consultas de control:
   - conteo de nodos por tipo;
   - conteo de relaciones por tipo;
   - top compradores;
   - top proveedores;
   - vecinos de un contrato.
 
+Validacion real:
+
+- Docker Desktop disponible con Neo4j `neo4j:5-community`.
+- Carga sobre muestra canonica temporal de 500 contratos.
+- Primera y segunda carga mantienen los mismos conteos:
+  - nodos: Buyer 15, CPV 71, Contract 500, Source 1, Supplier 193.
+  - aristas: AWARDED_TO 500, FROM_SOURCE 500, HAS_CPV 1097, PUBLISHED 500.
+
 Criterio de cierre:
 
-- Ejecutar la carga dos veces no duplica nodos ni relaciones.
-- Neo4j muestra grafo basico consultable.
+- Cerrado cuando el commit del hito quede subido a `sebas`.
 
 Tecnologias:
 

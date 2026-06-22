@@ -170,6 +170,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=Path("data/processed/agent2_contracts_canonical.parquet"),
     )
     agent3_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    agent3_neo4j_parser = subparsers.add_parser(
+        "agent3-load-neo4j",
+        help="Carga nodos y aristas del agente 3 en Neo4j.",
+    )
+    agent3_neo4j_parser.add_argument(
+        "--nodes",
+        type=Path,
+        default=Path("data/processed/agent3_nodes.parquet"),
+    )
+    agent3_neo4j_parser.add_argument(
+        "--edges",
+        type=Path,
+        default=Path("data/processed/agent3_edges.parquet"),
+    )
+    agent3_neo4j_parser.add_argument("--uri", default=None)
+    agent3_neo4j_parser.add_argument("--user", default=None)
+    agent3_neo4j_parser.add_argument("--password", default=None)
+    agent3_neo4j_parser.add_argument("--database", default=None)
     batch_parser = subparsers.add_parser(
         "run-batch",
         help="Orquesta ingesta semanal o mensual y estado de batch para cadenas futuras.",
@@ -344,6 +362,33 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Aristas: {report['edges_rows']}")
         print(f"- Metricas contrato: {report['contract_metrics_rows']}")
         print(f"- Reporte agente: {report['outputs']['report']}")
+        return 0
+    if args.command == "agent3-load-neo4j":
+        from .agent3.neo4j_store import (
+            DEFAULT_NEO4J_PASSWORD,
+            DEFAULT_NEO4J_URI,
+            DEFAULT_NEO4J_USER,
+            load_graph_to_neo4j,
+        )
+
+        settings = Settings.from_env()
+        uri = args.uri or settings.neo4j_uri or DEFAULT_NEO4J_URI
+        user = args.user or settings.neo4j_user or DEFAULT_NEO4J_USER
+        password = args.password or settings.neo4j_password or DEFAULT_NEO4J_PASSWORD
+        report = load_graph_to_neo4j(
+            nodes_path=args.nodes,
+            edges_path=args.edges,
+            uri=uri,
+            user=user,
+            password=password,
+            database=args.database,
+        )
+        print("Agente 3 cargado en Neo4j")
+        print(f"- URI: {uri}")
+        print(f"- Nodos procesados: {report['nodes_processed']}")
+        print(f"- Aristas procesadas: {report['edges_processed']}")
+        print(f"- Nodos Neo4j por tipo: {report['controls'].get('nodes_by_type', {})}")
+        print(f"- Aristas Neo4j por tipo: {report['controls'].get('edges_by_type', {})}")
         return 0
     if args.command == "run-batch":
         from .batch import run_batch
