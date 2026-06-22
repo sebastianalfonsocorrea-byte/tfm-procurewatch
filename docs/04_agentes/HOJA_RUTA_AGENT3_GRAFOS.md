@@ -102,29 +102,27 @@ Tecnologias:
 
 ## Hito 3 - Metricas avanzadas de red
 
-TODO:
+Estado:
 
-- Calcular metricas con NetworkX:
+- Implementado calculo de metricas con NetworkX:
   - degree centrality;
   - betweenness centrality;
   - connected components;
   - numero de vecinos por entidad;
   - contratos por comunidad o componente.
-- Preparar deteccion de comunidades:
-  - Louvain como primera opcion;
-  - Leiden como referencia metodologica si se incorpora dependencia viable.
-- Exportar:
+- Implementada deteccion de comunidades Louvain con semilla fija para reproducibilidad.
+- Exportacion anadida:
   - `agent3_entity_metrics.parquet`
   - `agent3_communities.parquet`
   - `agent3_network_summary.json`
-- Documentar limitaciones:
+- Limitaciones documentadas para siguientes hitos:
   - proveedores nulos;
   - identificadores incompletos;
   - matching entre fuentes todavia imperfecto.
 
 Criterio de cierre:
 
-- Metricas de entidad y comunidad pueden unirse con contratos o dashboard.
+- Cerrado cuando el commit del hito quede subido a `sebas` y pase la comprobacion integral.
 
 Tecnologias:
 

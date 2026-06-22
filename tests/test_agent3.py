@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from procurewatch.agent3 import (
     build_graph_tables,
     compute_contract_graph_metrics,
+    compute_network_metrics,
     load_graph_records_to_neo4j,
     run_agent3,
     validate_canonical_columns,
@@ -58,6 +59,26 @@ class Agent3Tests(unittest.TestCase):
         self.assertEqual(by_contract["C-001"].buyer_supplier_contract_share, 1.0)
         self.assertNotIn("C-004", by_contract)
 
+    def test_compute_network_metrics_returns_entity_communities_and_summary(self) -> None:
+        graph = build_graph_tables(_contracts())
+
+        result = compute_network_metrics(graph)
+        by_node = {item["node_id"]: item for item in result.entity_records}
+
+        self.assertEqual(len(result.entity_records), 10)
+        self.assertEqual(by_node["contract:C-001"]["node_type"], "Contract")
+        self.assertEqual(by_node["contract:C-001"]["component_size"], 10)
+        self.assertGreater(by_node["buyer:B1"]["neighbor_count"], 0)
+        self.assertIn("community_id", by_node["supplier:S1"])
+        self.assertGreaterEqual(result.summary["community_count"], 1)
+        self.assertEqual(result.summary["component_count"], 1)
+        self.assertEqual(result.summary["largest_component_size"], 10)
+        self.assertEqual(result.summary["betweenness_mode"], "exact")
+        self.assertEqual(
+            sum(item["contract_count"] for item in result.community_records),
+            3,
+        )
+
     def test_validate_canonical_columns_reports_missing_contract(self) -> None:
         with self.assertRaisesRegex(ValueError, "contract_key_canon"):
             validate_canonical_columns(["source", "buyer_name", "supplier_name", "cpv_codes_raw"])
@@ -80,7 +101,12 @@ class Agent3Tests(unittest.TestCase):
         self.assertTrue((output_dir / "agent3_nodes.parquet").exists())
         self.assertTrue((output_dir / "agent3_edges.parquet").exists())
         self.assertTrue((output_dir / "agent3_contract_metrics.parquet").exists())
+        self.assertTrue((output_dir / "agent3_entity_metrics.parquet").exists())
+        self.assertTrue((output_dir / "agent3_communities.parquet").exists())
+        self.assertTrue((output_dir / "agent3_network_summary.json").exists())
         self.assertTrue((output_dir / "agent3_graph_report.json").exists())
+        self.assertEqual(report["entity_metrics_rows"], 10)
+        self.assertGreaterEqual(report["community_count"], 1)
 
     def test_cli_run_agent3_command(self) -> None:
         import pandas as pd
