@@ -109,7 +109,18 @@ Tecnologias:
 
 ## Hito 3 - Qdrant y embeddings
 
-TODO:
+Estado:
+
+- Store Qdrant real preparado para la coleccion `procurement_documents`.
+- Embeddings via Ollama como PoC local configurable.
+- BGE-M3 queda como objetivo metodologico posterior si se instala como modelo de embeddings.
+- CLI demo disponible:
+
+```powershell
+procurewatch agent4-index-corpus --query "evidencia documental"
+```
+
+Implementado:
 
 - Definir coleccion:
   - `procurement_documents`
@@ -119,8 +130,8 @@ TODO:
   - busqueda vectorial;
   - filtros por `contract_key_canon`, `source`, `document_type`.
 - Elegir embeddings:
-  - objetivo metodologico: BGE-M3;
-  - alternativa PoC: embeddings via Ollama si BGE-M3 no esta preparado.
+  - PoC via Ollama usando `PROCUREWATCH_OLLAMA_EMBEDDING_MODEL`;
+  - objetivo metodologico posterior: BGE-M3.
 - Registrar:
   - modelo de embeddings;
   - version;
@@ -131,6 +142,7 @@ TODO:
 Criterio de cierre:
 
 - Un chunk se indexa y se recupera desde Qdrant con `document_id`, `chunk_id` y `contract_key_canon`.
+- Hito cerrado cuando el commit `feat(agent4): add qdrant vector store` quede subido a `sebas`.
 
 Tecnologias:
 

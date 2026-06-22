@@ -65,6 +65,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("data/processed/agent4_documents_manifest.json"),
     )
+    agent4_index_parser = subparsers.add_parser(
+        "agent4-index-corpus",
+        help="Indexa el corpus documental de Agent4 en Qdrant y permite una busqueda demo.",
+    )
+    agent4_index_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    agent4_index_parser.add_argument("--qdrant-url", default=None)
+    agent4_index_parser.add_argument("--collection", default="procurement_documents")
+    agent4_index_parser.add_argument("--ollama-base-url", default=None)
+    agent4_index_parser.add_argument("--embedding-model", default=None)
+    agent4_index_parser.add_argument("--chunk-size", type=int, default=900)
+    agent4_index_parser.add_argument("--overlap", type=int, default=120)
+    agent4_index_parser.add_argument("--query", default=None)
+    agent4_index_parser.add_argument("--limit", type=int, default=5)
+    agent4_index_parser.add_argument("--contract-key", default=None)
+    agent4_index_parser.add_argument("--source", default=None)
+    agent4_index_parser.add_argument("--document-type", default=None)
     sample_parser = subparsers.add_parser(
         "make-agent1-sample",
         help="Genera muestras pequenas de BOE, PLACE y OpenTender para pruebas rapidas.",
@@ -244,6 +264,44 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Documentos: {manifest['documents_count']}")
         print(f"- Corpus index: {args.corpus_index}")
         print(f"- Output: {args.output}")
+        return 0
+    if args.command == "agent4-index-corpus":
+        from .agent4 import QdrantSearchFilters, index_corpus_to_qdrant
+
+        settings = Settings.from_env()
+        report = index_corpus_to_qdrant(
+            corpus_index=args.corpus_index,
+            qdrant_url=args.qdrant_url or settings.qdrant_url or "http://localhost:6333",
+            collection_name=args.collection,
+            ollama_base_url=args.ollama_base_url
+            or settings.ollama_base_url
+            or "http://localhost:11434",
+            embedding_model=args.embedding_model or settings.ollama_embedding_model,
+            chunk_size=args.chunk_size,
+            overlap=args.overlap,
+            query=args.query,
+            limit=args.limit,
+            filters=QdrantSearchFilters(
+                contract_key_canon=args.contract_key,
+                source=args.source,
+                document_type=args.document_type,
+            ),
+        )
+        print("Corpus Agent4 indexado en Qdrant")
+        print(f"- Coleccion: {report.collection_name}")
+        print(f"- Documentos: {report.documents_count}")
+        print(f"- Chunks/puntos: {report.chunks_count}/{report.points_count}")
+        print(
+            f"- Embeddings: {report.embedding_provider}:{report.embedding_model} "
+            f"dim={report.embedding_dimension}"
+        )
+        if args.query:
+            print(f"- Resultados query: {len(report.results)}")
+            for result in report.results:
+                print(
+                    f"  - {result.chunk.chunk_id} "
+                    f"score={result.score:.4f} contract={result.chunk.contract_key_canon}"
+                )
         return 0
     if args.command == "make-agent1-sample":
         from .samples import make_agent1_sample
