@@ -2,6 +2,24 @@
 
 Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibilidad de decisiones.
 
+## 22/06/2026
+
+### Hecho
+
+- Se corrige el parser de OpenTender para el formato real descargado desde la página española:
+  el JSONL es OCDS compilado en la raíz, no un contenedor con `releases`.
+- La normalización de OpenTender deja de producir una salida vacía y, sobre una muestra real,
+  parsea 1.298 registros con 1.260 filas CPV 71.
+- Se rehace la ingesta de OpenTender y la reconstrucción de artefactos derivados sin repetir
+  la descarga de PLACE.
+- Resultado de cobertura tras la reconstrucción:
+  - `op_contract_keys`: 1.260;
+  - `boe_contract_keys`: 3.883;
+  - `place_contract_keys`: 12.605;
+  - intersecciones con OpenTender: 0.
+- La limpieza de temporales sigue funcionando: la carpeta `/private/tmp/procurewatch-raw`
+  desaparece al finalizar la corrida.
+
 ## 21/06/2026
 
 ### Hecho
