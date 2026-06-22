@@ -130,22 +130,25 @@ Tecnologias:
 
 ## Hito 4 - Integracion con Agent2
 
-TODO:
+Estado:
 
-- Entregar features para red flags:
+- Preparado contrato de features Agent3 para red flags futuras:
   - RF-03 recurrencia comprador-proveedor;
   - RF-04 concentracion proveedor/comprador;
   - centralidades como senales auxiliares.
-- Definir contrato de salida:
+- Definido contrato de salida:
   - `contract_key_canon`
   - metricas contractuales;
   - version de Agent3;
   - fecha de calculo.
-- Ajustar tests de Agent2 cuando consuma metricas.
+- Exportacion anadida:
+  - `agent3_agent2_features.parquet`
+  - `agent3_agent2_features_schema.json`
+- Agent2 todavia no se implementa en este hito; queda preparado para consumir features sin recalcular grafo.
 
 Criterio de cierre:
 
-- Agent2 puede usar metricas Agent3 sin recalcular grafo.
+- Cerrado cuando el commit del hito quede subido a `sebas`.
 
 Tecnologias:
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .agent2_features import build_agent2_feature_records, build_agent2_features_schema
 from .graph import build_graph_tables, build_networkx_graph
 from .loader import CANONICAL_REQUIRED_COLUMNS, load_canonical_contracts, validate_canonical_columns
 from .metrics import compute_contract_graph_metrics
@@ -16,6 +17,8 @@ __all__ = [
     "GraphNode",
     "GraphTables",
     "NetworkMetricsResult",
+    "build_agent2_feature_records",
+    "build_agent2_features_schema",
     "build_graph_tables",
     "build_networkx_graph",
     "compute_contract_graph_metrics",

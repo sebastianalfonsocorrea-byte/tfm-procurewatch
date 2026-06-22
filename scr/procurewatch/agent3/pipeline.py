@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .agent2_features import build_agent2_feature_records, build_agent2_features_schema
 from .graph import build_graph_tables
 from .loader import load_canonical_contracts
 from .metrics import compute_contract_graph_metrics
@@ -24,17 +25,30 @@ def run_agent3(
     if not input_path.exists():
         raise FileNotFoundError(f"No existe canonico Agent2 para Agent3: {input_path}")
 
+    generated_at_utc = datetime.now(UTC).isoformat()
     output_dir.mkdir(parents=True, exist_ok=True)
     contracts = load_canonical_contracts(input_path)
     graph_tables = build_graph_tables(contracts)
     metrics = compute_contract_graph_metrics(contracts)
     network_metrics = compute_network_metrics(graph_tables)
+    agent2_feature_records = build_agent2_feature_records(
+        graph_tables=graph_tables,
+        contract_metrics=metrics,
+        entity_metrics=network_metrics.entity_records,
+        agent3_version=AGENT3_VERSION,
+        generated_at_utc=generated_at_utc,
+    )
+    agent2_features_schema = build_agent2_features_schema(
+        agent3_version=AGENT3_VERSION,
+        generated_at_utc=generated_at_utc,
+    )
 
     nodes_df = pd.DataFrame(graph_tables.node_records())
     edges_df = pd.DataFrame(graph_tables.edge_records())
     metrics_df = pd.DataFrame([item.as_record() for item in metrics])
     entity_metrics_df = pd.DataFrame(network_metrics.entity_records)
     communities_df = pd.DataFrame(network_metrics.community_records)
+    agent2_features_df = pd.DataFrame(agent2_feature_records)
 
     outputs = {
         "nodes": output_dir / "agent3_nodes.parquet",
@@ -43,6 +57,8 @@ def run_agent3(
         "entity_metrics": output_dir / "agent3_entity_metrics.parquet",
         "communities": output_dir / "agent3_communities.parquet",
         "network_summary": output_dir / "agent3_network_summary.json",
+        "agent2_features": output_dir / "agent3_agent2_features.parquet",
+        "agent2_features_schema": output_dir / "agent3_agent2_features_schema.json",
         "report": output_dir / "agent3_graph_report.json",
     }
     nodes_df.to_parquet(outputs["nodes"], index=False)
@@ -50,15 +66,20 @@ def run_agent3(
     metrics_df.to_parquet(outputs["contract_metrics"], index=False)
     entity_metrics_df.to_parquet(outputs["entity_metrics"], index=False)
     communities_df.to_parquet(outputs["communities"], index=False)
+    agent2_features_df.to_parquet(outputs["agent2_features"], index=False)
     outputs["network_summary"].write_text(
         json.dumps(network_metrics.summary, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    outputs["agent2_features_schema"].write_text(
+        json.dumps(agent2_features_schema, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
     report = {
         "agent": "agent3",
         "agent3_version": AGENT3_VERSION,
-        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "generated_at_utc": generated_at_utc,
         "input_path": str(input_path),
         "output_dir": str(output_dir),
         "input_rows": int(len(contracts)),
@@ -67,6 +88,7 @@ def run_agent3(
         "contract_metrics_rows": int(len(metrics_df)),
         "entity_metrics_rows": int(len(entity_metrics_df)),
         "communities_rows": int(len(communities_df)),
+        "agent2_features_rows": int(len(agent2_features_df)),
         "component_count": network_metrics.summary["component_count"],
         "community_count": network_metrics.summary["community_count"],
         "largest_component_size": network_metrics.summary["largest_component_size"],

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
@@ -7,6 +8,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from procurewatch.agent3 import (
+    build_agent2_feature_records,
+    build_agent2_features_schema,
     build_graph_tables,
     compute_contract_graph_metrics,
     compute_network_metrics,
@@ -79,6 +82,38 @@ class Agent3Tests(unittest.TestCase):
             3,
         )
 
+    def test_build_agent2_features_projects_graph_metrics_by_contract(self) -> None:
+        graph = build_graph_tables(_contracts())
+        contract_metrics = compute_contract_graph_metrics(_contracts())
+        network_metrics = compute_network_metrics(graph)
+
+        records = build_agent2_feature_records(
+            graph_tables=graph,
+            contract_metrics=contract_metrics,
+            entity_metrics=network_metrics.entity_records,
+            agent3_version="test",
+            generated_at_utc="2026-06-22T00:00:00+00:00",
+        )
+        by_contract = {item["contract_key_canon"]: item for item in records}
+
+        self.assertEqual(len(records), 3)
+        self.assertEqual(by_contract["C-001"]["buyer_supplier_recurrence"], 2)
+        self.assertEqual(by_contract["C-001"]["buyer_supplier_contract_share"], 1.0)
+        self.assertTrue(by_contract["C-001"]["has_supplier"])
+        self.assertEqual(by_contract["C-001"]["cpv_count"], 1)
+        self.assertEqual(by_contract["C-004"]["buyer_supplier_recurrence"], 0)
+        self.assertFalse(by_contract["C-004"]["has_supplier"])
+        self.assertIsNone(by_contract["C-004"]["supplier_neighbor_count"])
+        self.assertIn("community_id", by_contract["C-004"])
+
+        schema = build_agent2_features_schema(
+            agent3_version="test",
+            generated_at_utc="2026-06-22T00:00:00+00:00",
+        )
+        self.assertEqual(schema["primary_key"], ["contract_key_canon"])
+        self.assertIn("RF-03", schema["intended_red_flags"])
+        self.assertIn("RF-04", schema["intended_red_flags"])
+
     def test_validate_canonical_columns_reports_missing_contract(self) -> None:
         with self.assertRaisesRegex(ValueError, "contract_key_canon"):
             validate_canonical_columns(["source", "buyer_name", "supplier_name", "cpv_codes_raw"])
@@ -104,9 +139,14 @@ class Agent3Tests(unittest.TestCase):
         self.assertTrue((output_dir / "agent3_entity_metrics.parquet").exists())
         self.assertTrue((output_dir / "agent3_communities.parquet").exists())
         self.assertTrue((output_dir / "agent3_network_summary.json").exists())
+        self.assertTrue((output_dir / "agent3_agent2_features.parquet").exists())
+        self.assertTrue((output_dir / "agent3_agent2_features_schema.json").exists())
         self.assertTrue((output_dir / "agent3_graph_report.json").exists())
         self.assertEqual(report["entity_metrics_rows"], 10)
+        self.assertEqual(report["agent2_features_rows"], 3)
         self.assertGreaterEqual(report["community_count"], 1)
+        schema = json.loads((output_dir / "agent3_agent2_features_schema.json").read_text())
+        self.assertEqual(schema["dataset"], "agent3_agent2_features")
 
     def test_cli_run_agent3_command(self) -> None:
         import pandas as pd

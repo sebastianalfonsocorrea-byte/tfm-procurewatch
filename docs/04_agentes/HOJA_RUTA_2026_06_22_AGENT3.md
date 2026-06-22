@@ -44,7 +44,8 @@ Regla de decision: los `.md` del repositorio mandan. SASM y maqueta solo corrige
 - Hito 2 implementado: carga Neo4j idempotente con constraints, `MERGE`, CLI `agent3-load-neo4j` y consultas de control.
 - Validacion real Hito 2: dos cargas consecutivas contra Neo4j local mantienen conteos sin duplicar nodos ni aristas.
 - Hito 3 implementado: metricas avanzadas con NetworkX, comunidades Louvain, resumen de red y artefactos Parquet/JSON.
-- Siguiente bloque tecnico: comprobacion integral de Agent3 y alineacion antes de pasar al Hito 4.
+- Hito 4 implementado: contrato `agent3_agent2_features` para integracion futura con Agent2 sin recalcular grafo.
+- Siguiente bloque tecnico: Hito 5, integracion con dashboard y memoria tecnica.
 
 ## Tecnologias a estudiar durante el avance
 

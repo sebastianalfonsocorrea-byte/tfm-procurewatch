@@ -361,6 +361,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Nodos: {report['nodes_rows']}")
         print(f"- Aristas: {report['edges_rows']}")
         print(f"- Metricas contrato: {report['contract_metrics_rows']}")
+        print(f"- Features Agent2: {report['agent2_features_rows']}")
         print(f"- Reporte agente: {report['outputs']['report']}")
         return 0
     if args.command == "agent3-load-neo4j":
