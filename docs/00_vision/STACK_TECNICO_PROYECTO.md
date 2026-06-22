@@ -152,7 +152,7 @@ viven bajo `data/`.
 
 - `scr/procurewatch/agent3/` (previsto)
   - Capa de grafos y relaciones desde el canonico o PostgreSQL.
-  - Plan detallado en `docs/PLAN_AGENTE3_GRAFOS.md`.
+  - Plan detallado en [Plan Agent3 grafos](../04_agentes/PLAN_AGENTE3_GRAFOS.md).
 
 ### 3.7 Batch orchestration
 

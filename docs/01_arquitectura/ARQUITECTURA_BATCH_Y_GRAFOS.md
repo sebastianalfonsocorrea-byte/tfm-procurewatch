@@ -112,4 +112,4 @@ Relaciones:
 - La actualizacion incremental de grafo debe construirse sobre esta salida, no sobre los Parquet por fuente.
 - Antes de cargar Neo4j conviene resolver el matching entre fuentes: las intersecciones actuales por `contract_key_canon` son 0.
 - La proxima capa recomendada es generar `nodes_*` y `edges_*` desde `agent2_contracts_canonical.parquet`, incluyendo `source` y futura `source_snapshot_id`.
-- El documento canonico del agente de grafos es `PLAN_AGENTE3_GRAFOS.md`.
+- El documento canonico del agente de grafos es [Plan Agent3 grafos](../04_agentes/PLAN_AGENTE3_GRAFOS.md).

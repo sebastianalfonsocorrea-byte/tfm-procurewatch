@@ -1,4 +1,4 @@
-﻿# Plan practico del Agent 1
+# Plan practico del Agent 1
 
 Objetivo: dejar una base reproducible para el `agent1` que consuma varias fuentes de contratacion y entregue tablas limpias para contraste entre BOE, PLACE y OpenTender.
 
@@ -189,18 +189,18 @@ Para evitar correr manualmente fuentes todos los dias se propone un ciclo doble:
 
 Ver el plan detallado en:
 
-- [docs/PLAN_INGESTA_BATCH_AGENT1.md](PLAN_INGESTA_BATCH_AGENT1.md)
+- [Plan ingesta batch Agent1](PLAN_INGESTA_BATCH_AGENT1.md)
 
 La propuesta de grafos y actualizacion de Neo4j para relaciones esta definida en:
 
-- [docs/ARQUITECTURA_BATCH_Y_GRAFOS.md](ARQUITECTURA_BATCH_Y_GRAFOS.md)
+- [Arquitectura batch y grafos](../01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md)
 
 La continuacion hacia Agent2, Agent4 y capa de datos esta definida en:
 
-- [docs/PLAN_CAPA_DATOS_AGENTES.md](PLAN_CAPA_DATOS_AGENTES.md)
-- [docs/PLAN_AGENTE2_SCORING.md](PLAN_AGENTE2_SCORING.md)
-- [docs/PLAN_AGENTE3_GRAFOS.md](PLAN_AGENTE3_GRAFOS.md)
-- [docs/PLAN_AGENTE4_RAG_LANGGRAPH.md](PLAN_AGENTE4_RAG_LANGGRAPH.md)
+- [Plan capa datos agentes](../01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md)
+- [Plan Agent2 scoring](../04_agentes/PLAN_AGENTE2_SCORING.md)
+- [Plan Agent3 grafos](../04_agentes/PLAN_AGENTE3_GRAFOS.md)
+- [Plan Agent4 RAG LangGraph](../04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md)
 
 ## 6) Como explicarlo en la metodologia del TFM
 

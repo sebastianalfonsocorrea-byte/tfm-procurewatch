@@ -1,4 +1,4 @@
-﻿# Seguimiento Operativo del Proyecto
+# Seguimiento Operativo del Proyecto
 
 Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibilidad de decisiones.
 
@@ -19,7 +19,7 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
   - persistencia de estado en `data/processed/run_batch_state.json`.
   - manifest detallado por ejecución en `data/manifest/batches/<run_mode>/<batch_id>/manifest.json`.
   - lógica idempotente semanal: si no cambia hash/tamaño de fuentes críticas, se salta `run-agent1`.
-- documentado stack técnico completo en `docs/STACK_TECNICO_PROYECTO.md`.
+- documentado stack técnico completo en `docs/00_vision/STACK_TECNICO_PROYECTO.md`.
 
 ### Decisiones
 
@@ -39,7 +39,7 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 - Ajustar limpieza de texto/fechas para `contract_key_canon` y medir mejora de cobertura.
 - Aniadir tests de no-deriva entre ejecuciones para dataset Agent1.
 - Integrar el output de Agent1 a estado LangGraph de la capa orquestadora.
-- Documentar politicas de normalizacion y exclusiones en `docs/PLAN_AGENTE1_PIPELINE.md`.
+- Documentar politicas de normalizacion y exclusiones en `docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md`.
 - Ampliar tests de integración con escenarios de batch (skip/resync semanal y ejecución mensual).
 
 ## 01/06/2026 (previsto)
@@ -52,12 +52,12 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ## Registro de trazabilidad de documentacion actualizada
 
-- `docs/PLAN_AGENTE1_PIPELINE.md` (estado, checklist, fuentes y flujo).
-- `docs/FUENTES_DATOS_Y_ROADMAP.md` (fuentes utiles + priorizacion datos.gob.es).
-- `docs/SEGUIMIENTO_AGENT1.md` (log de decisiones y riesgos).
+- `docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md` (estado, checklist, fuentes y flujo).
+- `docs/02_fuentes/FUENTES_DATOS_Y_ROADMAP.md` (fuentes utiles + priorizacion datos.gob.es).
+- `docs/03_agent1_ingesta/SEGUIMIENTO_AGENT1.md` (log de decisiones y riesgos).
 - `README.md` (estado tecnico, comandos de control y proximos pasos).
 - `data/processed/agent1_run_report.json` (metadatos de corrida).
-- `docs/PLAN_INGESTA_BATCH_AGENT1.md` (modelo semanal/mensual de refresh y propuesta de integración datos.gob.es).
+- `docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md` (modelo semanal/mensual de refresh y propuesta de integración datos.gob.es).
 
 ## Cierre real de sesion 31/05/2026
 

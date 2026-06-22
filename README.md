@@ -1,4 +1,4 @@
-﻿# ProcureWatch Analytics
+# ProcureWatch Analytics
 
 ProcureWatch Analytics es el prototipo tecnico del TFM para analizar datos abiertos de
 contratacion publica y priorizar casos con posibles patrones de riesgo. El sistema no declara
@@ -66,16 +66,17 @@ de cada agente.
 ## Documentacion operativa obligatoria para continuidad
 
 - `AGENTS.md` (contexto tecnico para nuevas sesiones).
-- `docs/PLAN_AGENTE1_PIPELINE.md` (estado y flujo del agente 1).
-- `docs/PLAN_AGENTE2_SCORING.md` (planteamiento de red flags y scoring).
-- `docs/PLAN_AGENTE3_GRAFOS.md` (grafos, Neo4j, NetworkX y relaciones).
-- `docs/PLAN_AGENTE4_RAG_LANGGRAPH.md` (estructura Agent4 con NLP/RAG/LangGraph).
-- `docs/SEGUIMIENTO_AGENTES.md` (seguimiento transversal de agentes).
-- `docs/PLAN_CAPA_DATOS_AGENTES.md` (PostgreSQL, Neo4j, Qdrant e IDs comunes).
-- `docs/PLAN_INGESTA_BATCH_AGENT1.md` (batch semanal/mensual + actualización total).
-- `docs/ARQUITECTURA_BATCH_Y_GRAFOS.md` (arquitectura de updates y Neo4j).
-- `docs/FUENTES_DATOS_Y_ROADMAP.md` (fuentes y prioridades).
-- `docs/STACK_TECNICO_PROYECTO.md` (stack Python + servicios + flujo técnico completo).
+- `docs/README.md` (indice navegable de documentacion).
+- `docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md` (estado y flujo del agente 1).
+- `docs/04_agentes/PLAN_AGENTE2_SCORING.md` (planteamiento de red flags y scoring).
+- `docs/04_agentes/PLAN_AGENTE3_GRAFOS.md` (grafos, Neo4j, NetworkX y relaciones).
+- `docs/04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md` (estructura Agent4 con NLP/RAG/LangGraph).
+- `docs/04_agentes/SEGUIMIENTO_AGENTES.md` (seguimiento transversal de agentes).
+- `docs/01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md` (PostgreSQL, Neo4j, Qdrant e IDs comunes).
+- `docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md` (batch semanal/mensual + actualización total).
+- `docs/01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md` (arquitectura de updates y Neo4j).
+- `docs/02_fuentes/FUENTES_DATOS_Y_ROADMAP.md` (fuentes y prioridades).
+- `docs/00_vision/STACK_TECNICO_PROYECTO.md` (stack Python + servicios + flujo técnico completo).
 
 ## Arranque rapido
 

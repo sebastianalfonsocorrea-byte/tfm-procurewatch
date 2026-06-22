@@ -1,7 +1,7 @@
 # Seguimiento operativo de agentes
 
 Este documento es el seguimiento transversal. Los detalles historicos de Agent1 se mantienen en
-`SEGUIMIENTO_AGENT1.md`.
+[Seguimiento Agent1](../03_agent1_ingesta/SEGUIMIENTO_AGENT1.md).
 
 ## Estado actual 31/05/2026
 
@@ -28,8 +28,8 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 
 ## Documentos canonicos
 
-- `PLAN_AGENTE1_PIPELINE.md`
-- `PLAN_AGENTE2_SCORING.md`
-- `PLAN_AGENTE3_GRAFOS.md`
-- `PLAN_AGENTE4_RAG_LANGGRAPH.md`
-- `PLAN_CAPA_DATOS_AGENTES.md`
+- [Plan Agent1 pipeline](../03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md)
+- [Plan Agent2 scoring](PLAN_AGENTE2_SCORING.md)
+- [Plan Agent3 grafos](PLAN_AGENTE3_GRAFOS.md)
+- [Plan Agent4 RAG LangGraph](PLAN_AGENTE4_RAG_LANGGRAPH.md)
+- [Plan capa datos agentes](../01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md)
