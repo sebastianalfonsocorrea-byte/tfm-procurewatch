@@ -54,6 +54,43 @@ def _make_opentender_payload(*, record_id: str, cpv: str, date: str = "2024-01-0
     )
 
 
+def _make_compiled_opentender_payload(*, record_id: str, cpv: str, date: str = "2024-01-01") -> dict:
+    return {
+        "id": record_id,
+        "tag": ["compiled"],
+        "ocid": record_id.rsplit("-", 1)[0],
+        "date": date,
+        "buyer": {
+            "id": "buyer-1",
+            "name": "Ministerio de Pruebas",
+        },
+        "tender": {
+            "id": "tender-1",
+            "title": "Contrato de prueba",
+            "items": [
+                {"id": "item-1", "classification": {"id": cpv, "scheme": "CPV"}},
+            ],
+            "value": {"amount": "100", "currency": "EUR"},
+            "procurementMethod": "open",
+            "mainProcurementCategory": "services",
+        },
+        "awards": [
+            {
+                "id": "award-1",
+                "date": "2024-01-05",
+                "value": {"amount": "90", "currency": "EUR"},
+                "suppliers": [
+                    {
+                        "id": "supplier-1",
+                        "name": "Proveedor A",
+                    }
+                ],
+            }
+        ],
+        "metaData": {"lastModified": "2024-01-02T00:00:00Z"},
+    }
+
+
 class OpenTenderTests(unittest.TestCase):
     def test_discover_opentender_download_url_prefers_jsonl_gz(self) -> None:
         html = """
@@ -148,6 +185,22 @@ class OpenTenderTests(unittest.TestCase):
             self.assertEqual(report["rows"]["cpv71_rows"], 1)
             self.assertTrue((output_dir / "contracts_opentender_all.parquet").exists())
             self.assertTrue((output_dir / "contracts_opentender_all_cpvall.parquet").exists())
+
+    def test_parse_opentender_record_handles_compiled_payload(self) -> None:
+        from procurewatch.data_sources.opentender import parse_opentender_record
+
+        record = parse_opentender_record(
+            _make_compiled_opentender_payload(record_id="ocds-123-2024-01-01", cpv="71300000"),
+            source_year=2024,
+            source_file="data-es-ocds-json.jsonl.gz",
+        )
+
+        self.assertEqual(record.source_record_id, "ocds-123-2024-01-01")
+        self.assertEqual(record.buyer_name, "Ministerio de Pruebas")
+        self.assertEqual(record.cpv_code_list, ["71300000"])
+        self.assertTrue(record.is_cpv_71)
+        self.assertEqual(record.awarded_supplier_name, "Proveedor A")
+        self.assertEqual(record.publication_date, "2024-01-01")
 
     @staticmethod
     def _make_registry_response() -> mock.Mock:

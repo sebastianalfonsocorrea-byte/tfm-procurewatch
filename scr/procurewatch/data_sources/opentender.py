@@ -18,7 +18,7 @@ from urllib.parse import urljoin
 import requests
 import pandas as pd
 
-PARSER_VERSION = "1.2.0"
+PARSER_VERSION = "1.3.0"
 
 
 DEFAULT_INPUT = Path("data/raw/opentender/data-es-ocds-json.zip")
@@ -302,17 +302,11 @@ def parse_opentender_record(
     source_year: int | None,
     source_file: str,
 ) -> OpenTenderRecord:
-    releases = payload.get("releases") or []
-    if not releases:
-        raise ValueError("registro sin releases")
+    release = _normalize_opentender_release(payload)
+    if release is None:
+        raise ValueError("registro sin datos OCDS normalizables")
 
-    release = sorted(
-        releases,
-        key=lambda item: str(item.get("date", "")),
-        reverse=True,
-    )[0]
-
-    ocid = release.get("ocid") or payload.get("uri") or "unknown"
+    ocid = release.get("ocid") or payload.get("ocid") or payload.get("id") or payload.get("uri") or "unknown"
     tender = release.get("tender") or {}
     buyer = release.get("buyer") or {}
     buyer_name = buyer.get("name")
@@ -320,7 +314,11 @@ def parse_opentender_record(
     buyer_nif = extract_identifier(buyer, "TAX_ID") or extract_identifier(buyer, "NIF")
     buyer_organization_id = extract_identifier(buyer, "ORGANIZATION_ID")
 
-    cpv_code_list = extract_cpv_codes_from_items((release.get("items") or []) + (tender.get("items") or []))
+    cpv_code_list = extract_cpv_codes_from_items(
+        (release.get("items") or [])
+        + (tender.get("items") or [])
+        + extract_cpv_items_from_lots(tender.get("lots") or [])
+    )
     cpv_codes_raw = ", ".join(cpv_code_list)
     is_cpv_71 = any(code.startswith("71") for code in cpv_code_list)
 
@@ -355,10 +353,10 @@ def parse_opentender_record(
         source_year=source_year,
         source_file=source_file,
         source_record_id=release.get("id") or ocid,
-        source_entry_id=payload.get("uri"),
-        source_url=payload.get("uri"),
-        publication_date=release.get("date") or tender.get("datePublished"),
-        updated=(payload.get("metaData") or {}).get("lastModified"),
+        source_entry_id=payload.get("id") or payload.get("uri") or ocid,
+        source_url=payload.get("uri") or payload.get("id"),
+        publication_date=release.get("date") or tender.get("datePublished") or (payload.get("metaData") or {}).get("publishedAt"),
+        updated=(payload.get("metaData") or {}).get("lastModified") or (payload.get("metaData") or {}).get("lastModifiedDate"),
         buyer_id=buyer_id,
         buyer_name=buyer_name,
         buyer_nif=buyer_nif,
@@ -384,6 +382,24 @@ def parse_opentender_record(
         awarded_supplier_nif=awarded_supplier_nif,
         status=release.get("status") or tender.get("status"),
     )
+
+
+def _normalize_opentender_release(payload: dict[str, Any]) -> dict[str, Any] | None:
+    releases = payload.get("releases")
+    if releases:
+        if not isinstance(releases, list):
+            return None
+        sorted_releases = sorted(
+            (release for release in releases if isinstance(release, dict)),
+            key=lambda item: str(item.get("date", "")),
+            reverse=True,
+        )
+        return sorted_releases[0] if sorted_releases else None
+
+    if any(key in payload for key in ("tender", "buyer", "awards", "parties")):
+        return payload
+
+    return None
 
 
 def deduplicate_records(
@@ -445,6 +461,20 @@ def extract_cpv_codes_from_items(items: list[dict[str, Any]]) -> list[str]:
             seen.add(cpv)
             codes.append(cpv)
     return codes
+
+
+def extract_cpv_items_from_lots(lots: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for lot in lots:
+        if not isinstance(lot, dict):
+            continue
+        for key in ("items", "item"):
+            value = lot.get(key)
+            if isinstance(value, list):
+                items.extend([entry for entry in value if isinstance(entry, dict)])
+            elif isinstance(value, dict):
+                items.append(value)
+    return items
 
 
 def extract_identifier(party: dict[str, Any], scheme: str) -> str | None:
