@@ -179,6 +179,8 @@ La comparativa no se interpreta como validación definitiva del modelo, sino com
 exploratorio con las limitaciones del canonico y de las etiquetas disponibles.
 La aproximación PU debe leerse como una versión práctica y acotada para el TFM, no como una
 implementación formal completa si no existen positivas y no etiquetadas suficientemente limpias.
+La comparativa se construye sobre covariables del contrato y señales de completitud, no sobre el
+propio `risk_score`, para evitar fuga de información desde las reglas hacia el modelo.
 
 ## Uso de PostgreSQL
 

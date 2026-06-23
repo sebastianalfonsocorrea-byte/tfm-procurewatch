@@ -43,10 +43,14 @@ def build_agent2_model_comparison(
         (frame["awarded_value_eur"] - frame["estimated_value_eur"]) / frame["estimated_value_eur"],
         np.nan,
     )
+    frame["has_supplier_name"] = frame["supplier_name"].astype("string").fillna("").str.strip().ne("")
+    frame["has_buyer_name"] = frame["buyer_name"].astype("string").fillna("").str.strip().ne("")
+    frame["has_estimated_value"] = frame["estimated_value_eur"].notna() & (frame["estimated_value_eur"] > 0)
+    frame["has_awarded_value"] = frame["awarded_value_eur"].notna()
+    frame["has_resolution_days"] = pd.to_numeric(frame["resolution_days"], errors="coerce").notna()
     frame["resolution_days"] = pd.to_numeric(frame["resolution_days"], errors="coerce")
     frame["estimated_value_eur"] = pd.to_numeric(frame["estimated_value_eur"], errors="coerce")
     frame["awarded_value_eur"] = pd.to_numeric(frame["awarded_value_eur"], errors="coerce")
-    frame["risk_score"] = pd.to_numeric(frame["risk_score"], errors="coerce")
 
     if frame.empty:
         return pd.DataFrame(
@@ -69,10 +73,16 @@ def build_agent2_model_comparison(
         "awarded_value_eur",
         "deviation_ratio",
         "resolution_days",
-        "risk_score",
     ]
     categorical_features = ["procedure"]
-    model_frame = frame[numeric_features + categorical_features].copy()
+    boolean_features = [
+        "has_supplier_name",
+        "has_buyer_name",
+        "has_estimated_value",
+        "has_awarded_value",
+        "has_resolution_days",
+    ]
+    model_frame = frame[numeric_features + categorical_features + boolean_features].copy()
 
     preprocessor = ColumnTransformer(
         transformers=[
@@ -95,6 +105,15 @@ def build_agent2_model_comparison(
                     ]
                 ),
                 categorical_features,
+            ),
+            (
+                "bool",
+                Pipeline(
+                    steps=[
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                    ]
+                ),
+                boolean_features,
             ),
         ],
         remainder="drop",
