@@ -471,6 +471,7 @@ def _build_supplier_summary(*, contracts: Any, scores: Any, snapshot_id: str) ->
                 "supplier_name",
                 "total_contracts",
                 "activated_contracts",
+                "activated_contract_ratio",
                 "total_importe_adjudicado",
                 "organismos_distintos",
                 "procedimientos_menores",
@@ -497,9 +498,18 @@ def _build_supplier_summary(*, contracts: Any, scores: Any, snapshot_id: str) ->
     for supplier_key, frame in grouped:
         total_contracts = int(len(frame))
         activated_contracts = int((frame["flags_count"].fillna(0) > 0).sum())
+        activated_contract_ratio = activated_contracts / total_contracts if total_contracts else 0.0
         mean_risk_score = float(frame["risk_score"].fillna(0).mean() if total_contracts else 0.0)
         max_risk_score = float(frame["risk_score"].fillna(0).max() if total_contracts else 0.0)
-        aggregated_score = min(round((mean_risk_score * 0.6) + (max_risk_score * 0.4), 2), 100.0)
+        aggregated_score = min(
+            round(
+                (mean_risk_score * 0.5)
+                + (max_risk_score * 0.3)
+                + (activated_contract_ratio * 100.0 * 0.2),
+                2,
+            ),
+            100.0,
+        )
         red_flags_counter: dict[str, int] = {}
         for flag_list in frame["top_flags_list"]:
             for flag in flag_list:
@@ -524,6 +534,7 @@ def _build_supplier_summary(*, contracts: Any, scores: Any, snapshot_id: str) ->
                 "supplier_name": supplier_name,
                 "total_contracts": total_contracts,
                 "activated_contracts": activated_contracts,
+                "activated_contract_ratio": round(activated_contract_ratio, 4),
                 "total_importe_adjudicado": total_importe,
                 "organismos_distintos": organismos_distintos,
                 "procedimientos_menores": procedures_menores,

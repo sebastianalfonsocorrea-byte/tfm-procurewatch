@@ -32,6 +32,8 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   - RF-05: desviación entre importe estimado y adjudicado;
   - RF-06: patrón temporal anómalo entre publicación y adjudicación.
 - El score pasa a escalar de 0 a 100 y conserva evidencia por contrato.
+- El score agregado por adjudicatario combina media, máximo y cobertura de contratos activados
+  para reflejar tanto severidad como recurrencia.
 - `run-agent2-mvp` lee `data/processed/agent2_contracts_canonical.parquet` y genera las salidas
   analíticas del agente sin pedir parámetros extra.
 - El resultado ya permite enseñar un ranking mínimo de casos y no depende todavía de grafos ni

@@ -220,6 +220,7 @@ def _prepare_agent2_supplier_summary_frame(frame: Any) -> Any:
     for column in (
         "total_contracts",
         "activated_contracts",
+        "activated_contract_ratio",
         "organismos_distintos",
         "procedimientos_menores",
     ):
@@ -313,6 +314,7 @@ def _agent2_supplier_dtypes() -> dict[str, Any]:
         "supplier_name": String(),
         "total_contracts": Integer(),
         "activated_contracts": Integer(),
+        "activated_contract_ratio": Float(),
         "total_importe_adjudicado": Float(),
         "organismos_distintos": Integer(),
         "procedimientos_menores": Integer(),

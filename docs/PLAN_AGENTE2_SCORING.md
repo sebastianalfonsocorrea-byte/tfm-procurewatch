@@ -130,9 +130,23 @@ Salida agregada adicional del agente:
 - `supplier_name`
 - `total_contracts`
 - `total_importe_adjudicado`
+- `activated_contract_ratio`
 - `score_riesgo_agregado`
 - `risk_level`
 - `red_flags_recurrentes`
+
+La agregación por adjudicatario combina tres señales:
+
+- la media del score por contrato;
+- el máximo score observado;
+- la proporción de contratos activados dentro del total del adjudicatario.
+
+Fórmula operativa:
+
+`score_riesgo_agregado = 0.5 * mean_risk_score + 0.3 * max_risk_score + 0.2 * activated_contract_ratio * 100`
+
+La idea es evitar que un único expediente extremo distorsione todo el perfil, pero sin perder el
+peso de picos puntuales ni la recurrencia de activaciones.
 
 Salida comparativa del agente:
 

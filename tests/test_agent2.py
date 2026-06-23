@@ -120,12 +120,17 @@ class Agent2Tests(unittest.TestCase):
             self.assertTrue((scores["evaluation_status"] == "evaluado").all())
             self.assertEqual(len(supplier_summary), 3)
             self.assertIn("score_riesgo_agregado", supplier_summary.columns)
+            self.assertIn("activated_contract_ratio", supplier_summary.columns)
             self.assertIn("red_flags_recurrentes", supplier_summary.columns)
             self.assertIn("iforest_anomaly_score", comparison.columns)
             self.assertIn("pu_probability", comparison.columns)
             self.assertEqual(len(comparison), 5)
             self.assertIn("source_snapshot_id", report)
             self.assertTrue((root / "processed" / "agent2_run_report.json").exists())
+
+            supplier_c = supplier_summary.set_index("supplier_name").loc["Proveedor C"]
+            self.assertEqual(supplier_c["score_riesgo_agregado"], 52.0)
+            self.assertEqual(supplier_c["activated_contract_ratio"], 1.0)
 
     def test_rf05_threshold_is_configurable(self) -> None:
         import pandas as pd
