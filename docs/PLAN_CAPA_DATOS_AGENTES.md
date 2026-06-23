@@ -52,6 +52,15 @@ Tablas objetivo para el primer ciclo:
 - `etl_runs`
 - `data_quality_issues`
 
+El MVP de Agent2 ya escribe una version operativa reducida en PostgreSQL con:
+
+- `agent2_risk_flags`
+- `agent2_risk_scores`
+- `agent2_outputs`
+
+Esto no sustituye el esquema objetivo anterior; simplemente valida trazabilidad y consulta del
+scoring mientras se completa la capa de datos completa.
+
 ## Neo4j minimo
 
 Neo4j se usara como capa derivada para Agent3 y para metricas relacionales que alimenten Agent2.

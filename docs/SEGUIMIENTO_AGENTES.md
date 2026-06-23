@@ -3,12 +3,12 @@
 Este documento es el seguimiento transversal. Los detalles historicos de Agent1 se mantienen en
 `SEGUIMIENTO_AGENT1.md`.
 
-## Estado actual 21/06/2026
+## Estado actual 23/06/2026
 
 | Agente | Estado | Entrada principal | Salida principal | Siguiente paso |
 |---|---|---|---|---|
 | Agent1 | Operativo | BOE, PLACE, OpenTender raw | `agent2_contracts_canonical.parquet` | Mejorar matching entre fuentes |
-| Agent2 | MVP de red flags v1 | Canonico Agent1 | `agent2_risk_flags.parquet`, `agent2_risk_scores.parquet` | Validar resultados y preparar carga a PostgreSQL |
+| Agent2 | MVP de red flags v1 | Canonico Agent1 | `agent2_risk_flags.parquet`, `agent2_risk_scores.parquet` | Consolidar la persistencia en PostgreSQL y preparar Agent3 |
 | Agent3 | Planificado | Canonico Agent1/PostgreSQL | nodos, edges y metricas | Crear generador de grafo |
 | Agent4 | Scaffold y plan | Contratos y documentos | chunks, retrieval y contexto | PoC RAG con evidencia |
 
@@ -46,6 +46,18 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 - En el canonico actual RF-06 no se activa, porque no hay suficientes patrones temporales
   anómalos detectables con los datos disponibles; el rule-set sigue implementado para futuros
   lotes o enriquecimientos.
+
+## Avance Agent2 23/06/2026 - persistencia MVP
+
+- `run-agent2` y `run-agent2-mvp` ya aceptan `--postgres-dsn` y `--write-postgres`.
+- El MVP persiste en PostgreSQL tres tablas de salida:
+  - `agent2_risk_flags`
+  - `agent2_risk_scores`
+  - `agent2_outputs`
+- La salida Parquet sigue siendo la referencia principal del pipeline y PostgreSQL queda como
+  capa estructurada para trazabilidad y consulta posterior.
+- La validación automatizada usa SQLite en tests para comprobar que el writer funciona sin
+  depender de un servidor PostgreSQL levantado.
 
 ## Avance Agent2 21/06/2026
 

@@ -192,6 +192,18 @@ procurewatch run-agent2-mvp
 Ese comando lee `data/processed/agent2_contracts_canonical.parquet` y genera las señales
 deterministas del MVP de red flags y scoring.
 
+Si `PROCUREWATCH_POSTGRES_DSN` está configurado, el mismo comando también persiste:
+
+- `agent2_risk_flags`
+- `agent2_risk_scores`
+- `agent2_outputs`
+
+Para forzar la carga manualmente:
+
+```powershell
+procurewatch run-agent2 --write-postgres --postgres-dsn postgresql://usuario:clave@localhost:5432/procurewatch
+```
+
 ## 10. Siguiente foco: Agent2 y Agent4
 
 Despues de validar Agent1:
