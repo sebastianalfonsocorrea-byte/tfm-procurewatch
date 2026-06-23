@@ -39,6 +39,7 @@ Entregables minimos:
 - Plan de derivacion a Neo4j para relaciones.
 - Resumen agregado por adjudicatario para compatibilizar el score por contrato con el score
   por entidad que pide la propuesta.
+- Comparativa MVP contra Isolation Forest y Positive-Unlabeled Learning.
 
 ## Red flags v1
 
@@ -116,6 +117,15 @@ Salida agregada adicional para el MVP:
 - `risk_level`
 - `red_flags_recurrentes`
 
+Salida comparativa adicional:
+
+- `iforest_anomaly_score`
+- `iforest_anomaly_flag`
+- `pu_probability`
+- `pu_label`
+- `agreement_iforest_rule`
+- `agreement_pu_rule`
+
 ## Uso de PostgreSQL
 
 Tablas destino:
@@ -123,6 +133,7 @@ Tablas destino:
 - `risk_flags`
 - `risk_scores`
 - `agent2_supplier_risk_summary`
+- `agent2_model_comparison`
 - `agent_outputs`
 
 Mientras PostgreSQL no este cargado, Agent2 puede leer Parquet, pero la salida debe disenar ya

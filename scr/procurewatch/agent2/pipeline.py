@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..db import write_agent2_risk_tables_to_postgres
+from .comparison import build_agent2_model_comparison
 from .schemas import Agent2Contract
 from .scoring import FLAG_WEIGHTS, score_contract
 
@@ -221,6 +222,11 @@ def run_agent2(
         scores=scores,
         snapshot_id=snapshot_id,
     )
+    model_comparison = build_agent2_model_comparison(
+        contracts=contracts,
+        scores=scores,
+        deviation_threshold=deviation_threshold,
+    )
 
     flags = pd.DataFrame(
         flag_records,
@@ -257,10 +263,12 @@ def run_agent2(
     flags_path = output_dir / "agent2_risk_flags.parquet"
     scores_path = output_dir / "agent2_risk_scores.parquet"
     supplier_summary_path = output_dir / "agent2_supplier_risk_summary.parquet"
+    comparison_path = output_dir / "agent2_model_comparison.parquet"
     report_path = output_dir / "agent2_run_report.json"
     flags.to_parquet(flags_path, index=False)
     scores.to_parquet(scores_path, index=False)
     supplier_summary.to_parquet(supplier_summary_path, index=False)
+    model_comparison.to_parquet(comparison_path, index=False)
 
     postgres_write_report = None
     if write_postgres:
@@ -270,6 +278,7 @@ def run_agent2(
             risk_flags=flags,
             risk_scores=scores,
             supplier_risk_summary=supplier_summary,
+            model_comparison=model_comparison,
             outputs=[
                 {
                     "agent_name": "agent2",
@@ -322,6 +331,21 @@ def run_agent2(
                 },
                 {
                     "agent_name": "agent2",
+                    "artifact_type": "model_comparison_parquet",
+                    "artifact_path": str(comparison_path),
+                    "rows": int(len(model_comparison)),
+                    "source_snapshot_id": snapshot_id,
+                    "created_at": created_at,
+                    "payload_json": json.dumps(
+                        {
+                            "report_path": str(report_path),
+                            "model_comparison": str(comparison_path),
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+                {
+                    "agent_name": "agent2",
                     "artifact_type": "run_report_json",
                     "artifact_path": str(report_path),
                     "rows": 1,
@@ -349,6 +373,7 @@ def run_agent2(
         "activated_flags": int(len(flags)),
         "activated_contract_rows": int((scores["flags_count"] > 0).sum()),
         "supplier_rows": int(len(supplier_summary)),
+        "comparison_rows": int(len(model_comparison)),
         "rules": {
             **RULE_METADATA,
             RF05_CODE: {
@@ -368,6 +393,7 @@ def run_agent2(
             "risk_flags": str(flags_path),
             "risk_scores": str(scores_path),
             "supplier_risk_summary": str(supplier_summary_path),
+            "model_comparison": str(comparison_path),
         },
         "postgres_write": postgres_write_report,
     }

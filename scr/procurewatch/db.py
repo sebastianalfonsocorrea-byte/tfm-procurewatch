@@ -12,6 +12,7 @@ AGENT1_SUPPLIERS_TABLE = "agent1_suppliers_analytical"
 AGENT2_RISK_FLAGS_TABLE = "agent2_risk_flags"
 AGENT2_RISK_SCORES_TABLE = "agent2_risk_scores"
 AGENT2_SUPPLIER_RISK_TABLE = "agent2_supplier_risk_summary"
+AGENT2_MODEL_COMPARISON_TABLE = "agent2_model_comparison"
 AGENT2_OUTPUTS_TABLE = "agent2_outputs"
 
 
@@ -68,6 +69,7 @@ def write_agent2_risk_tables_to_postgres(
     risk_flags: Any,
     risk_scores: Any,
     supplier_risk_summary: Any,
+    model_comparison: Any,
     outputs: Any,
     postgres_dsn: str,
     schema: str | None = None,
@@ -79,6 +81,7 @@ def write_agent2_risk_tables_to_postgres(
     flags_frame = _prepare_agent2_flags_frame(pd.DataFrame(risk_flags))
     scores_frame = _prepare_agent2_scores_frame(pd.DataFrame(risk_scores))
     supplier_frame = _prepare_agent2_supplier_summary_frame(pd.DataFrame(supplier_risk_summary))
+    comparison_frame = _prepare_agent2_comparison_frame(pd.DataFrame(model_comparison))
     outputs_frame = _prepare_agent2_outputs_frame(pd.DataFrame(outputs))
     with engine.begin() as connection:
         flags_frame.to_sql(
@@ -105,6 +108,14 @@ def write_agent2_risk_tables_to_postgres(
             index=False,
             dtype=_agent2_supplier_dtypes(),
         )
+        comparison_frame.to_sql(
+            AGENT2_MODEL_COMPARISON_TABLE,
+            connection,
+            schema=schema,
+            if_exists=if_exists,
+            index=False,
+            dtype=_agent2_comparison_dtypes(),
+        )
         outputs_frame.to_sql(
             AGENT2_OUTPUTS_TABLE,
             connection,
@@ -130,6 +141,10 @@ def write_agent2_risk_tables_to_postgres(
             {
                 "name": AGENT2_SUPPLIER_RISK_TABLE,
                 "rows": int(len(supplier_frame)),
+            },
+            {
+                "name": AGENT2_MODEL_COMPARISON_TABLE,
+                "rows": int(len(comparison_frame)),
             },
             {
                 "name": AGENT2_OUTPUTS_TABLE,
@@ -224,6 +239,23 @@ def _prepare_agent2_outputs_frame(frame: Any) -> Any:
     return prepared
 
 
+def _prepare_agent2_comparison_frame(frame: Any) -> Any:
+    import pandas as pd
+
+    prepared = frame.copy()
+    for column in ("rule_positive", "iforest_anomaly_flag", "pu_label", "agreement_iforest_rule", "agreement_pu_rule"):
+        if column in prepared.columns:
+            prepared[column] = prepared[column].astype("Int64")
+    for column in ("rule_score", "iforest_anomaly_score", "pu_probability"):
+        if column in prepared.columns:
+            prepared[column] = pd.to_numeric(prepared[column], errors="coerce")
+    if "rule_flags_count" in prepared.columns:
+        prepared["rule_flags_count"] = pd.to_numeric(prepared["rule_flags_count"], errors="coerce")
+    if "contract_key_canon" in prepared.columns:
+        prepared["contract_key_canon"] = prepared["contract_key_canon"].astype("string")
+    return prepared
+
+
 def _sqlalchemy_dtypes(entity_name: str) -> dict[str, Any]:
     from .agent1.analytical_schema import ANALYTICAL_SCHEMA
 
@@ -292,6 +324,21 @@ def _agent2_supplier_dtypes() -> dict[str, Any]:
         "red_flags_recurrentes": Text(),
         "score_version": String(),
         "source_snapshot_id": String(),
+    }
+
+
+def _agent2_comparison_dtypes() -> dict[str, Any]:
+    return {
+        "contract_key_canon": String(),
+        "rule_score": Float(),
+        "rule_flags_count": Integer(),
+        "rule_positive": Integer(),
+        "iforest_anomaly_score": Float(),
+        "iforest_anomaly_flag": Integer(),
+        "pu_probability": Float(),
+        "pu_label": Integer(),
+        "agreement_iforest_rule": Integer(),
+        "agreement_pu_rule": Integer(),
     }
 
 
