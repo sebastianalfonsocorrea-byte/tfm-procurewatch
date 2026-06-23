@@ -8,7 +8,7 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 | Agente | Estado | Entrada principal | Salida principal | Siguiente paso |
 |---|---|---|---|---|
 | Agent1 | Operativo | BOE, PLACE, OpenTender raw | `agent2_contracts_canonical.parquet` | Mejorar matching entre fuentes |
-| Agent2 | MVP de red flags v1 | Canonico Agent1 | `agent2_risk_flags.parquet`, `agent2_risk_scores.parquet` | Consolidar la persistencia en PostgreSQL y preparar Agent3 |
+| Agent2 | Operativo dentro del MVP del TFM | Canonico Agent1 | `agent2_risk_flags.parquet`, `agent2_risk_scores.parquet` | Consolidar la persistencia en PostgreSQL y preparar Agent3 |
 | Agent3 | Planificado | Canonico Agent1/PostgreSQL | nodos, edges y metricas | Crear generador de grafo |
 | Agent4 | Scaffold y plan | Contratos y documentos | chunks, retrieval y contexto | PoC RAG con evidencia |
 
@@ -33,7 +33,7 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   - RF-06: patrón temporal anómalo entre publicación y adjudicación.
 - El score pasa a escalar de 0 a 100 y conserva evidencia por contrato.
 - `run-agent2-mvp` lee `data/processed/agent2_contracts_canonical.parquet` y genera las salidas
-  analíticas del MVP sin pedir parámetros extra.
+  analíticas del agente sin pedir parámetros extra.
 - El resultado ya permite enseñar un ranking mínimo de casos y no depende todavía de grafos ni
   documentos.
 - Ejecución real sobre el canonico Agent1 actual:
@@ -50,10 +50,10 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   anómalos detectables con los datos disponibles; el rule-set sigue implementado para futuros
   lotes o enriquecimientos.
 
-## Avance Agent2 23/06/2026 - persistencia MVP
+## Avance Agent2 23/06/2026 - persistencia del agente
 
 - `run-agent2` y `run-agent2-mvp` ya aceptan `--postgres-dsn` y `--write-postgres`.
-- El MVP persiste en PostgreSQL tres tablas de salida:
+- El agente persiste en PostgreSQL estas tablas de salida:
   - `agent2_risk_flags`
   - `agent2_risk_scores`
   - `agent2_supplier_risk_summary`

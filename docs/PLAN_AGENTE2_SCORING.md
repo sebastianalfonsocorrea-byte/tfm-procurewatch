@@ -53,9 +53,9 @@ Prioridad inicial:
 - RF-06: patrones temporales anomalos.
 - RF-07: repeticion de CPV, titulos o importes entre contratos cercanos.
 
-### MVP ejecutable actual
+### Ejecución operativa actual
 
-Para el borrador del TFM, el MVP deja operativas estas señales deterministas:
+Para el borrador del TFM, el agente deja operativas estas señales deterministas:
 
 - RF-01: adjudicatario ausente.
 - RF-02: procedimiento sensible o de urgencia.
@@ -107,7 +107,7 @@ Salidas minimas:
 - `score_version`
 - `source_snapshot_id`
 
-Salida agregada adicional para el MVP:
+Salida agregada adicional del agente:
 
 - `supplier_key`
 - `supplier_name`

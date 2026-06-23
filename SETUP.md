@@ -163,7 +163,7 @@ python -m procurewatch run-agent1 --year 2024 --cpv-prefix 71 --force-rebuild
 La corrida normal reutiliza cache de BOE/PLACE/OpenTender si ya existen los Parquet y los reportes de calidad asociados. La salida esperada incluye `agent1_run_report.json`, `agent1_data_quality_summary.json`, `agent1_contract_key_coverage.parquet` y `agent2_contracts_canonical.parquet`.
 
 Si el entorno Docker tiene PostgreSQL levantado y `PROCUREWATCH_POSTGRES_DSN` está configurado,
-puedes persistir el resultado analítico mínimo del MVP con:
+puedes persistir el resultado analítico mínimo del flujo del TFM con:
 
 ```powershell
 procurewatch run-agent1 --year 2024 --cpv-prefix 71 --write-postgres
@@ -190,7 +190,7 @@ procurewatch run-agent2-mvp
 ```
 
 Ese comando lee `data/processed/agent2_contracts_canonical.parquet` y genera las señales
-deterministas del MVP de red flags y scoring.
+deterministas del Agente 2.
 También deja la comparación adicional del Agente 2 en:
 
 - `agent2_supplier_risk_summary.parquet`
