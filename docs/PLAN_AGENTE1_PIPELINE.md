@@ -41,6 +41,8 @@ Pendiente para el siguiente ciclo:
 - Añadir validaciones automaticas de tipos/campos criticos en el reporte final de cobertura.
 - Integrar reporte de agente en el flujo de orquestacion LangGraph de 4 agentes.
 - Mejorar el contrato canonico de Agent2 solo si cambian los criterios de scoring.
+- Si el matching entre fuentes sigue sin producir intersecciones útiles, documentarlo como
+  limitación reproducible del canónico actual en lugar de forzar coincidencias artificiales.
 
 Checklist de cierre del ciclo:
 

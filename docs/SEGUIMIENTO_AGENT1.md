@@ -15,6 +15,9 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
   - `agent1_suppliers_analytical`.
 - El entorno local necesitaba el driver `psycopg` para que SQLAlchemy pudiera abrir el DSN
   `postgresql://...`; el conector lo normaliza a `postgresql+psycopg://...`.
+- La comprobación de calidad del agente deja visible qué campos críticos están cubiertos y
+  cuáles siguen nulos; si el matching entre fuentes no mejora, se documenta como limitación
+  reproducible y no como coincidencia artificial.
 
 ### Diferencia operativa entre los dos comandos
 
@@ -135,6 +138,8 @@ La lógica base es la misma; `run-mvp` solo reduce fricción para arrancar el pi
   los 2.179 millones citados.
 - La diferencia se revisará contra la metodología exacta del dataset original y se documentará o
   corregirá en la memoria si no puede reproducirse.
+- Mientras las intersecciones por `contract_key_canon` sigan en 0, el canónico debe tratarse como
+  frontera trazable y no como prueba de cruce real entre fuentes.
 
 ## 20/06/2026
 

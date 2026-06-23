@@ -40,6 +40,18 @@ class Agent1CoverageReportTests(unittest.TestCase):
             self.assertEqual(report["schema"]["status"], "complete")
             self.assertEqual(report["overall_status"], "partial")
             self.assertEqual(
+                report["quality_metrics"]["ocds_critical_completeness"]["fields"],
+                [
+                    "id_contrato",
+                    "organismo_contratante",
+                    "procedimiento",
+                    "cpv_codigo",
+                    "importe_adjudicado",
+                    "fecha_publicacion",
+                    "nombre_adjudicatario",
+                ],
+            )
+            self.assertEqual(
                 report["quality_metrics"]["ocds_critical_completeness"]["status"],
                 "met",
             )
