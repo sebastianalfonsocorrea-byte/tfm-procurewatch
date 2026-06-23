@@ -67,6 +67,9 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   supervisados.
 - La validación automatizada usa SQLite en tests para comprobar que el writer funciona sin
   depender de un servidor PostgreSQL levantado.
+- Las salidas que no tengan evidencia suficiente deben quedar marcadas como `no_evaluable`,
+  `confidence` reducido o limitación explícita; no se deben forzar scores ni comparativas sobre
+  casos sin variables críticas.
 
 ### Diferencia operativa entre los dos comandos
 
@@ -96,6 +99,8 @@ La lógica analítica es la misma en ambos casos; cambia el nivel de comodidad d
 
 - El matching actual entre BOE, PLACE y OpenTender tiene intersecciones 0 por `contract_key_canon`.
 - Agent2 puede avanzar con señales intrafuente, pero no debe afirmar contraste real entre fuentes.
+- Si la comparativa con modelos alternativos se ejecuta sobre un subconjunto pequeño o sesgado, eso
+  debe documentarse como contraste exploratorio y no como validación cerrada.
 - Agent3 debe construirse desde el canonico o PostgreSQL, no desde raw.
 - Agent4 debe citar `document_id`, `chunk_id` y `contract_key_canon` cuando use evidencia textual.
 

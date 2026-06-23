@@ -25,6 +25,23 @@ El dataset canonico tiene 51.720 filas y estado de calidad `ok`. La ausencia act
 intersecciones entre BOE/PLACE/OpenTender por `contract_key_canon` no bloquea Agent2, pero limita
 las afirmaciones de contraste entre fuentes.
 
+## Casos no evaluables y limitaciones operativas
+
+Agent2 no fuerza un score cuando faltan los campos que necesita cada regla o cada comparativa.
+En ese caso la fila queda registrada como `no_evaluable` o con `confidence` reducido, según el
+tipo de salida.
+
+Casos típicos:
+
+- importes faltantes o no válidos para RF-05 y para el score agregado por adjudicatario;
+- ausencia de adjudicatario identificable para métricas de recurrencia o concentración;
+- falta de suficiente variación o de variables útiles para la comparativa con Isolation Forest;
+- ausencia de etiquetas fiables para una formulación estricta de Positive-Unlabeled Learning;
+- falta de intersección entre fuentes para afirmar contraste real BOE/PLACE/OpenTender.
+
+Regla práctica: si el dato no permite una evidencia trazable, el agente debe dejar constancia de la
+limitación en lugar de inventar una señal, un emparejamiento o un score.
+
 ## Alcance v1
 
 Agent2 queda planteado como motor incremental; no se considera cerrado hasta implementar red flags
@@ -126,6 +143,11 @@ Salida comparativa del agente:
 - `agreement_iforest_rule`
 - `agreement_pu_rule`
 
+La comparativa no se interpreta como validación definitiva del modelo, sino como contraste
+exploratorio con las limitaciones del canonico y de las etiquetas disponibles.
+La aproximación PU debe leerse como una versión práctica y acotada para el TFM, no como una
+implementación formal completa si no existen positivas y no etiquetadas suficientemente limpias.
+
 ## Uso de PostgreSQL
 
 Tablas destino:
@@ -153,4 +175,7 @@ Neo4j entra cuando haya que calcular patrones relacionales:
 - Agent2 puede ejecutarse sobre el canonico sin depender de documentos.
 - Cada flag es trazable a columnas o evidencias concretas.
 - El score incluye version de regla y no borra historico.
-- Las limitaciones de datos faltantes quedan registradas como `confidence` menor o flag no aplicable.
+- Las limitaciones de datos faltantes quedan registradas como `confidence` menor, `no_evaluable`
+  o flag no aplicable.
+- No se fuerza comparación entre fuentes, modelos o etiquetas cuando la evidencia de entrada no
+  alcanza para sostenerla.
