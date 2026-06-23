@@ -2,6 +2,12 @@
 
 Este documento recoge el stack completo del proyecto, lo que está implementado hoy y lo que está definido como objetivo técnico para el TFM.
 
+Nota de lectura:
+
+- las secciones "implementada hoy" describen estado real del repo;
+- las secciones "objetivo" o "roadmap" describen direccion tecnica, no cierre final;
+- para preparar la memoria conviene cruzarlo con `docs/BASE_MEMORIA_TFM.md`.
+
 ## 1) Objetivo del stack
 
 ProcureWatch Analytics está construido como un sistema de analitica aplicada:

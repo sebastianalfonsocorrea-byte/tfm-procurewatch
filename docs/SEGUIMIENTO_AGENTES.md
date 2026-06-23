@@ -3,6 +3,12 @@
 Este documento es el seguimiento transversal. Los detalles historicos de Agent1 se mantienen en
 `SEGUIMIENTO_AGENT1.md`.
 
+Nota de lectura:
+
+- lo que aparece aqui es estado real y decisiones ya tomadas;
+- cuando se menciona un objetivo o un siguiente paso, no implica que ya esté cerrado;
+- para escribir la memoria conviene contrastar este seguimiento con `docs/BASE_MEMORIA_TFM.md`.
+
 ## Estado actual 23/06/2026
 
 | Agente | Estado | Entrada principal | Salida principal | Siguiente paso |

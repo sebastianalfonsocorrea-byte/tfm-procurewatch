@@ -16,6 +16,12 @@ ProcureWatch Analytics se plantea como un prototipo analitico reproducible para 
 
 El nucleo academico del TFM esta en el analisis de datos masivos: integracion de fuentes heterogeneas, normalizacion OCDS, construccion de indicadores de red flags, analisis de redes, deteccion de anomalias y visualizacion explicable. Los modelos locales, web scraping, RAG y agentes tienen un papel instrumental para extraer, organizar y explicar informacion.
 
+Nota de lectura para la memoria:
+
+- este documento mezcla objetivo, alcance, metodologia y roadmap;
+- para el estado real debe leerse junto con `docs/SEGUIMIENTO_AGENTES.md` y `docs/SEGUIMIENTO_AGENT1.md`;
+- para la distincion entre implementado, parcial y proxy puede usarse `docs/BASE_MEMORIA_TFM.md`.
+
 ## Objetivo general
 
 Disenar, desarrollar y evaluar un prototipo de plataforma analitica multiagente que, a partir de datos abiertos de contratacion publica, detecte y visualice patrones de riesgo en licitaciones, adjudicaciones y empresas adjudicatarias mediante red flags, scoring de anomalias, analisis de redes, NLP documental y fichas explicables de caso.

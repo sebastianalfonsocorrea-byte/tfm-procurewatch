@@ -3,6 +3,10 @@
 Objetivo: plantear Agent2 como motor determinista y explicable de red flags, usando el dataset
 canonico producido por Agent1 y preparando su posterior uso con PostgreSQL y Neo4j.
 
+Nota de lectura para memoria: este plan mezcla diseño, implementación parcial y criterios de
+aceptación. Para separar lo realizado de lo pendiente, usar `docs/BASE_MEMORIA_TFM.md` y
+`SEGUIMIENTO_AGENTES.md`.
+
 ## Estado de partida
 
 Entrada actual:

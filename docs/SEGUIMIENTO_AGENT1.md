@@ -2,6 +2,9 @@
 
 Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibilidad de decisiones.
 
+Nota de lectura: este documento registra estado real y decisiones ya tomadas. Para escribir la
+memoria conviene usarlo junto con `docs/BASE_MEMORIA_TFM.md`.
+
 
 ## 23/06/2026
 
