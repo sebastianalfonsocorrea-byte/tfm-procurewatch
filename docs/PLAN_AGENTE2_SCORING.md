@@ -37,6 +37,8 @@ Entregables minimos:
 - Decision de columnas obligatorias.
 - Plan de carga a PostgreSQL.
 - Plan de derivacion a Neo4j para relaciones.
+- Resumen agregado por adjudicatario para compatibilizar el score por contrato con el score
+  por entidad que pide la propuesta.
 
 ## Red flags v1
 
@@ -104,12 +106,23 @@ Salidas minimas:
 - `score_version`
 - `source_snapshot_id`
 
+Salida agregada adicional para el MVP:
+
+- `supplier_key`
+- `supplier_name`
+- `total_contracts`
+- `total_importe_adjudicado`
+- `score_riesgo_agregado`
+- `risk_level`
+- `red_flags_recurrentes`
+
 ## Uso de PostgreSQL
 
 Tablas destino:
 
 - `risk_flags`
 - `risk_scores`
+- `agent2_supplier_risk_summary`
 - `agent_outputs`
 
 Mientras PostgreSQL no este cargado, Agent2 puede leer Parquet, pero la salida debe disenar ya

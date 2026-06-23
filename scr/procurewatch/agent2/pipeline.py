@@ -216,6 +216,12 @@ def run_agent2(
         )
         flag_records.extend(new_flag_records)
 
+    supplier_summary = _build_supplier_summary(
+        contracts=contracts,
+        scores=scores,
+        snapshot_id=snapshot_id,
+    )
+
     flags = pd.DataFrame(
         flag_records,
         columns=[
@@ -250,9 +256,11 @@ def run_agent2(
     output_dir.mkdir(parents=True, exist_ok=True)
     flags_path = output_dir / "agent2_risk_flags.parquet"
     scores_path = output_dir / "agent2_risk_scores.parquet"
+    supplier_summary_path = output_dir / "agent2_supplier_risk_summary.parquet"
     report_path = output_dir / "agent2_run_report.json"
     flags.to_parquet(flags_path, index=False)
     scores.to_parquet(scores_path, index=False)
+    supplier_summary.to_parquet(supplier_summary_path, index=False)
 
     postgres_write_report = None
     if write_postgres:
@@ -261,6 +269,7 @@ def run_agent2(
         postgres_write_report = write_agent2_risk_tables_to_postgres(
             risk_flags=flags,
             risk_scores=scores,
+            supplier_risk_summary=supplier_summary,
             outputs=[
                 {
                     "agent_name": "agent2",
@@ -296,6 +305,23 @@ def run_agent2(
                 },
                 {
                     "agent_name": "agent2",
+                    "artifact_type": "supplier_risk_summary_parquet",
+                    "artifact_path": str(supplier_summary_path),
+                    "rows": int(len(supplier_summary)),
+                    "source_snapshot_id": snapshot_id,
+                    "created_at": created_at,
+                    "payload_json": json.dumps(
+                        {
+                            "report_path": str(report_path),
+                            "risk_flags": str(flags_path),
+                            "risk_scores": str(scores_path),
+                            "supplier_risk_summary": str(supplier_summary_path),
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+                {
+                    "agent_name": "agent2",
                     "artifact_type": "run_report_json",
                     "artifact_path": str(report_path),
                     "rows": 1,
@@ -322,6 +348,7 @@ def run_agent2(
         "not_evaluable_rows": int((~rf05_evaluable_mask).sum()),
         "activated_flags": int(len(flags)),
         "activated_contract_rows": int((scores["flags_count"] > 0).sum()),
+        "supplier_rows": int(len(supplier_summary)),
         "rules": {
             **RULE_METADATA,
             RF05_CODE: {
@@ -340,6 +367,7 @@ def run_agent2(
         "outputs": {
             "risk_flags": str(flags_path),
             "risk_scores": str(scores_path),
+            "supplier_risk_summary": str(supplier_summary_path),
         },
         "postgres_write": postgres_write_report,
     }
@@ -386,6 +414,106 @@ def _build_pair_context(contracts: Any) -> Any:
     context["pair_share"] = context["pair_awarded"] / context["buyer_total_awarded"]
     context["pair_count"] = context["pair_count"].fillna(0).astype("Int64")
     return context
+
+
+def _build_supplier_summary(*, contracts: Any, scores: Any, snapshot_id: str) -> Any:
+    import pandas as pd
+
+    combined = contracts[[
+        "contract_key_canon",
+        "buyer_name",
+        "supplier_name",
+        "supplier_id",
+        "procedure",
+        "awarded_value_eur",
+    ]].copy()
+    combined = combined.merge(
+        scores[["contract_key_canon", "risk_score", "risk_level", "flags_count", "top_flags"]],
+        on="contract_key_canon",
+        how="left",
+    )
+    combined["supplier_key"] = combined["supplier_id"].astype("string").fillna("").str.strip()
+    combined.loc[combined["supplier_key"].eq(""), "supplier_key"] = (
+        combined["supplier_name"].astype("string").fillna("").map(_normalize_key)
+    )
+    combined = combined[combined["supplier_key"].ne("")]
+    if combined.empty:
+        return pd.DataFrame(
+            columns=[
+                "supplier_key",
+                "supplier_id",
+                "supplier_name",
+                "total_contracts",
+                "activated_contracts",
+                "total_importe_adjudicado",
+                "organismos_distintos",
+                "procedimientos_menores",
+                "procedimientos_menores_ratio",
+                "mean_risk_score",
+                "max_risk_score",
+                "score_riesgo_agregado",
+                "risk_level",
+                "red_flags_recurrentes",
+                "score_version",
+                "source_snapshot_id",
+            ]
+        )
+
+    def _top_flags(value: Any) -> list[str]:
+        try:
+            return list(json.loads(value)) if value else []
+        except Exception:
+            return []
+
+    combined["top_flags_list"] = combined["top_flags"].map(_top_flags)
+    grouped = combined.groupby("supplier_key", dropna=False)
+    records: list[dict[str, Any]] = []
+    for supplier_key, frame in grouped:
+        total_contracts = int(len(frame))
+        activated_contracts = int((frame["flags_count"].fillna(0) > 0).sum())
+        mean_risk_score = float(frame["risk_score"].fillna(0).mean() if total_contracts else 0.0)
+        max_risk_score = float(frame["risk_score"].fillna(0).max() if total_contracts else 0.0)
+        aggregated_score = min(round((mean_risk_score * 0.6) + (max_risk_score * 0.4), 2), 100.0)
+        red_flags_counter: dict[str, int] = {}
+        for flag_list in frame["top_flags_list"]:
+            for flag in flag_list:
+                red_flags_counter[flag] = red_flags_counter.get(flag, 0) + 1
+        recurrent_flags = [
+            flag for flag, count in sorted(red_flags_counter.items(), key=lambda item: (-item[1], item[0])) if count >= 2
+        ]
+        procedures_menores = int(
+            frame["procedure"].astype("string").fillna("").map(_normalize_key).str.contains("MENOR", na=False).sum()
+        )
+        total_importe = float(frame["awarded_value_eur"].fillna(0).sum())
+        organismos_distintos = int(frame["buyer_name"].astype("string").fillna("").nunique(dropna=True))
+        procedures_menores_ratio = (
+            procedures_menores / total_contracts if total_contracts else 0.0
+        )
+        supplier_id = str(frame["supplier_id"].dropna().iloc[0]) if frame["supplier_id"].notna().any() else ""
+        supplier_name = str(frame["supplier_name"].dropna().iloc[0]) if frame["supplier_name"].notna().any() else ""
+        records.append(
+            {
+                "supplier_key": supplier_key,
+                "supplier_id": supplier_id,
+                "supplier_name": supplier_name,
+                "total_contracts": total_contracts,
+                "activated_contracts": activated_contracts,
+                "total_importe_adjudicado": total_importe,
+                "organismos_distintos": organismos_distintos,
+                "procedimientos_menores": procedures_menores,
+                "procedimientos_menores_ratio": procedures_menores_ratio,
+                "mean_risk_score": round(mean_risk_score, 2),
+                "max_risk_score": round(max_risk_score, 2),
+                "score_riesgo_agregado": aggregated_score,
+                "risk_level": _risk_level_from_score(aggregated_score),
+                "red_flags_recurrentes": json.dumps(recurrent_flags, ensure_ascii=False),
+                "score_version": SCORE_VERSION,
+                "source_snapshot_id": snapshot_id,
+            }
+        )
+    result = pd.DataFrame(records)
+    result["source_snapshot_id"] = result["source_snapshot_id"].astype("string")
+    return result
 
 
 def _apply_batch_flag(

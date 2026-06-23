@@ -56,9 +56,12 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 - El MVP persiste en PostgreSQL tres tablas de salida:
   - `agent2_risk_flags`
   - `agent2_risk_scores`
+  - `agent2_supplier_risk_summary`
   - `agent2_outputs`
 - La salida Parquet sigue siendo la referencia principal del pipeline y PostgreSQL queda como
   capa estructurada para trazabilidad y consulta posterior.
+- El scoring ya no queda solo por contrato: también se agrega un resumen por adjudicatario para
+  acercarse al requisito de score por entidad de la propuesta.
 - La validación automatizada usa SQLite en tests para comprobar que el writer funciona sin
   depender de un servidor PostgreSQL levantado.
 

@@ -80,12 +80,14 @@ class Agent2Tests(unittest.TestCase):
             report = run_agent2(input_path, root / "processed")
             flags = pd.read_parquet(report["outputs"]["risk_flags"])
             scores = pd.read_parquet(report["outputs"]["risk_scores"])
+            supplier_summary = pd.read_parquet(report["outputs"]["supplier_risk_summary"])
 
             self.assertEqual(report["rows"], 5)
             self.assertEqual(report["evaluable_rows"], 5)
             self.assertEqual(report["not_evaluable_rows"], 0)
             self.assertEqual(report["activated_contract_rows"], 5)
             self.assertEqual(report["activated_flags"], 14)
+            self.assertEqual(report["supplier_rows"], 3)
             self.assertEqual(
                 set(report["flag_breakdown"].keys()),
                 {"RF-01", "RF-02", "RF-03", "RF-04", "RF-05", "RF-06"},
@@ -114,6 +116,9 @@ class Agent2Tests(unittest.TestCase):
             self.assertCountEqual(json.loads(temporal_row["top_flags"]), ["RF-01", "RF-02", "RF-06"])
 
             self.assertTrue((scores["evaluation_status"] == "evaluado").all())
+            self.assertEqual(len(supplier_summary), 3)
+            self.assertIn("score_riesgo_agregado", supplier_summary.columns)
+            self.assertIn("red_flags_recurrentes", supplier_summary.columns)
             self.assertIn("source_snapshot_id", report)
             self.assertTrue((root / "processed" / "agent2_run_report.json").exists())
 
@@ -147,6 +152,7 @@ class Agent2Tests(unittest.TestCase):
             self.assertEqual(scores.loc[0, "risk_score"], 30.0)
             self.assertEqual(scores.loc[0, "risk_level"], "medio")
             self.assertCountEqual(json.loads(scores.loc[0, "top_flags"]), ["RF-01", "RF-06"])
+            self.assertEqual(report["supplier_rows"], 1)
 
 
 if __name__ == "__main__":

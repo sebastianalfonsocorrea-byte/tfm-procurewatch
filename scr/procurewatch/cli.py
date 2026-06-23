@@ -535,6 +535,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Contratos de entrada: {report['rows']}")
         print(f"- Contratos evaluables: {report['evaluable_rows']}")
         print(f"- Contratos con alguna señal: {report['activated_contract_rows']}")
+        if report.get("supplier_rows") is not None:
+            print(f"- Adjudicatarios resumidos: {report['supplier_rows']}")
         print(f"- Señales activadas: {report['activated_flags']}")
         if report.get("postgres_write"):
             print(f"- PostgreSQL: {report['postgres_write']['postgres_dsn']}")
@@ -555,6 +557,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Agente 2 MVP ejecutado")
         print(f"- Contratos de entrada: {report['rows']}")
         print(f"- Contratos con alguna señal: {report['activated_contract_rows']}")
+        if report.get("supplier_rows") is not None:
+            print(f"- Adjudicatarios resumidos: {report['supplier_rows']}")
         print(f"- Señales activadas: {report['activated_flags']}")
         print(f"- PostgreSQL: {'si' if postgres_dsn else 'no'}")
         print(f"- Reporte: {report['report_path']}")

@@ -11,6 +11,7 @@ AGENT1_CONTRACTS_TABLE = "agent1_contracts_analytical"
 AGENT1_SUPPLIERS_TABLE = "agent1_suppliers_analytical"
 AGENT2_RISK_FLAGS_TABLE = "agent2_risk_flags"
 AGENT2_RISK_SCORES_TABLE = "agent2_risk_scores"
+AGENT2_SUPPLIER_RISK_TABLE = "agent2_supplier_risk_summary"
 AGENT2_OUTPUTS_TABLE = "agent2_outputs"
 
 
@@ -66,6 +67,7 @@ def write_agent2_risk_tables_to_postgres(
     *,
     risk_flags: Any,
     risk_scores: Any,
+    supplier_risk_summary: Any,
     outputs: Any,
     postgres_dsn: str,
     schema: str | None = None,
@@ -76,6 +78,7 @@ def write_agent2_risk_tables_to_postgres(
     engine = create_engine(_normalize_postgres_dsn(postgres_dsn), future=True)
     flags_frame = _prepare_agent2_flags_frame(pd.DataFrame(risk_flags))
     scores_frame = _prepare_agent2_scores_frame(pd.DataFrame(risk_scores))
+    supplier_frame = _prepare_agent2_supplier_summary_frame(pd.DataFrame(supplier_risk_summary))
     outputs_frame = _prepare_agent2_outputs_frame(pd.DataFrame(outputs))
     with engine.begin() as connection:
         flags_frame.to_sql(
@@ -93,6 +96,14 @@ def write_agent2_risk_tables_to_postgres(
             if_exists=if_exists,
             index=False,
             dtype=_agent2_scores_dtypes(),
+        )
+        supplier_frame.to_sql(
+            AGENT2_SUPPLIER_RISK_TABLE,
+            connection,
+            schema=schema,
+            if_exists=if_exists,
+            index=False,
+            dtype=_agent2_supplier_dtypes(),
         )
         outputs_frame.to_sql(
             AGENT2_OUTPUTS_TABLE,
@@ -115,6 +126,10 @@ def write_agent2_risk_tables_to_postgres(
             {
                 "name": AGENT2_RISK_SCORES_TABLE,
                 "rows": int(len(scores_frame)),
+            },
+            {
+                "name": AGENT2_SUPPLIER_RISK_TABLE,
+                "rows": int(len(supplier_frame)),
             },
             {
                 "name": AGENT2_OUTPUTS_TABLE,
@@ -172,6 +187,35 @@ def _prepare_agent2_scores_frame(frame: Any) -> Any:
     return prepared
 
 
+def _prepare_agent2_supplier_summary_frame(frame: Any) -> Any:
+    import pandas as pd
+
+    prepared = frame.copy()
+    for column in (
+        "supplier_key",
+        "supplier_name",
+        "supplier_id",
+        "score_version",
+        "source_snapshot_id",
+        "risk_level",
+        "red_flags_recurrentes",
+    ):
+        if column in prepared.columns:
+            prepared[column] = prepared[column].astype("string")
+    for column in (
+        "total_contracts",
+        "activated_contracts",
+        "organismos_distintos",
+        "procedimientos_menores",
+    ):
+        if column in prepared.columns:
+            prepared[column] = pd.to_numeric(prepared[column], errors="coerce")
+    for column in ("total_importe_adjudicado", "score_riesgo_agregado", "mean_risk_score", "max_risk_score"):
+        if column in prepared.columns:
+            prepared[column] = pd.to_numeric(prepared[column], errors="coerce")
+    return prepared
+
+
 def _prepare_agent2_outputs_frame(frame: Any) -> Any:
     prepared = frame.copy()
     for column in prepared.columns:
@@ -225,6 +269,27 @@ def _agent2_scores_dtypes() -> dict[str, Any]:
         "flags_count": Integer(),
         "top_flags": Text(),
         "evaluation_status": String(),
+        "score_version": String(),
+        "source_snapshot_id": String(),
+    }
+
+
+def _agent2_supplier_dtypes() -> dict[str, Any]:
+    return {
+        "supplier_key": String(),
+        "supplier_id": String(),
+        "supplier_name": String(),
+        "total_contracts": Integer(),
+        "activated_contracts": Integer(),
+        "total_importe_adjudicado": Float(),
+        "organismos_distintos": Integer(),
+        "procedimientos_menores": Integer(),
+        "procedimientos_menores_ratio": Float(),
+        "mean_risk_score": Float(),
+        "max_risk_score": Float(),
+        "score_riesgo_agregado": Float(),
+        "risk_level": String(),
+        "red_flags_recurrentes": Text(),
         "score_version": String(),
         "source_snapshot_id": String(),
     }

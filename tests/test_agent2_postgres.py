@@ -12,6 +12,7 @@ from procurewatch.agent2 import run_agent2
 from procurewatch.db import AGENT2_OUTPUTS_TABLE
 from procurewatch.db import AGENT2_RISK_FLAGS_TABLE
 from procurewatch.db import AGENT2_RISK_SCORES_TABLE
+from procurewatch.db import AGENT2_SUPPLIER_RISK_TABLE
 
 
 class Agent2PostgresTests(unittest.TestCase):
@@ -47,6 +48,7 @@ class Agent2PostgresTests(unittest.TestCase):
             self.assertIsNotNone(report["postgres_write"])
             self.assertTrue((root / "processed" / "agent2_risk_flags.parquet").exists())
             self.assertTrue((root / "processed" / "agent2_risk_scores.parquet").exists())
+            self.assertTrue((root / "processed" / "agent2_supplier_risk_summary.parquet").exists())
 
             engine = create_engine(f"sqlite:///{sqlite_path}", future=True)
             try:
@@ -56,6 +58,9 @@ class Agent2PostgresTests(unittest.TestCase):
                     ).scalar_one()
                     scores_count = connection.execute(
                         text(f"SELECT COUNT(*) FROM {AGENT2_RISK_SCORES_TABLE}")
+                    ).scalar_one()
+                    supplier_count = connection.execute(
+                        text(f"SELECT COUNT(*) FROM {AGENT2_SUPPLIER_RISK_TABLE}")
                     ).scalar_one()
                     outputs_count = connection.execute(
                         text(f"SELECT COUNT(*) FROM {AGENT2_OUTPUTS_TABLE}")
@@ -71,7 +76,8 @@ class Agent2PostgresTests(unittest.TestCase):
 
             self.assertEqual(flags_count, report["activated_flags"])
             self.assertEqual(scores_count, report["rows"])
-            self.assertEqual(outputs_count, 3)
+            self.assertEqual(supplier_count, report["supplier_rows"])
+            self.assertEqual(outputs_count, 4)
             self.assertEqual(json.loads(payload)["report_path"], report["report_path"])
 
 
