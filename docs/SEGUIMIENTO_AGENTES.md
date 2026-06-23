@@ -59,6 +59,15 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 - La validación automatizada usa SQLite en tests para comprobar que el writer funciona sin
   depender de un servidor PostgreSQL levantado.
 
+### Diferencia operativa entre los dos comandos
+
+| Comando | Uso | Configuración | Persistencia |
+|---|---|---|---|
+| `run-agent2` | Ejecución explícita y configurable | Recibe `--input`, `--output-dir`, `--deviation-threshold`, `--postgres-dsn` y `--write-postgres` | Solo si se activa con `--write-postgres` |
+| `run-agent2-mvp` | Ejecución rápida para demo o borrador | Usa por defecto `data/processed/agent2_contracts_canonical.parquet` y `data/processed` | Automática si existe `PROCUREWATCH_POSTGRES_DSN` o se pasa `--postgres-dsn` |
+
+La lógica analítica es la misma en ambos casos; cambia el nivel de comodidad de la interfaz.
+
 ## Avance Agent2 21/06/2026
 
 - RF-05 detecta adjudicaciones cuyo importe supera en más de un 10 % el importe estimado.
