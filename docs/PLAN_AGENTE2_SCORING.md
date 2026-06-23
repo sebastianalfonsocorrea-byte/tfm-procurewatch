@@ -39,7 +39,7 @@ Entregables minimos:
 - Plan de derivacion a Neo4j para relaciones.
 - Resumen agregado por adjudicatario para compatibilizar el score por contrato con el score
   por entidad que pide la propuesta.
-- Comparativa MVP contra Isolation Forest y Positive-Unlabeled Learning.
+- Comparativa del agente contra Isolation Forest y Positive-Unlabeled Learning.
 
 ## Red flags v1
 
@@ -117,7 +117,7 @@ Salida agregada adicional para el MVP:
 - `risk_level`
 - `red_flags_recurrentes`
 
-Salida comparativa adicional:
+Salida comparativa del agente:
 
 - `iforest_anomaly_score`
 - `iforest_anomaly_flag`

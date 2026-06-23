@@ -191,7 +191,7 @@ procurewatch run-agent2-mvp
 
 Ese comando lee `data/processed/agent2_contracts_canonical.parquet` y genera las señales
 deterministas del MVP de red flags y scoring.
-También deja la comparación adicional en:
+También deja la comparación adicional del Agente 2 en:
 
 - `agent2_supplier_risk_summary.parquet`
 - `agent2_model_comparison.parquet`

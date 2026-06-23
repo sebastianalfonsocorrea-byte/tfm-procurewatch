@@ -62,7 +62,7 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   capa estructurada para trazabilidad y consulta posterior.
 - El scoring ya no queda solo por contrato: también se agrega un resumen por adjudicatario para
   acercarse al requisito de score por entidad de la propuesta.
-- El MVP añade además una comparativa paralela contra Isolation Forest y una aproximación
+- El Agente 2 añade además una comparativa paralela contra Isolation Forest y una aproximación
   Positive-Unlabeled para contrastar el enfoque de reglas con modelos no supervisados y semi-
   supervisados.
 - La validación automatizada usa SQLite en tests para comprobar que el writer funciona sin
