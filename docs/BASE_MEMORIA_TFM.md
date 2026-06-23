@@ -30,7 +30,8 @@ está en roadmap y qué solo puede presentarse como evaluación proxy.
 - Batch:
   - orquesta Agent1 y Agent2 en ejecuciones semanales o mensuales;
   - guarda snapshots de entrada y salida para trazabilidad;
-  - permite declarar un lote como base reproducible para el TFM.
+  - genera un `freeze_manifest.json` en ejecuciones mensuales o forzadas como base reproducible
+    para el TFM sin multiplicar los parquets.
 
 ## Qué debe presentarse como parcial o limitado
 

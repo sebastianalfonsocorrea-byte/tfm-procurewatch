@@ -30,6 +30,9 @@ Nota de lectura:
 - `run-batch` ya orquesta Agent1 y, cuando el canonico cambia o el lote es mensual/forzado,
   vuelve a ejecutar Agent2 sobre `agent2_contracts_canonical.parquet` y guarda sus reportes de
   salida como trazabilidad del lote.
+- En lote mensual o forzado se genera además un `freeze_manifest.json` con hashes y rutas de las
+  salidas clave para dejar el resultado del TFM congelado y reproducible sin duplicar parquets
+  pesados.
 
 ## Avance Agent2 23/06/2026
 

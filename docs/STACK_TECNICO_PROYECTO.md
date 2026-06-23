@@ -166,7 +166,7 @@ viven bajo `data/`.
   - `run_batch` para operación recurrente semanal/mensual.
   - Snapshot de fuentes por hash (`sha256`) para detectar cambios.
   - Reejecución de Agent2 cuando cambia el canónico o cuando el lote es mensual/forzado.
-  - Snapshot de salidas para trazabilidad del lote y futura congelación reproducible.
+  - `freeze_manifest.json` para congelar el resultado mensual/final sin duplicar artefactos pesados.
   - Estado persistido:
     - `data/processed/run_batch_state.json`
     - `data/manifest/batches/<run_mode>/<batch_id>/manifest.json`

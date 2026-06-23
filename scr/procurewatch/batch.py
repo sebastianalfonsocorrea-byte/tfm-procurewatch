@@ -158,6 +158,32 @@ def run_batch(
         )
         agent2_output_snapshots = _agent2_output_snapshots(run_agent2_report)
 
+    output_snapshots = agent1_output_snapshots + agent2_output_snapshots
+    freeze_manifest: dict[str, Any] | None = None
+    freeze_manifest_path: Path | None = None
+    if run_mode == "monthly" or force:
+        freeze_manifest = {
+            "freeze_id": batch_id,
+            "freeze_mode": "final" if run_mode == "monthly" else "forced",
+            "batch_id": batch_id,
+            "run_mode": run_mode,
+            "created_at_utc": datetime.now(UTC).isoformat(),
+            "year": year,
+            "cpv_prefix": cpv_prefix,
+            "source_snapshots": core_snapshots + (datos_gob_snapshots if include_datos_gob else []),
+            "output_snapshots": output_snapshots,
+            "agent1_run_report_path": run_agent1_report.get("agent1_run_report_path")
+            if run_agent1_report
+            else None,
+            "agent2_run_report_path": run_agent2_report.get("report_path") if run_agent2_report else None,
+        }
+        freeze_manifest_path = batch_manifest_dir / run_mode / batch_id / "freeze_manifest.json"
+        freeze_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        freeze_manifest_path.write_text(
+            json.dumps(freeze_manifest, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
     batch_manifest = {
         "batch_id": batch_id,
         "run_mode": run_mode,
@@ -180,12 +206,16 @@ def run_batch(
         "status": "executed" if (run_agent1_now or run_agent2_now) else "skipped",
         "agent1_report": run_agent1_report,
         "agent2_report": run_agent2_report,
-        "output_snapshots": agent1_output_snapshots + agent2_output_snapshots,
+        "output_snapshots": output_snapshots,
+        "freeze_status": "frozen" if freeze_manifest is not None else "not_frozen",
+        "freeze_manifest": freeze_manifest,
     }
     if run_agent1_report is not None:
         batch_manifest["agent1_run_report_path"] = run_agent1_report.get("agent1_run_report_path")
     if run_agent2_report is not None:
         batch_manifest["agent2_run_report_path"] = run_agent2_report.get("report_path")
+    if freeze_manifest_path is not None:
+        batch_manifest["freeze_manifest_path"] = str(freeze_manifest_path)
 
     completed_at = datetime.now(UTC)
     batch_manifest["completed_at_utc"] = completed_at.isoformat()
