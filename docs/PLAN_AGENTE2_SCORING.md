@@ -59,6 +59,7 @@ Para el borrador del TFM, el MVP deja operativas estas señales deterministas:
 - RF-03: recurrencia comprador-proveedor en el canonico.
 - RF-04: concentracion de importe en la pareja comprador-proveedor.
 - RF-05: desviacion entre importe estimado y adjudicado.
+- RF-06: patron temporal anomalo entre publicacion y adjudicacion.
 
 ### Primera implementación: RF-05
 

@@ -26,7 +26,8 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   - RF-02: procedimiento sensible o de urgencia;
   - RF-03: recurrencia comprador-proveedor;
   - RF-04: concentración de importe en la pareja comprador-proveedor;
-  - RF-05: desviación entre importe estimado y adjudicado.
+  - RF-05: desviación entre importe estimado y adjudicado;
+  - RF-06: patrón temporal anómalo entre publicación y adjudicación.
 - El score pasa a escalar de 0 a 100 y conserva evidencia por contrato.
 - `run-agent2-mvp` lee `data/processed/agent2_contracts_canonical.parquet` y genera las salidas
   analíticas del MVP sin pedir parámetros extra.
@@ -34,14 +35,17 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   documentos.
 - Ejecución real sobre el canonico Agent1 actual:
   - 17.927 contratos analizados;
-  - 12.536 contratos con alguna señal;
-  - 17.530 señales activadas en total;
+  - 17.601 contratos con alguna señal;
+  - 31.278 señales activadas en total;
   - reparto por red flag:
-    - RF-01: 3.420;
-    - RF-02: 232;
+    - RF-01: 17.202;
+    - RF-02: 198;
     - RF-03: 5.321;
     - RF-04: 568;
     - RF-05: 7.989.
+- En el canonico actual RF-06 no se activa, porque no hay suficientes patrones temporales
+  anómalos detectables con los datos disponibles; el rule-set sigue implementado para futuros
+  lotes o enriquecimientos.
 
 ## Avance Agent2 21/06/2026
 
