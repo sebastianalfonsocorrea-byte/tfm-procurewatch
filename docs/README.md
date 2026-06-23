@@ -43,6 +43,7 @@ Planes, seguimiento y hojas de ruta de Agent2, Agent3 y Agent4.
 - [Plan Agent4 RAG LangGraph](04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md)
 - [Hoja de ruta Agent3 grafos](04_agentes/HOJA_RUTA_AGENT3_GRAFOS.md)
 - [Hoja de ruta Agent4 RAG](04_agentes/HOJA_RUTA_AGENT4_RAG.md)
+- [Hoja de ruta sebas cierre TFM](04_agentes/HOJA_RUTA_SEBAS_CIERRE_TFM.md)
 - [Bitacora Agent4 RAG](04_agentes/BITACORA_AGENT4_RAG.md)
 - [Cierre integrado Agent3-Agent4 2026-06-23](04_agentes/CIERRE_AGENT3_AGENT4_2026_06_23.md)
 

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import networkx as nx
 import plotly.express as px
@@ -28,12 +30,23 @@ from procurewatch.agent3.demo import (  # noqa: E402
 
 
 def main() -> None:
-    st.set_page_config(page_title="Agent3 Graph Demo", layout="wide")
-    st.title("Agent3 Graph Demo")
+    st.set_page_config(page_title="ProcureWatch MVP", layout="wide")
+    st.title("ProcureWatch MVP")
 
     default_output_dir = os.getenv("PROCUREWATCH_AGENT3_DEMO_DIR", "data/processed")
     output_dir_text = st.sidebar.text_input("Output dir", value=default_output_dir)
     output_dir = Path(output_dir_text)
+    default_case_context_path = Path(
+        os.getenv(
+            "PROCUREWATCH_AGENT4_CASE_CONTEXT",
+            str(_default_case_context_path(output_dir)),
+        )
+    )
+    case_context_text = st.sidebar.text_input(
+        "Agent4 case context",
+        value=str(default_case_context_path),
+    )
+    case_context = _load_case_context(Path(case_context_text)) if case_context_text else {}
     missing = missing_demo_artifacts(output_dir)
     if missing:
         st.error("Faltan artefactos Agent3.")
@@ -57,8 +70,8 @@ def main() -> None:
     )
     _render_kpis(kpis)
 
-    summary_tab, network_tab, cases_tab, artifacts_tab = st.tabs(
-        ["Resumen", "Red", "Casos", "Artefactos"]
+    summary_tab, network_tab, cases_tab, case_tab, artifacts_tab = st.tabs(
+        ["Resumen", "Red", "Casos", "Ficha", "Artefactos"]
     )
     with summary_tab:
         _render_summary(data)
@@ -66,6 +79,8 @@ def main() -> None:
         _render_network(data)
     with cases_tab:
         _render_cases(data)
+    with case_tab:
+        _render_case_context(case_context)
     with artifacts_tab:
         _render_artifacts(data)
 
@@ -186,6 +201,62 @@ def _render_cases(data) -> None:
             st.write(item["interpretation"])
 
 
+def _render_case_context(payload: dict[str, Any]) -> None:
+    st.subheader("Ficha explicable")
+    if not payload:
+        st.warning("No hay ficha Agent4 cargada.")
+        return
+
+    case_context = _dict_value(payload.get("case_context"))
+    agent2_score = _dict_value(payload.get("agent2_score")) or _dict_value(
+        case_context.get("agent2_score")
+    )
+    agent3_metrics = _dict_value(case_context.get("agent3_metrics_used"))
+    warnings = _list_value(payload.get("warnings")) or _list_value(case_context.get("warnings"))
+    citations = _list_value(payload.get("citations")) or _list_value(case_context.get("citations"))
+    evidences = _list_value(case_context.get("evidences")) or _list_value(
+        payload.get("retrieved_context")
+    )
+
+    contract_key = payload.get("contract_key_canon") or case_context.get("contract_key_canon")
+    answer = payload.get("answer") or case_context.get("summary") or "Sin resumen disponible."
+
+    columns = st.columns(4)
+    columns[0].metric("Risk score", _format_metric(agent2_score.get("risk_score")))
+    columns[1].metric("Red flags", len(_list_value(agent2_score.get("red_flags"))))
+    columns[2].metric("Evidencias", len(evidences))
+    columns[3].metric("Citas", len(citations))
+
+    st.caption(str(contract_key or "Contrato no informado"))
+    st.write(str(answer))
+
+    if warnings:
+        st.warning("\n".join(f"- {item}" for item in warnings))
+
+    left, right = st.columns(2)
+    with left:
+        st.subheader("Agent2")
+        st.json(agent2_score)
+    with right:
+        st.subheader("Agent3")
+        if agent3_metrics:
+            st.json(agent3_metrics)
+        else:
+            st.info("Sin metricas Agent3 para este caso.")
+
+    st.subheader("Evidencias")
+    if evidences:
+        st.dataframe(evidences, use_container_width=True, hide_index=True)
+    else:
+        st.info("Sin evidencias documentales recuperadas.")
+
+    st.subheader("Citas")
+    if citations:
+        st.dataframe(citations, use_container_width=True, hide_index=True)
+    else:
+        st.info("Sin citas documentales.")
+
+
 def _render_artifacts(data) -> None:
     st.subheader("Artefactos")
     outputs = data.report.get("outputs", {})
@@ -264,6 +335,44 @@ def _network_figure(nodes, edges) -> go.Figure:
         plot_bgcolor="white",
     )
     return figure
+
+
+def _default_case_context_path(output_dir: Path) -> Path:
+    candidates = [
+        output_dir / "agent4_case_context_integrated_demo.json",
+        output_dir / "agent4_case_context.json",
+        Path("data/processed/agent4_case_context.json"),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def _load_case_context(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        st.warning(f"No se pudo leer la ficha Agent4: {path}")
+        return {}
+
+
+def _dict_value(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _list_value(value: object) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _format_metric(value: object) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, float):
+        return f"{value:.2f}"
+    return str(value)
 
 
 if __name__ == "__main__":
