@@ -32,8 +32,6 @@ Ingesta, normalizacion, batch y resultados de Agent1.
 - [Plan Agent1 pipeline](03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md)
 - [Plan ingesta batch Agent1](03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md)
 - [Seguimiento Agent1](03_agent1_ingesta/SEGUIMIENTO_AGENT1.md)
-- [Resultado pipeline BOE](03_agent1_ingesta/RESULTADO_PIPELINE_BOE.md)
-- [Resultado descarga PLACE 2024](03_agent1_ingesta/RESULTADO_DESCARGA_PLACE_2024.md)
 
 ## 04_agentes
 
@@ -43,12 +41,20 @@ Planes, seguimiento y hojas de ruta de Agent2, Agent3 y Agent4.
 - [Plan Agent2 scoring](04_agentes/PLAN_AGENTE2_SCORING.md)
 - [Plan Agent3 grafos](04_agentes/PLAN_AGENTE3_GRAFOS.md)
 - [Plan Agent4 RAG LangGraph](04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md)
-- [Hoja de ruta diaria Agent3 2026-06-22](04_agentes/HOJA_RUTA_2026_06_22_AGENT3.md)
 - [Hoja de ruta Agent3 grafos](04_agentes/HOJA_RUTA_AGENT3_GRAFOS.md)
-- [Resultados demo Agent3](04_agentes/RESULTADOS_AGENT3_DEMO.md)
 - [Hoja de ruta Agent4 RAG](04_agentes/HOJA_RUTA_AGENT4_RAG.md)
 - [Bitacora Agent4 RAG](04_agentes/BITACORA_AGENT4_RAG.md)
 - [Cierre integrado Agent3-Agent4 2026-06-23](04_agentes/CIERRE_AGENT3_AGENT4_2026_06_23.md)
+
+## Legacy
+
+Documentacion historica preservada fuera del flujo operativo actual.
+
+- [Legacy README](../legacy/README.md)
+- [Resultado pipeline BOE](../legacy/docs/03_agent1_ingesta/RESULTADO_PIPELINE_BOE.md)
+- [Resultado descarga PLACE 2024](../legacy/docs/03_agent1_ingesta/RESULTADO_DESCARGA_PLACE_2024.md)
+- [Hoja de ruta diaria Agent3 2026-06-22](../legacy/docs/04_agentes/HOJA_RUTA_2026_06_22_AGENT3.md)
+- [Resultados demo Agent3](../legacy/docs/04_agentes/RESULTADOS_AGENT3_DEMO.md)
 
 ## 05_referencias
 

@@ -93,6 +93,7 @@ include = ["procurewatch*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["scr"]
+addopts = ["-p", "no:cacheprovider"]
 
 [tool.ruff]
 line-length = 100

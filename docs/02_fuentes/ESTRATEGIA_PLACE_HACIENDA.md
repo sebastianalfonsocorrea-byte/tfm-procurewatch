@@ -111,7 +111,7 @@ Si el tamano es razonable y el parser funciona, se amplia historico.
 
 Se descargo la muestra 2024 de perfiles y agregacion, mas documentacion tecnica y organos de
 contratacion. El resultado esta documentado en
-[Resultado descarga PLACE 2024](../03_agent1_ingesta/RESULTADO_DESCARGA_PLACE_2024.md).
+[Resultado descarga PLACE 2024](../../legacy/docs/03_agent1_ingesta/RESULTADO_DESCARGA_PLACE_2024.md).
 
 La conclusion practica es que PLACE aporta mucho detalle, pero tambien mucho volumen: el ZIP de
 perfiles 2024 pesa 1,79 GB comprimido y contiene unos 19 GB descomprimidos. Por tanto, la
