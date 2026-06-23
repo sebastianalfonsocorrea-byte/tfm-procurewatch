@@ -18,6 +18,9 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 - `scr/procurewatch/data_sources/` guarda conectores y parsers de fuentes externas.
 - `scr/procurewatch/agentN/` guarda la logica propia de cada agente.
 - Ningun agente debe afirmar fraude; todos priorizan revision humana con evidencia trazable.
+- El MVP del TFM es el flujo completo de extremo a extremo; los comandos `run-mvp` y
+  `run-agent2-mvp` solo son atajos operativos para ejecutar piezas del mismo flujo con menos
+  friccion durante el desarrollo.
 
 ## Avance Agent2 23/06/2026
 
