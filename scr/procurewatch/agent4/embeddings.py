@@ -8,7 +8,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
-DEFAULT_OLLAMA_EMBEDDING_MODEL = "qwen3:8b"
+DEFAULT_OLLAMA_EMBEDDING_MODEL = "bge-m3"
 DETERMINISTIC_TEST_EMBEDDING_MODEL = "deterministic-test-embedding"
 
 

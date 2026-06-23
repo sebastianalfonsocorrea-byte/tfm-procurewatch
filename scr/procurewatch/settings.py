@@ -21,7 +21,7 @@ class Settings:
     qdrant_url: str | None = None
     ollama_base_url: str | None = None
     ollama_model: str = "qwen3:8b"
-    ollama_embedding_model: str = "qwen3:8b"
+    ollama_embedding_model: str = "bge-m3"
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -49,7 +49,7 @@ class Settings:
             ollama_model=ollama_model,
             ollama_embedding_model=os.getenv(
                 "PROCUREWATCH_OLLAMA_EMBEDDING_MODEL",
-                ollama_model,
+                "bge-m3",
             ),
         )
 

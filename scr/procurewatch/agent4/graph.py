@@ -4,7 +4,11 @@ from collections.abc import Callable
 from pathlib import Path
 from uuid import uuid4
 
+from procurewatch.settings import Settings
+
 from .corpus import DEFAULT_SYNTHETIC_CORPUS_INDEX
+from .embeddings import DeterministicEmbeddingClient, OllamaEmbeddingClient
+from .generation import OllamaGenerationClient
 from .nodes import (
     chunk_documents_node,
     discover_documents_node,
@@ -15,6 +19,7 @@ from .nodes import (
     persist_agent_output_node,
     retrieve_context_node,
 )
+from .qdrant_store import DEFAULT_QDRANT_COLLECTION, DEFAULT_QDRANT_URL, QdrantVectorStore
 from .state import Agent4State
 
 _NODE_SEQUENCE: tuple[tuple[str, Callable[[Agent4State], Agent4State]], ...] = (
@@ -58,10 +63,21 @@ def run_agent4_case_flow(
     question: str,
     corpus_index: Path = DEFAULT_SYNTHETIC_CORPUS_INDEX,
     output_path: Path | None = None,
+    contract_context: dict[str, object] | None = None,
+    agent2_score: dict[str, object] | None = None,
+    agent3_metrics: dict[str, object] | None = None,
+    warnings: list[str] | None = None,
+    use_services: bool = False,
+    qdrant_url: str | None = None,
+    collection_name: str = DEFAULT_QDRANT_COLLECTION,
+    ollama_base_url: str | None = None,
+    embedding_model: str | None = None,
+    llm_model: str | None = None,
     chunk_size: int = 900,
     overlap: int = 120,
     retrieval_limit: int = 5,
 ) -> Agent4State:
+    settings = Settings.from_env()
     state: Agent4State = {
         "run_id": str(uuid4()),
         "contract_key_canon": contract_key_canon,
@@ -71,6 +87,31 @@ def run_agent4_case_flow(
         "overlap": overlap,
         "retrieval_limit": retrieval_limit,
     }
+    if contract_context is not None:
+        state["contract_context"] = contract_context
+    if agent2_score is not None:
+        state["agent2_score"] = agent2_score
+    if agent3_metrics is not None:
+        state["agent3_metrics"] = agent3_metrics
+    if warnings:
+        state["warnings"] = list(warnings)
+    if use_services:
+        resolved_ollama_base_url = (
+            ollama_base_url or settings.ollama_base_url or "http://localhost:11434"
+        )
+        state["embedding_client"] = OllamaEmbeddingClient(
+            base_url=resolved_ollama_base_url,
+            model=embedding_model or settings.ollama_embedding_model,
+        )
+        state["embedding_fallback_client"] = DeterministicEmbeddingClient()
+        state["vector_store"] = QdrantVectorStore(
+            url=qdrant_url or settings.qdrant_url or DEFAULT_QDRANT_URL,
+            collection_name=collection_name,
+        )
+        state["generation_client"] = OllamaGenerationClient(
+            base_url=resolved_ollama_base_url,
+            model=llm_model or settings.ollama_model,
+        )
     if output_path is not None:
         state["output_path"] = output_path
     return run_agent4_graph(state)

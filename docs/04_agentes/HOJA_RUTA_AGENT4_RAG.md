@@ -196,7 +196,25 @@ Tecnologias:
 
 ## Hito 5 - Generacion de ficha explicable
 
-TODO:
+Estado:
+
+- Ficha JSON trazable v1 implementada en `case_context`.
+- La salida mantiene compatibilidad con `answer` y `citations`.
+- La generacion queda en modo determinista para tests y ejecucion offline.
+- La ruta real con servicios queda disponible mediante:
+
+```powershell
+procurewatch agent4-run-flow --contract-key PW-2024-0001 --question "evidencia documental" --use-services
+```
+
+- Qdrant responde en Docker en `http://localhost:6333`; Agent4 valida `/healthz` y Docker usa
+  un healthcheck TCP porque la imagen no trae `curl`.
+- Ollama responde en local con `qwen3:8b` como modelo generativo.
+- `bge-m3` queda como modelo de embeddings local via Ollama para indexar/consultar Qdrant.
+- Limitacion observada: `qwen3:8b` no implementa `/api/embed`; se mantiene solo como modelo
+  generativo.
+
+Implementado:
 
 - Crear prompt controlado:
   - responder solo con evidencia recuperada;
@@ -210,18 +228,25 @@ TODO:
   - advertencias;
   - campos usados del contrato;
   - metricas Agent3 usadas si existen.
-- Integrar LLM local:
-  - Qwen3 via Ollama como objetivo;
-  - fallback sin LLM para tests.
 - Tests:
   - sin evidencia;
   - con evidencia;
   - formato de citas;
   - advertencia obligatoria.
+- Integracion local con servicios:
+  - Qdrant real via Docker;
+  - Ollama/Qwen3 para generar resumen;
+  - fallback determinista de embeddings si el modelo principal no soporta `/api/embed`.
+
+Nota de cierre:
+
+- La coleccion `procurement_documents` se valida con `bge-m3` y dimension 1024 tras recrear la
+  version que habia quedado con embeddings deterministas de 16 dimensiones.
 
 Criterio de cierre:
 
-- Agent4 genera una ficha textual/JSON trazable para un contrato.
+- Agent4 genera una ficha textual/JSON trazable para un contrato con evidencia recuperada y
+  resumen local via Ollama.
 
 Tecnologias:
 
@@ -229,17 +254,32 @@ Tecnologias:
 
 ## Hito 6 - Integracion con Agent2 y Agent3
 
-TODO:
+Estado:
+
+- Integracion local implementada con JSON como salida primaria.
+- Comando disponible:
+
+```powershell
+procurewatch agent4-case-context --contract-key PW-2024-0001 --canonical-path data/processed_sample/agent2_contracts_canonical.parquet
+```
+
+- El canonico Agent2 real sigue siendo el origen por defecto:
+  - `data/processed/agent2_contracts_canonical.parquet`
+- Las metricas Agent3 se leen si existe:
+  - `data/processed/agent3_agent2_features.parquet`
+- Si Agent3 no existe para el contrato, Agent4 continua con warning.
+
+Implementado:
 
 - Agent4 debe recibir:
   - contrato canonico;
-  - flags y score de Agent2;
-  - metricas de Agent3;
+  - flags y score de Agent2 calculados en memoria con reglas actuales;
+  - metricas de Agent3 si existen;
   - chunks recuperados desde Qdrant.
-- Crear comando o funcion:
+- Crear comando y funcion:
   - `procurewatch agent4-case-context --contract-key ...`
 - Persistir salida:
-  - JSON local primero;
+  - JSON local primero, implementado;
   - PostgreSQL `agent_outputs` despues.
 - Crear caso demo:
   - contrato con metricas Agent3;
@@ -248,7 +288,8 @@ TODO:
 
 Criterio de cierre:
 
-- Una ficha combina dato estructurado, grafo y evidencia documental.
+- Una ficha combina dato estructurado, score Agent2, grafo Agent3 si existe y evidencia
+  documental.
 
 Tecnologias:
 
@@ -256,13 +297,29 @@ Tecnologias:
 
 ## Hito 7 - Evaluacion y cierre
 
-TODO:
+Estado:
+
+- Evaluacion local reproducible implementada.
+- Comando disponible:
+
+```powershell
+procurewatch agent4-evaluate
+```
+
+- Eval set sintetico minimo:
+  - `data/synthetic/agent4_corpus/agent4_eval_set.json`
+- Reporte local:
+  - `data/processed/agent4_evaluation_report.json`
+
+Implementado:
 
 - Evaluar retrieval:
-  - precision manual de top-k;
+  - precision@k aproximada por documentos esperados;
+  - recall de documentos esperados;
   - cobertura de citas;
-  - porcentaje de respuestas con evidencia.
-- Evaluar RAG con RAGAS cuando haya corpus suficiente:
+  - porcentaje de respuestas con evidencia;
+  - cumplimiento de expectativa por caso.
+- Evaluar RAG con RAGAS cuando haya corpus suficiente, documentado como futuro:
   - faithfulness;
   - answer relevancy;
   - context recall.
@@ -274,11 +331,43 @@ TODO:
 
 Criterio de cierre:
 
-- Agent4 queda defendible como PoC documental/RAG trazable.
+- Agent4 queda defendible como PoC documental/RAG trazable con metricas locales, reporte JSON y
+  limitaciones explicitas.
 
 Tecnologias:
 
-- RAGAS, evaluacion manual, documentacion tecnica.
+- Evaluacion local JSON, RAGAS futuro, documentacion tecnica.
+
+## Cierre operativo 23/06/2026
+
+Estado:
+
+- Agent4 queda cerrado como PoC documental/RAG trazable.
+- Se genera demo integrada con Agent3 en:
+  - [Cierre integrado Agent3-Agent4 2026-06-23](CIERRE_AGENT3_AGENT4_2026_06_23.md)
+- Se endurece Qdrant para validar la dimension vectorial de colecciones existentes antes de
+  indexar. Si la coleccion fue creada con otra dimension, Agent4 falla temprano con mensaje
+  accionable en lugar de fallar tarde en upsert o busqueda.
+- La demo integrada offline genera ficha `case_context` para `PW-2024-0001` con:
+  - score Agent2;
+  - metricas Agent3;
+  - 2 evidencias;
+  - 2 citas;
+  - frontera explicita de no declaracion de fraude.
+
+Validacion:
+
+- `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py`
+  - Resultado: 52 passed.
+- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
+  - Resultado: All checks passed.
+
+Siguiente foco:
+
+- Ampliar corpus real o semi-real para evaluar retrieval con mas variabilidad.
+- Preparar dashboard/demo integrada final.
+- Mantener Qdrant/Ollama como servicios opcionales para demo live y los tests como flujo offline
+  reproducible.
 
 ## Orden recomendado de commits
 
@@ -291,3 +380,5 @@ Tecnologias:
 7. `feat(agent4): complete langgraph case flow`
 8. `feat(agent4): generate traceable case context`
 9. `test(agent4): cover rag and evidence paths`
+10. `feat(agent4): integrate agent2 agent3 case context`
+11. `feat(agent4): add local rag evaluation report`

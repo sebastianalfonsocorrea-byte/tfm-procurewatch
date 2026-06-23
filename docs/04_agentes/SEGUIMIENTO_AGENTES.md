@@ -3,14 +3,45 @@
 Este documento es el seguimiento transversal. Los detalles historicos de Agent1 se mantienen en
 [Seguimiento Agent1](../03_agent1_ingesta/SEGUIMIENTO_AGENT1.md).
 
-## Estado actual 31/05/2026
+## Estado actual 23/06/2026
 
 | Agente | Estado | Entrada principal | Salida principal | Siguiente paso |
 |---|---|---|---|---|
 | Agent1 | Operativo | BOE, PLACE, OpenTender raw | `agent2_contracts_canonical.parquet` | Mejorar matching entre fuentes |
-| Agent2 | Scaffold y plan | Canonico Agent1 | red flags y scores | Implementar reglas v1 |
-| Agent3 | Planificado | Canonico Agent1/PostgreSQL | nodos, edges y metricas | Crear generador de grafo |
-| Agent4 | Scaffold y plan | Contratos y documentos | chunks, retrieval y contexto | PoC RAG con evidencia |
+| Agent2 | V1 local implementada | Canonico Agent1 | `agent2_risk_scores.parquet`, `agent2_risk_flags.parquet` | Integrar features Agent3 y PostgreSQL |
+| Agent3 | MVP tecnico cerrado | Canonico Agent1/PostgreSQL | nodos, edges, metricas y features | Demo integrada y dashboard final |
+| Agent4 | PoC RAG trazable cerrada | Contratos y documentos | case context, citas y evaluacion RAG local | Ampliar corpus real/semi-real |
+
+## Corte integrado Agent3-Agent4 23/06/2026
+
+Se genera un cierre demostrable conjunto para Agent3 y Agent4 en:
+
+- [Cierre integrado Agent3-Agent4 2026-06-23](CIERRE_AGENT3_AGENT4_2026_06_23.md)
+- Artefactos locales: `data/processed/agent3_agent4_demo_2026_06_23/`
+
+Resumen de la demo:
+
+- Agent3 se ejecuta sobre un canonico sintetico minimo con 3 contratos.
+- Agent3 genera 11 nodos, 13 aristas, 3 metricas contractuales y 3 filas de features.
+- Agent4 genera ficha para `PW-2024-0001` combinando:
+  - contrato canonico;
+  - score Agent2 `risk_score=0.5`;
+  - red flags `risky_procedure` y `awarded_above_estimate`;
+  - metricas Agent3;
+  - 2 evidencias documentales y 2 citas.
+
+Validacion enfocada:
+
+- `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py`
+  - Resultado: 52 passed.
+- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
+  - Resultado: All checks passed.
+
+Decision de continuidad:
+
+- Agent3 y Agent4 quedan cerrados como MVP/PoC defendibles.
+- El siguiente bloque recomendado es preparar demo integrada/dashboard y ampliar corpus documental
+  real o semi-real para mejorar evaluacion RAG.
 
 ## Reglas comunes
 

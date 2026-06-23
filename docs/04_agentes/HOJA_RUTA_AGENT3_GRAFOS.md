@@ -188,6 +188,32 @@ Tecnologias:
 
 - Streamlit/Plotly o Neo4j Browser para demo tecnica; PyVis/Sigma.js queda como opcion futura.
 
+## Cierre operativo 23/06/2026
+
+Estado:
+
+- Agent3 queda cerrado como MVP tecnico defendible.
+- Se genera demo integrada con Agent4 en:
+  - [Cierre integrado Agent3-Agent4 2026-06-23](CIERRE_AGENT3_AGENT4_2026_06_23.md)
+- La demo integrada usa un canonico sintetico minimo para alinear:
+  - contrato `PW-2024-0001`;
+  - features Agent3;
+  - score Agent2;
+  - evidencias Agent4.
+
+Validacion:
+
+- `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py`
+  - Resultado: 52 passed.
+- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
+  - Resultado: All checks passed.
+
+Siguiente foco:
+
+- Preparar dashboard/demo integrada final.
+- Mantener como limitacion metodologica la calidad de identificadores de comprador, proveedor y
+  `contract_key_canon`.
+
 ## Orden recomendado de commits
 
 1. `docs: add agent3 roadmap`

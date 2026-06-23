@@ -104,6 +104,87 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent4_flow_parser.add_argument("--chunk-size", type=int, default=900)
     agent4_flow_parser.add_argument("--overlap", type=int, default=120)
     agent4_flow_parser.add_argument("--limit", type=int, default=5)
+    agent4_flow_parser.add_argument(
+        "--use-services",
+        action="store_true",
+        help="Usa Qdrant y Ollama configurados en entorno/local para la ficha.",
+    )
+    agent4_flow_parser.add_argument("--qdrant-url", default=None)
+    agent4_flow_parser.add_argument("--collection", default="procurement_documents")
+    agent4_flow_parser.add_argument("--ollama-base-url", default=None)
+    agent4_flow_parser.add_argument("--embedding-model", default=None)
+    agent4_flow_parser.add_argument("--llm-model", default=None)
+    agent4_case_context_parser = subparsers.add_parser(
+        "agent4-case-context",
+        help="Genera ficha integrada Agent4 con contrato canonico, Agent2, Agent3 y RAG.",
+    )
+    agent4_case_context_parser.add_argument("--contract-key", required=True)
+    agent4_case_context_parser.add_argument("--question", default="evidencia documental")
+    agent4_case_context_parser.add_argument(
+        "--canonical-path",
+        type=Path,
+        default=Path("data/processed/agent2_contracts_canonical.parquet"),
+    )
+    agent4_case_context_parser.add_argument(
+        "--agent3-features-path",
+        type=Path,
+        default=Path("data/processed/agent3_agent2_features.parquet"),
+    )
+    agent4_case_context_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    agent4_case_context_parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/processed/agent4_case_context.json"),
+    )
+    agent4_case_context_parser.add_argument("--chunk-size", type=int, default=900)
+    agent4_case_context_parser.add_argument("--overlap", type=int, default=120)
+    agent4_case_context_parser.add_argument("--limit", type=int, default=5)
+    agent4_case_context_parser.add_argument(
+        "--use-services",
+        action="store_true",
+        help="Usa Qdrant y Ollama configurados en entorno/local para la ficha integrada.",
+    )
+    agent4_case_context_parser.add_argument("--qdrant-url", default=None)
+    agent4_case_context_parser.add_argument("--collection", default="procurement_documents")
+    agent4_case_context_parser.add_argument("--ollama-base-url", default=None)
+    agent4_case_context_parser.add_argument("--embedding-model", default=None)
+    agent4_case_context_parser.add_argument("--llm-model", default=None)
+    agent4_evaluate_parser = subparsers.add_parser(
+        "agent4-evaluate",
+        help="Evalua retrieval, citas y trazabilidad de Agent4 sobre un eval set local.",
+    )
+    agent4_evaluate_parser.add_argument(
+        "--eval-set",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_eval_set.json"),
+    )
+    agent4_evaluate_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    agent4_evaluate_parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/processed/agent4_evaluation_report.json"),
+    )
+    agent4_evaluate_parser.add_argument("--chunk-size", type=int, default=900)
+    agent4_evaluate_parser.add_argument("--overlap", type=int, default=120)
+    agent4_evaluate_parser.add_argument("--limit", type=int, default=5)
+    agent4_evaluate_parser.add_argument(
+        "--use-services",
+        action="store_true",
+        help="Evalua usando Qdrant/Ollama configurados; offline por defecto.",
+    )
+    agent4_evaluate_parser.add_argument("--qdrant-url", default=None)
+    agent4_evaluate_parser.add_argument("--collection", default="procurement_documents")
+    agent4_evaluate_parser.add_argument("--ollama-base-url", default=None)
+    agent4_evaluate_parser.add_argument("--embedding-model", default=None)
+    agent4_evaluate_parser.add_argument("--llm-model", default=None)
     sample_parser = subparsers.add_parser(
         "make-agent1-sample",
         help="Genera muestras pequenas de BOE, PLACE y OpenTender para pruebas rapidas.",
@@ -213,6 +294,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
     agent1_parser.add_argument("--force-rebuild", action="store_true")
+    agent2_parser = subparsers.add_parser(
+        "run-agent2",
+        help="Ejecuta scoring determinista v1 del agente 2 sobre el canonico.",
+    )
+    agent2_parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("data/processed/agent2_contracts_canonical.parquet"),
+    )
+    agent2_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    agent2_parser.add_argument("--limit", type=int, default=None)
+    agent2_parser.add_argument("--source-snapshot-id", default=None)
     agent3_parser = subparsers.add_parser(
         "run-agent3",
         help="Genera nodos, aristas y metricas locales del agente 3 desde el canonico.",
@@ -330,6 +423,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             question=args.question,
             corpus_index=args.corpus_index,
             output_path=args.output,
+            use_services=args.use_services,
+            qdrant_url=args.qdrant_url,
+            collection_name=args.collection,
+            ollama_base_url=args.ollama_base_url,
+            embedding_model=args.embedding_model,
+            llm_model=args.llm_model,
             chunk_size=args.chunk_size,
             overlap=args.overlap,
             retrieval_limit=args.limit,
@@ -341,6 +440,77 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Chunks: {len(state.get('chunks', []))}")
         print(f"- Evidencias: {len(state.get('retrieved_context', []))}")
         print(f"- Citas: {len(state.get('citations', []))}")
+        case_context = state.get("case_context", {})
+        generation = case_context.get("generation", {}) if isinstance(case_context, dict) else {}
+        if generation:
+            print(f"- Generacion: {generation.get('mode')}")
+        vector_report = state.get("vector_upsert_report", {})
+        if vector_report:
+            print(f"- Vector store: {vector_report.get('collection_name')}")
+        print(f"- Output: {args.output}")
+        return 0
+    if args.command == "agent4-case-context":
+        from .agent4 import run_agent4_case_context
+
+        state = run_agent4_case_context(
+            contract_key_canon=args.contract_key,
+            question=args.question,
+            canonical_path=args.canonical_path,
+            agent3_features_path=args.agent3_features_path,
+            corpus_index=args.corpus_index,
+            output_path=args.output,
+            use_services=args.use_services,
+            qdrant_url=args.qdrant_url,
+            collection_name=args.collection,
+            ollama_base_url=args.ollama_base_url,
+            embedding_model=args.embedding_model,
+            llm_model=args.llm_model,
+            chunk_size=args.chunk_size,
+            overlap=args.overlap,
+            retrieval_limit=args.limit,
+        )
+        agent2_score = state.get("agent2_score", {})
+        red_flags = agent2_score.get("red_flags", []) if isinstance(agent2_score, dict) else []
+        agent3_metrics = state.get("agent3_metrics", {})
+        print("Ficha integrada Agent4 ejecutada")
+        print(f"- Run ID: {state.get('run_id')}")
+        print(f"- Contrato: {state.get('contract_key_canon')}")
+        if isinstance(agent2_score, dict):
+            print(f"- Agent2 risk_score: {agent2_score.get('risk_score')}")
+        print(f"- Agent2 red flags: {len(red_flags) if isinstance(red_flags, list) else 0}")
+        print(f"- Agent3 metricas: {'si' if agent3_metrics else 'no'}")
+        print(f"- Evidencias: {len(state.get('retrieved_context', []))}")
+        print(f"- Citas: {len(state.get('citations', []))}")
+        print(f"- Warnings: {len(state.get('warnings', []))}")
+        print(f"- Output: {args.output}")
+        return 0
+    if args.command == "agent4-evaluate":
+        from .agent4 import run_agent4_evaluation
+
+        report = run_agent4_evaluation(
+            eval_set_path=args.eval_set,
+            corpus_index=args.corpus_index,
+            output_path=args.output,
+            use_services=args.use_services,
+            qdrant_url=args.qdrant_url,
+            collection_name=args.collection,
+            ollama_base_url=args.ollama_base_url,
+            embedding_model=args.embedding_model,
+            llm_model=args.llm_model,
+            chunk_size=args.chunk_size,
+            overlap=args.overlap,
+            retrieval_limit=args.limit,
+        )
+        summary = report["summary"]
+        print("Evaluacion Agent4 completada")
+        print(f"- Modo: {report['mode']}")
+        print(f"- Casos: {summary['cases_count']}")
+        print(f"- Casos con evidencia: {summary['cases_with_evidence']}")
+        print(f"- Accuracy expectativas: {summary['expectation_accuracy']}")
+        print(f"- Precision@k media: {summary['average_precision_at_k']}")
+        print(f"- Recall documentos esperado: {summary['average_expected_document_recall']}")
+        print(f"- Cobertura citas media: {summary['average_citation_coverage']}")
+        print(f"- Warnings: {summary['warnings_count']}")
         print(f"- Output: {args.output}")
         return 0
     if args.command == "make-agent1-sample":
@@ -478,6 +648,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "run-agent2":
+        from .agent2 import run_agent2
+
+        report = run_agent2(
+            input_path=args.input,
+            output_dir=args.output_dir,
+            limit=args.limit,
+            source_snapshot_id=args.source_snapshot_id,
+        )
+        print("Agente 2 ejecutado")
+        print(f"- Contratos evaluados: {report['input_rows']}")
+        print(f"- Scores: {report['scores_rows']}")
+        print(f"- Flags: {report['flags_rows']}")
+        print(f"- Niveles riesgo: {report['risk_level_counts']}")
+        print(f"- Reporte agente: {report['outputs']['report']}")
         return 0
     if args.command == "run-agent3":
         from .agent3 import run_agent3

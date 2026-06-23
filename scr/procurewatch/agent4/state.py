@@ -23,8 +23,14 @@ class Agent4State(TypedDict, total=False):
     answer: str
     citations: list[str]
     warnings: list[str]
+    case_context: dict[str, object]
+    agent2_score: dict[str, object]
+    agent3_metrics: dict[str, object]
     embedding_client: Any
+    embedding_fallback_client: Any
+    active_embedding_client: Any
     vector_store: Any
+    generation_client: Any
     embedding_metadata: dict[str, object]
     vector_upsert_report: dict[str, object]
     agent_output: dict[str, object]

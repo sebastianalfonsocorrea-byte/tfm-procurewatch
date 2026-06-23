@@ -47,6 +47,8 @@ Planes, seguimiento y hojas de ruta de Agent2, Agent3 y Agent4.
 - [Hoja de ruta Agent3 grafos](04_agentes/HOJA_RUTA_AGENT3_GRAFOS.md)
 - [Resultados demo Agent3](04_agentes/RESULTADOS_AGENT3_DEMO.md)
 - [Hoja de ruta Agent4 RAG](04_agentes/HOJA_RUTA_AGENT4_RAG.md)
+- [Bitacora Agent4 RAG](04_agentes/BITACORA_AGENT4_RAG.md)
+- [Cierre integrado Agent3-Agent4 2026-06-23](04_agentes/CIERRE_AGENT3_AGENT4_2026_06_23.md)
 
 ## 05_referencias
 

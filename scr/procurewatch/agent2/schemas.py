@@ -31,3 +31,24 @@ class Agent2Score:
     risk_score: float
     red_flags: list[str] = field(default_factory=list)
     evidence: dict[str, Any] = field(default_factory=dict)
+    risk_level: str = "low"
+    flags_count: int = 0
+    top_flags: list[str] = field(default_factory=list)
+    score_version: str = ""
+    source_snapshot_id: str = ""
+
+
+@dataclass(frozen=True)
+class Agent2RiskFlag:
+    risk_flag_id: str
+    contract_key_canon: str
+    source: str
+    source_record_id: str
+    flag_code: str
+    flag_name: str
+    severity: str
+    confidence: float
+    evidence_fields: list[str]
+    evidence_text: str
+    rule_version: str
+    created_at_utc: str
