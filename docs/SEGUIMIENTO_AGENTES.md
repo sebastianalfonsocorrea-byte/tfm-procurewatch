@@ -27,6 +27,9 @@ Nota de lectura:
 - El MVP del TFM es el flujo completo de extremo a extremo; los comandos `run-mvp` y
   `run-agent2-mvp` solo son atajos operativos para ejecutar piezas del mismo flujo con menos
   friccion durante el desarrollo.
+- `run-batch` ya orquesta Agent1 y, cuando el canonico cambia o el lote es mensual/forzado,
+  vuelve a ejecutar Agent2 sobre `agent2_contracts_canonical.parquet` y guarda sus reportes de
+  salida como trazabilidad del lote.
 
 ## Avance Agent2 23/06/2026
 

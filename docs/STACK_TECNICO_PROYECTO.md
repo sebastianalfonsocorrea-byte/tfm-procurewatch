@@ -165,6 +165,8 @@ viven bajo `data/`.
 - `scr/procurewatch/batch.py`
   - `run_batch` para operación recurrente semanal/mensual.
   - Snapshot de fuentes por hash (`sha256`) para detectar cambios.
+  - Reejecución de Agent2 cuando cambia el canónico o cuando el lote es mensual/forzado.
+  - Snapshot de salidas para trazabilidad del lote y futura congelación reproducible.
   - Estado persistido:
     - `data/processed/run_batch_state.json`
     - `data/manifest/batches/<run_mode>/<batch_id>/manifest.json`

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .agent1 import run_agent1
+from .agent2 import run_agent2
 
 DEFAULT_BOE_INPUT = Path("data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv")
 DEFAULT_OPEN_TENDER_INPUT = Path("data/raw/opentender/data-es-ocds-json.zip")
@@ -78,9 +79,17 @@ def run_batch(
     )
 
     previous_state = _load_batch_state(batch_state_path)
+    previous_output_snapshot_entries = (
+        previous_state.get("output_snapshots") if previous_state else []
+    )
     previous_snapshots = {
         entry["source_id"]: entry
         for entry in (previous_state.get("source_snapshots") if previous_state else [])
+        if isinstance(entry, dict) and "source_id" in entry
+    }
+    previous_output_snapshots = {
+        entry["source_id"]: entry
+        for entry in (previous_output_snapshot_entries or [])
         if isinstance(entry, dict) and "source_id" in entry
     }
 
@@ -102,6 +111,7 @@ def run_batch(
     run_agent1_now = force or run_mode == "monthly" or source_has_changes
 
     run_agent1_report: dict[str, Any] | None = None
+    agent1_output_snapshots: list[dict[str, Any]] = []
     if run_agent1_now:
         place_inputs: list[Path] = []
         if not place_download:
@@ -123,8 +133,30 @@ def run_batch(
             place_download=place_download,
             place_datasets=requested_place_datasets,
         )
+        agent1_output_snapshots = _agent1_output_snapshots(run_agent1_report)
     else:
         run_agent1_report = None
+
+    canonical_snapshot = next(
+        (snapshot for snapshot in agent1_output_snapshots if snapshot["source_id"] == "agent1::canonical_agent2"),
+        None,
+    )
+    canonical_has_changes = bool(
+        canonical_snapshot
+        and not _same_snapshot(canonical_snapshot, previous_output_snapshots.get("agent1::canonical_agent2"))
+    )
+
+    run_agent2_now = force or run_mode == "monthly" or canonical_has_changes
+
+    run_agent2_report: dict[str, Any] | None = None
+    agent2_output_snapshots: list[dict[str, Any]] = []
+    if run_agent2_now and canonical_snapshot is not None:
+        canonical_path = Path(canonical_snapshot["path"])
+        run_agent2_report = run_agent2(
+            input_path=canonical_path,
+            output_dir=processed_dir,
+        )
+        agent2_output_snapshots = _agent2_output_snapshots(run_agent2_report)
 
     batch_manifest = {
         "batch_id": batch_id,
@@ -144,11 +176,16 @@ def run_batch(
         "changed_sources": sorted(set(changed_sources)),
         "source_has_changes": source_has_changes,
         "agent1_executed": run_agent1_now,
-        "status": "executed" if run_agent1_now else "skipped",
+        "agent2_executed": run_agent2_now,
+        "status": "executed" if (run_agent1_now or run_agent2_now) else "skipped",
         "agent1_report": run_agent1_report,
+        "agent2_report": run_agent2_report,
+        "output_snapshots": agent1_output_snapshots + agent2_output_snapshots,
     }
     if run_agent1_report is not None:
         batch_manifest["agent1_run_report_path"] = run_agent1_report.get("agent1_run_report_path")
+    if run_agent2_report is not None:
+        batch_manifest["agent2_run_report_path"] = run_agent2_report.get("report_path")
 
     completed_at = datetime.now(UTC)
     batch_manifest["completed_at_utc"] = completed_at.isoformat()
@@ -168,6 +205,30 @@ def run_batch(
     )
 
     return batch_manifest
+
+
+def _agent1_output_snapshots(report: dict[str, Any]) -> list[dict[str, Any]]:
+    snapshots: list[dict[str, Any]] = []
+    canonical = report.get("canonical_agent2")
+    if isinstance(canonical, dict) and canonical.get("path"):
+        snapshots.append(_snapshot_file("agent1::canonical_agent2", Path(canonical["path"])))
+    report_path = report.get("agent1_run_report_path")
+    if report_path:
+        snapshots.append(_snapshot_file("agent1::run_report", Path(report_path)))
+    return snapshots
+
+
+def _agent2_output_snapshots(report: dict[str, Any]) -> list[dict[str, Any]]:
+    snapshots: list[dict[str, Any]] = []
+    outputs = report.get("outputs")
+    if isinstance(outputs, dict):
+        for output_name, output_path in outputs.items():
+            if output_path:
+                snapshots.append(_snapshot_file(f"agent2::{output_name}", Path(output_path)))
+    report_path = report.get("report_path")
+    if report_path:
+        snapshots.append(_snapshot_file("agent2::run_report", Path(report_path)))
+    return snapshots
 
 
 def _snapshot_file(

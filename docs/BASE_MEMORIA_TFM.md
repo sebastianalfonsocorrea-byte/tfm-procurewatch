@@ -27,6 +27,10 @@ está en roadmap y qué solo puede presentarse como evaluación proxy.
   - validación de estabilidad;
   - comparación con Isolation Forest y PU learning;
   - evaluación proxy formal de la comparativa.
+- Batch:
+  - orquesta Agent1 y Agent2 en ejecuciones semanales o mensuales;
+  - guarda snapshots de entrada y salida para trazabilidad;
+  - permite declarar un lote como base reproducible para el TFM.
 
 ## Qué debe presentarse como parcial o limitado
 

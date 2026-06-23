@@ -308,6 +308,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     batch_parser.add_argument("--place-datasets", nargs="*", default=None)
     batch_parser.add_argument("--no-datos-gob", action="store_true")
     batch_parser.add_argument(
+        "--opentender-download-url",
+        type=str,
+        default=None,
+        help="URL temporal de OpenTender para la fase de batch.",
+    )
+    batch_parser.add_argument(
         "--boe-input",
         type=Path,
         default=Path("data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv"),
@@ -317,6 +323,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("data/raw/opentender/data-es-ocds-json.zip"),
     )
+    batch_parser.add_argument("--raw-dir", type=Path, default=Path("data/raw"))
+    batch_parser.add_argument("--cleanup-downloads", action="store_true")
 
     args = parser.parse_args(argv)
     if args.command == "doctor":
@@ -580,14 +588,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             include_datos_gob=not args.no_datos_gob,
             boe_input=args.boe_input,
             open_tender_input=args.opentender_input,
+            open_tender_download_url=args.opentender_download_url,
+            raw_dir=args.raw_dir,
+            cleanup_downloads=args.cleanup_downloads,
         )
 
         print(f"run-batch [{result['status']}]")
         print(f"batch_id: {result['batch_id']}")
         print(f"agent1_executed: {result['agent1_executed']}")
+        print(f"agent2_executed: {result['agent2_executed']}")
         print(f"changed_sources: {result['changed_sources']}")
         if result.get("agent1_run_report_path"):
             print(f"agent1_report: {result['agent1_run_report_path']}")
+        if result.get("agent2_run_report_path"):
+            print(f"agent2_report: {result['agent2_run_report_path']}")
         return 0
 
     parser.print_help()
