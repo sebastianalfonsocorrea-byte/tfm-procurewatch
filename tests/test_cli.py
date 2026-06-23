@@ -35,20 +35,44 @@ class CliTests(unittest.TestCase):
         self.assertEqual(kwargs["output_dir"], Path("data/processed"))
 
     def test_run_agent2_mvp_uses_default_canonical(self) -> None:
-        with mock.patch("procurewatch.agent2.run_agent2") as run_agent2_mock:
-            run_agent2_mock.return_value = {
-                "rows": 1,
-                "activated_contract_rows": 1,
-                "activated_flags": 1,
-                "report_path": "agent2_run_report.json",
-            }
-            exit_code = main(["run-agent2-mvp"])
+        with mock.patch("procurewatch.cli.Settings.from_env") as from_env:
+            from_env.return_value = mock.Mock(postgres_dsn=None)
+            with mock.patch("procurewatch.agent2.run_agent2") as run_agent2_mock:
+                run_agent2_mock.return_value = {
+                    "rows": 1,
+                    "activated_contract_rows": 1,
+                    "activated_flags": 1,
+                    "report_path": "agent2_run_report.json",
+                }
+                exit_code = main(["run-agent2-mvp"])
 
         self.assertEqual(exit_code, 0)
         run_agent2_mock.assert_called_once()
         kwargs = run_agent2_mock.call_args.kwargs
         self.assertEqual(kwargs["input_path"], Path("data/processed/agent2_contracts_canonical.parquet"))
         self.assertEqual(kwargs["output_dir"], Path("data/processed"))
+        self.assertIsNone(kwargs["postgres_dsn"])
+        self.assertFalse(kwargs["write_postgres"])
+
+    def test_run_agent2_mvp_uses_env_postgres_dsn(self) -> None:
+        with mock.patch("procurewatch.cli.Settings.from_env") as from_env:
+            from_env.return_value = mock.Mock(postgres_dsn="postgresql://demo")
+            with mock.patch("procurewatch.agent2.run_agent2") as run_agent2_mock:
+                run_agent2_mock.return_value = {
+                    "rows": 1,
+                    "activated_contract_rows": 1,
+                    "activated_flags": 1,
+                    "report_path": "agent2_run_report.json",
+                }
+                exit_code = main(["run-agent2-mvp"])
+
+        self.assertEqual(exit_code, 0)
+        run_agent2_mock.assert_called_once()
+        kwargs = run_agent2_mock.call_args.kwargs
+        self.assertEqual(kwargs["input_path"], Path("data/processed/agent2_contracts_canonical.parquet"))
+        self.assertEqual(kwargs["output_dir"], Path("data/processed"))
+        self.assertEqual(kwargs["postgres_dsn"], "postgresql://demo")
+        self.assertTrue(kwargs["write_postgres"])
 
 
 if __name__ == "__main__":

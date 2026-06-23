@@ -9,6 +9,9 @@ from sqlalchemy.types import Date, Float, Integer, String, Text
 
 AGENT1_CONTRACTS_TABLE = "agent1_contracts_analytical"
 AGENT1_SUPPLIERS_TABLE = "agent1_suppliers_analytical"
+AGENT2_RISK_FLAGS_TABLE = "agent2_risk_flags"
+AGENT2_RISK_SCORES_TABLE = "agent2_risk_scores"
+AGENT2_OUTPUTS_TABLE = "agent2_outputs"
 
 
 def write_agent1_analytical_tables_to_postgres(
@@ -59,6 +62,68 @@ def write_agent1_analytical_tables_to_postgres(
     }
 
 
+def write_agent2_risk_tables_to_postgres(
+    *,
+    risk_flags: Any,
+    risk_scores: Any,
+    outputs: Any,
+    postgres_dsn: str,
+    schema: str | None = None,
+    if_exists: str = "replace",
+) -> dict[str, Any]:
+    import pandas as pd
+
+    engine = create_engine(_normalize_postgres_dsn(postgres_dsn), future=True)
+    flags_frame = _prepare_agent2_flags_frame(pd.DataFrame(risk_flags))
+    scores_frame = _prepare_agent2_scores_frame(pd.DataFrame(risk_scores))
+    outputs_frame = _prepare_agent2_outputs_frame(pd.DataFrame(outputs))
+    with engine.begin() as connection:
+        flags_frame.to_sql(
+            AGENT2_RISK_FLAGS_TABLE,
+            connection,
+            schema=schema,
+            if_exists=if_exists,
+            index=False,
+            dtype=_agent2_flags_dtypes(),
+        )
+        scores_frame.to_sql(
+            AGENT2_RISK_SCORES_TABLE,
+            connection,
+            schema=schema,
+            if_exists=if_exists,
+            index=False,
+            dtype=_agent2_scores_dtypes(),
+        )
+        outputs_frame.to_sql(
+            AGENT2_OUTPUTS_TABLE,
+            connection,
+            schema=schema,
+            if_exists=if_exists,
+            index=False,
+            dtype=_agent2_outputs_dtypes(),
+        )
+    engine.dispose()
+    return {
+        "postgres_dsn": _sanitize_dsn(postgres_dsn),
+        "schema": schema,
+        "if_exists": if_exists,
+        "tables": [
+            {
+                "name": AGENT2_RISK_FLAGS_TABLE,
+                "rows": int(len(flags_frame)),
+            },
+            {
+                "name": AGENT2_RISK_SCORES_TABLE,
+                "rows": int(len(scores_frame)),
+            },
+            {
+                "name": AGENT2_OUTPUTS_TABLE,
+                "rows": int(len(outputs_frame)),
+            },
+        ],
+    }
+
+
 def _prepare_entity_frame(frame: Any, entity_name: str) -> Any:
     import pandas as pd
     from .agent1.analytical_schema import ANALYTICAL_SCHEMA
@@ -74,6 +139,43 @@ def _prepare_entity_frame(frame: Any, entity_name: str) -> Any:
         elif column_type.startswith("list["):
             prepared[column] = prepared[column].map(_jsonify_list_value)
         elif column_type == "string":
+            prepared[column] = prepared[column].astype("string")
+    return prepared
+
+
+def _prepare_agent2_flags_frame(frame: Any) -> Any:
+    import pandas as pd
+
+    prepared = frame.copy()
+    for column in ("evidence_fields", "evidence_text", "flag_code", "severity", "rule_version"):
+        if column in prepared.columns:
+            prepared[column] = prepared[column].astype("string")
+    for column in ("created_at", "source_snapshot_id", "contract_key_canon", "risk_flag_id"):
+        if column in prepared.columns:
+            prepared[column] = prepared[column].astype("string")
+    if "confidence" in prepared.columns:
+        prepared["confidence"] = pd.to_numeric(prepared["confidence"], errors="coerce")
+    return prepared
+
+
+def _prepare_agent2_scores_frame(frame: Any) -> Any:
+    import pandas as pd
+
+    prepared = frame.copy()
+    for column in ("contract_key_canon", "risk_level", "top_flags", "evaluation_status", "score_version", "source_snapshot_id"):
+        if column in prepared.columns:
+            prepared[column] = prepared[column].astype("string")
+    if "risk_score" in prepared.columns:
+        prepared["risk_score"] = pd.to_numeric(prepared["risk_score"], errors="coerce")
+    if "flags_count" in prepared.columns:
+        prepared["flags_count"] = pd.to_numeric(prepared["flags_count"], errors="coerce")
+    return prepared
+
+
+def _prepare_agent2_outputs_frame(frame: Any) -> Any:
+    prepared = frame.copy()
+    for column in prepared.columns:
+        if column.endswith("_json") or column in {"name", "path", "artifact_path", "artifact_type", "agent_name", "source_snapshot_id", "created_at"}:
             prepared[column] = prepared[column].astype("string")
     return prepared
 
@@ -98,6 +200,46 @@ def _sqlalchemy_dtypes(entity_name: str) -> dict[str, Any]:
         else:
             dtypes[column] = Text()
     return dtypes
+
+
+def _agent2_flags_dtypes() -> dict[str, Any]:
+    return {
+        "risk_flag_id": String(),
+        "contract_key_canon": String(),
+        "flag_code": String(),
+        "severity": String(),
+        "confidence": Float(),
+        "evidence_fields": Text(),
+        "evidence_text": Text(),
+        "rule_version": String(),
+        "created_at": String(),
+        "source_snapshot_id": String(),
+    }
+
+
+def _agent2_scores_dtypes() -> dict[str, Any]:
+    return {
+        "contract_key_canon": String(),
+        "risk_score": Float(),
+        "risk_level": String(),
+        "flags_count": Integer(),
+        "top_flags": Text(),
+        "evaluation_status": String(),
+        "score_version": String(),
+        "source_snapshot_id": String(),
+    }
+
+
+def _agent2_outputs_dtypes() -> dict[str, Any]:
+    return {
+        "agent_name": String(),
+        "artifact_type": String(),
+        "artifact_path": Text(),
+        "rows": Integer(),
+        "source_snapshot_id": String(),
+        "created_at": String(),
+        "payload_json": Text(),
+    }
 
 
 def _jsonify_list_value(value: Any) -> Any:

@@ -263,6 +263,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=0.10,
         help="Desviacion relativa minima para activar RF-05 (por defecto: 0.10).",
     )
+    agent2_parser.add_argument(
+        "--postgres-dsn",
+        type=str,
+        default=None,
+        help="DSN de PostgreSQL para persistir las tablas de riesgo del MVP.",
+    )
+    agent2_parser.add_argument(
+        "--write-postgres",
+        action="store_true",
+        help="Guarda risk_flags, risk_scores y agent_outputs en PostgreSQL.",
+    )
     agent2_mvp_parser = subparsers.add_parser(
         "run-agent2-mvp",
         help="Ejecuta Agent 2 sobre el canonico de Agent 1 con el conjunto minimo de red flags.",
@@ -278,6 +289,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=float,
         default=0.10,
         help="Desviacion relativa minima para activar RF-05 (por defecto: 0.10).",
+    )
+    agent2_mvp_parser.add_argument(
+        "--postgres-dsn",
+        type=str,
+        default=None,
+        help="Sobrescribe el DSN de PostgreSQL del entorno si es necesario.",
     )
     batch_parser = subparsers.add_parser(
         "run-batch",
@@ -511,26 +528,35 @@ def main(argv: Sequence[str] | None = None) -> int:
             input_path=args.input,
             output_dir=args.output_dir,
             deviation_threshold=args.deviation_threshold,
+            postgres_dsn=args.postgres_dsn,
+            write_postgres=args.write_postgres,
         )
         print("Agente 2 ejecutado")
         print(f"- Contratos de entrada: {report['rows']}")
         print(f"- Contratos evaluables: {report['evaluable_rows']}")
         print(f"- Contratos con alguna señal: {report['activated_contract_rows']}")
         print(f"- Señales activadas: {report['activated_flags']}")
+        if report.get("postgres_write"):
+            print(f"- PostgreSQL: {report['postgres_write']['postgres_dsn']}")
         print(f"- Reporte: {report['report_path']}")
         return 0
     if args.command == "run-agent2-mvp":
         from .agent2 import run_agent2
+        settings = Settings.from_env()
+        postgres_dsn = args.postgres_dsn or settings.postgres_dsn
 
         report = run_agent2(
             input_path=args.input,
             output_dir=args.output_dir,
             deviation_threshold=args.deviation_threshold,
+            postgres_dsn=postgres_dsn,
+            write_postgres=postgres_dsn is not None,
         )
         print("Agente 2 MVP ejecutado")
         print(f"- Contratos de entrada: {report['rows']}")
         print(f"- Contratos con alguna señal: {report['activated_contract_rows']}")
         print(f"- Señales activadas: {report['activated_flags']}")
+        print(f"- PostgreSQL: {'si' if postgres_dsn else 'no'}")
         print(f"- Reporte: {report['report_path']}")
         return 0
     if args.command == "run-batch":

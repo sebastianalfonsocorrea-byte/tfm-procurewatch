@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ..db import write_agent2_risk_tables_to_postgres
 from .schemas import Agent2Contract
 from .scoring import FLAG_WEIGHTS, score_contract
 
@@ -62,6 +63,8 @@ def run_agent2(
     input_path: Path,
     output_dir: Path,
     deviation_threshold: float = DEFAULT_DEVIATION_THRESHOLD,
+    postgres_dsn: str | None = None,
+    write_postgres: bool = False,
 ) -> dict[str, Any]:
     """Execute the Agent 2 MVP over the canonical dataset produced by Agent 1."""
     import pandas as pd
@@ -251,6 +254,66 @@ def run_agent2(
     flags.to_parquet(flags_path, index=False)
     scores.to_parquet(scores_path, index=False)
 
+    postgres_write_report = None
+    if write_postgres:
+        if postgres_dsn is None:
+            raise ValueError("postgres_dsn is required when write_postgres is enabled")
+        postgres_write_report = write_agent2_risk_tables_to_postgres(
+            risk_flags=flags,
+            risk_scores=scores,
+            outputs=[
+                {
+                    "agent_name": "agent2",
+                    "artifact_type": "risk_flags_parquet",
+                    "artifact_path": str(flags_path),
+                    "rows": int(len(flags)),
+                    "source_snapshot_id": snapshot_id,
+                    "created_at": created_at,
+                    "payload_json": json.dumps(
+                        {
+                            "report_path": str(report_path),
+                            "risk_flags": str(flags_path),
+                            "risk_scores": str(scores_path),
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+                {
+                    "agent_name": "agent2",
+                    "artifact_type": "risk_scores_parquet",
+                    "artifact_path": str(scores_path),
+                    "rows": int(len(scores)),
+                    "source_snapshot_id": snapshot_id,
+                    "created_at": created_at,
+                    "payload_json": json.dumps(
+                        {
+                            "report_path": str(report_path),
+                            "risk_flags": str(flags_path),
+                            "risk_scores": str(scores_path),
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+                {
+                    "agent_name": "agent2",
+                    "artifact_type": "run_report_json",
+                    "artifact_path": str(report_path),
+                    "rows": 1,
+                    "source_snapshot_id": snapshot_id,
+                    "created_at": created_at,
+                    "payload_json": json.dumps(
+                        {
+                            "report_path": str(report_path),
+                            "risk_flags": str(flags_path),
+                            "risk_scores": str(scores_path),
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+            ],
+            postgres_dsn=postgres_dsn,
+        )
+
     report = {
         "input_path": str(input_path),
         "source_snapshot_id": snapshot_id,
@@ -278,6 +341,7 @@ def run_agent2(
             "risk_flags": str(flags_path),
             "risk_scores": str(scores_path),
         },
+        "postgres_write": postgres_write_report,
     }
     report_path.write_text(
         json.dumps(report, ensure_ascii=False, indent=2),
