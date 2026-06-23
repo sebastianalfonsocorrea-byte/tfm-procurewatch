@@ -181,6 +181,8 @@ procurewatch run-mvp
 Ese comando usa el `PROCUREWATCH_POSTGRES_DSN` del entorno si está definido y activa la
 persistencia en PostgreSQL automáticamente.
 
+Si quieres un guion de demo muy corto para la defensa, mira `docs/DEMO_MVP.md`.
+
 ## 10. Siguiente foco: Agent2 y Agent4
 
 Despues de validar Agent1:
