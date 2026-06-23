@@ -16,6 +16,15 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 - El entorno local necesitaba el driver `psycopg` para que SQLAlchemy pudiera abrir el DSN
   `postgresql://...`; el conector lo normaliza a `postgresql+psycopg://...`.
 
+### Diferencia operativa entre los dos comandos
+
+| Comando | Uso | Configuración | Persistencia |
+|---|---|---|---|
+| `run-agent1` | Ejecución completa y configurable | Recibe parámetros explícitos como `--year`, `--cpv-prefix`, `--buyer-catalog`, `--postgres-dsn` y `--write-postgres` | Solo si se activa con `--write-postgres` |
+| `run-mvp` | Ejecución rápida para demo o borrador | Usa por defecto el flujo y los artefactos de trabajo del proyecto, sin obligar a pasar tantos parámetros | Automática si existe `PROCUREWATCH_POSTGRES_DSN` o se pasa `--postgres-dsn` |
+
+La lógica base es la misma; `run-mvp` solo reduce fricción para arrancar el pipeline.
+
 ## 22/06/2026
 
 ### Hecho
