@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from procurewatch.data_sources.boe import (
+    build_boe_award_lines,
     extract_cpv_codes,
     parse_boe_record,
     parse_eur,
@@ -65,6 +66,50 @@ class BoeParserTests(unittest.TestCase):
             extract_cpv_codes("71000000 Servicios; 71300000 Servicios de ingeniería"),
             ["71000000", "71300000"],
         )
+
+    def test_build_boe_award_lines_keeps_lots_and_removes_only_exact_duplicates(self) -> None:
+        import pandas as pd
+
+        base = {
+            "notice_id": "BOE-1",
+            "institution": "Ministerio",
+            "buyer_name": "Organismo",
+            "file_number": "EXP-1",
+            "object": "Servicio",
+            "record_type": "Contratación",
+            "estimated_value_eur": 100.0,
+            "cpv_codes_raw": "71300000 Servicios",
+            "cpv_code_list": ["71300000"],
+        }
+        dataframe = pd.DataFrame(
+            [
+                {**base, "supplier_name": "Proveedor A", "awarded_value_eur": 40.0},
+                {**base, "supplier_name": "Proveedor A", "awarded_value_eur": 40.0},
+                {**base, "supplier_name": "Proveedor B", "awarded_value_eur": 60.0},
+                {
+                    **base,
+                    "notice_id": "BOE-2",
+                    "file_number": "EXP-2",
+                    "supplier_name": "Proveedor C",
+                    "awarded_value_eur": 45.0,
+                    "cpv_codes_raw": "45000000 y 71300000",
+                    "cpv_code_list": ["45000000", "71300000"],
+                },
+                {
+                    **base,
+                    "notice_id": "BOE-3",
+                    "file_number": "EXP-3",
+                    "record_type": "Licitación",
+                    "supplier_name": "No disponible",
+                    "awarded_value_eur": None,
+                },
+            ]
+        )
+
+        result = build_boe_award_lines(dataframe)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(set(result["supplier_name"]), {"Proveedor A", "Proveedor B"})
 
 
 if __name__ == "__main__":

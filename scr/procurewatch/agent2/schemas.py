@@ -9,6 +9,7 @@ class Agent2Contract:
     contract_key_canon: str
     source: str
     source_record_id: str = ""
+    source_tender_id: str = ""
     source_dataset: str = ""
     buyer_name: str = ""
     buyer_id: str = ""
@@ -23,6 +24,9 @@ class Agent2Contract:
     cpv_codes_raw: str = ""
     cpv_code_list: str = ""
     source_file: str = ""
+    supplier_count_in_tender: int | None = None
+    buyer_procedure_count: int | None = None
+    resolution_days: int | None = None
 
 
 @dataclass(frozen=True)

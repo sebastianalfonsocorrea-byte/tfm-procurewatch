@@ -5,6 +5,9 @@ Objetivo: dejar una base reproducible para el `agent1` que consuma varias fuente
 Ubicacion de codigo: `scr/procurewatch/agent1/pipeline.py`, reexportado desde
 `scr/procurewatch/agent1/__init__.py` para conservar `from procurewatch.agent1 import run_agent1`.
 
+Modelo analítico objetivo: `scr/procurewatch/agent1/analytical_schema.py`, documentado en
+`docs/MODELO_DATOS_ANALITICO.md`.
+
 ## Estado al 31/05/2026
 
 Resumen de lo hecho en la sesion del 31/05/2026:
@@ -44,6 +47,7 @@ Checklist de cierre del ciclo:
 - [ ] `data_quality_report.json` presente para BOE/PLACE/OCDS en la misma corrida.
 - [ ] `agent1_contract_key_coverage.parquet` y `agent1_contract_key_coverage_preview.csv` regeneran de forma estable.
 - [ ] Política de normalizacion de texto para `contract_key_canon` documentada en el informe de método.
+- [x] `agent1_data_quality_summary.json` mide completitud OCDS, validez fiscal y coherencia temporal.
 
 ## 1) Formato recomendado para ingesta interna
 
@@ -68,7 +72,8 @@ Para este proyecto el formato de salida recomendado es:
 ### Fuente principal ya descargada
 
 - BOE: `data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv`
-- OpenTender: `data/raw/opentender/data-es-ocds-json.zip`.
+- OpenTender: descarga directa desde `https://opentender.eu/es/download`
+  y almacenamiento temporal en `data/raw/opentender/` durante la ejecución.
 - PLACE: `data/raw/place/` con:
   - `profiles/licitacionesPerfilesContratanteCompleto3_2024.zip`
   - `aggregation/PlataformasAgregadasSinMenores_2024.zip`

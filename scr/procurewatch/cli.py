@@ -294,6 +294,43 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent1_parser.add_argument("--limit-place", type=int, default=None)
     agent1_parser.add_argument("--limit-opentender", type=int, default=None)
     agent1_parser.add_argument("--force-rebuild", action="store_true")
+    agent1_parser.add_argument("--cleanup-downloads", action="store_true")
+    agent1_parser.add_argument("--postgres-dsn", default=None)
+    agent1_parser.add_argument("--write-postgres", action="store_true")
+    agent1_report_parser = subparsers.add_parser(
+        "report-agent1-coverage",
+        help="Genera informe de cobertura y calidad del dataset analitico Agent1.",
+    )
+    agent1_report_parser.add_argument(
+        "--contracts",
+        type=Path,
+        default=Path("data/processed/contracts_analytical.parquet"),
+    )
+    agent1_report_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    mvp_parser = subparsers.add_parser(
+        "run-mvp",
+        help="Ejecuta el flujo MVP Agent1 con salida analitica y PostgreSQL opcional.",
+    )
+    mvp_parser.add_argument("--year", type=int, default=2024)
+    mvp_parser.add_argument("--cpv-prefix", default="71")
+    mvp_parser.add_argument("--postgres-dsn", default=None)
+    mvp_parser.add_argument(
+        "--boe-input",
+        type=Path,
+        default=Path("data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv"),
+    )
+    mvp_parser.add_argument(
+        "--opentender-input",
+        type=Path,
+        default=Path("data/raw/opentender/data-es-ocds-json.zip"),
+    )
+    mvp_parser.add_argument("--place-inputs", nargs="*", type=Path)
+    mvp_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    mvp_parser.add_argument("--buyer-catalog", type=Path, default=None)
+    mvp_parser.add_argument("--place-download", action="store_true")
+    mvp_parser.add_argument("--place-datasets", nargs="*")
+    mvp_parser.add_argument("--cleanup-downloads", action="store_true")
+    mvp_parser.add_argument("--force-rebuild", action="store_true")
     agent2_parser = subparsers.add_parser(
         "run-agent2",
         help="Ejecuta scoring determinista v1 del agente 2 sobre el canonico.",
@@ -306,6 +343,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     agent2_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
     agent2_parser.add_argument("--limit", type=int, default=None)
     agent2_parser.add_argument("--source-snapshot-id", default=None)
+    agent2_mvp_parser = subparsers.add_parser(
+        "run-agent2-mvp",
+        help="Ejecuta el MVP RF-01..RF-06 de Agent2 sobre el canonico.",
+    )
+    agent2_mvp_parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("data/processed/agent2_contracts_canonical.parquet"),
+    )
+    agent2_mvp_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    agent2_mvp_parser.add_argument("--deviation-threshold", type=float, default=0.10)
     agent3_parser = subparsers.add_parser(
         "run-agent3",
         help="Genera nodos, aristas y metricas locales del agente 3 desde el canonico.",
@@ -642,12 +690,57 @@ def main(argv: Sequence[str] | None = None) -> int:
             limit_place=args.limit_place,
             limit_ot=args.limit_opentender,
             force_rebuild=args.force_rebuild,
+            cleanup_downloads=args.cleanup_downloads,
+            postgres_dsn=args.postgres_dsn,
+            write_postgres=args.write_postgres,
         )
 
         print("Agente 1 ejecutado")
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "run-mvp":
+        from .agent1 import run_agent1
+
+        settings = Settings.from_env()
+        postgres_dsn = args.postgres_dsn or settings.postgres_dsn
+        if args.place_download:
+            place_inputs = list(args.place_inputs) if args.place_inputs else []
+        else:
+            place_inputs = args.place_inputs or [
+                Path("data/raw/place/profiles/licitacionesPerfilesContratanteCompleto3_2024.zip"),
+                Path("data/raw/place/aggregation/PlataformasAgregadasSinMenores_2024.zip"),
+            ]
+        reports = run_agent1(
+            boe_input=args.boe_input,
+            open_tender_input=args.opentender_input,
+            place_inputs=place_inputs,
+            output_dir=args.output_dir,
+            cpv_prefix=args.cpv_prefix,
+            year=args.year,
+            place_download=args.place_download,
+            place_datasets=args.place_datasets,
+            buyer_catalog_path=args.buyer_catalog,
+            cleanup_downloads=args.cleanup_downloads,
+            force_rebuild=args.force_rebuild,
+            postgres_dsn=postgres_dsn,
+            write_postgres=postgres_dsn is not None,
+        )
+        print("MVP ejecutado")
+        print(f"- PostgreSQL: {'si' if postgres_dsn else 'no'}")
+        print(f"- Reporte agente: {reports['agent1_run_report_path']}")
+        return 0
+    if args.command == "report-agent1-coverage":
+        from .agent1 import build_agent1_coverage_report
+
+        report = build_agent1_coverage_report(
+            contracts_path=args.contracts,
+            output_dir=args.output_dir,
+        )
+        print("Informe Agent1 generado")
+        print(f"- Estado global: {report['overall_status']}")
+        print(f"- Output JSON: {report['outputs']['json']}")
         return 0
     if args.command == "run-agent2":
         from .agent2 import run_agent2
@@ -664,6 +757,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Flags: {report['flags_rows']}")
         print(f"- Niveles riesgo: {report['risk_level_counts']}")
         print(f"- Reporte agente: {report['outputs']['report']}")
+        return 0
+    if args.command == "run-agent2-mvp":
+        from .agent2 import run_agent2_mvp
+
+        report = run_agent2_mvp(
+            input_path=args.input,
+            output_dir=args.output_dir,
+            deviation_threshold=args.deviation_threshold,
+        )
+        print("Agente 2 MVP ejecutado")
+        print(f"- Contratos evaluados: {report['rows']}")
+        print(f"- Contratos con flags: {report['activated_contract_rows']}")
+        print(f"- Flags activadas: {report['activated_flags']}")
+        print(f"- Reporte agente: {report['report_path']}")
         return 0
     if args.command == "run-agent3":
         from .agent3 import run_agent3

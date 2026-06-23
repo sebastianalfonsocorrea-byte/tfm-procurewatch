@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -15,7 +16,11 @@ def run_agent1(
     *,
     boe_input: Path,
     open_tender_input: Path,
+    open_tender_download_url: str | None = None,
     place_inputs: list[Path],
+    buyer_catalog_path: Path | None = None,
+    raw_dir: Path = Path("data/raw"),
+    cleanup_downloads: bool = False,
     output_dir: Path = Path("data/processed"),
     cpv_prefix: str = "71",
     year: int = 2024,
@@ -25,6 +30,8 @@ def run_agent1(
     limit_place: int | None = None,
     limit_ot: int | None = None,
     force_rebuild: bool = False,
+    postgres_dsn: str | None = None,
+    write_postgres: bool = False,
 ) -> dict[str, Any]:
     if place_download:
         from ..data_sources.place import build_targets, download_targets, load_manifest
@@ -34,8 +41,8 @@ def run_agent1(
 
     if not boe_input.exists():
         raise FileNotFoundError(f"No existe BOE input: {boe_input}")
-    if not open_tender_input.exists():
-        raise FileNotFoundError(f"No existe OpenTender input: {open_tender_input}")
+    if buyer_catalog_path is not None and not buyer_catalog_path.exists():
+        raise FileNotFoundError(f"No existe buyer catalog input: {buyer_catalog_path}")
     if not place_inputs and not place_download:
         raise ValueError(
             "Debes indicar al menos un fichero PLACE de entrada o usar --place-download."
@@ -45,6 +52,24 @@ def run_agent1(
     reports: dict[str, Any] = {}
     selected_place_inputs = list(place_inputs)
     downloaded_targets: list[Path] = []
+    downloaded_opentender_inputs: list[Path] = []
+    effective_open_tender_input = open_tender_input
+
+    if open_tender_download_url:
+        from ..data_sources.opentender import download_opentender_zip
+
+        effective_open_tender_input = raw_dir / "opentender" / "data-es-ocds-json.zip"
+        opentender_download_report = download_opentender_zip(
+            url=open_tender_download_url,
+            output_path=effective_open_tender_input,
+            overwrite=True,
+        )
+        reports["opentender_download"] = opentender_download_report
+        effective_open_tender_input = Path(opentender_download_report["output_path"])
+        if opentender_download_report.get("downloaded"):
+            downloaded_opentender_inputs = [effective_open_tender_input]
+    if not effective_open_tender_input.exists():
+        raise FileNotFoundError(f"No existe OpenTender input: {effective_open_tender_input}")
 
     if place_download:
         manifest = load_manifest(DEFAULT_MANIFEST)
@@ -54,12 +79,13 @@ def run_agent1(
             dataset_ids=set(place_datasets) if place_datasets else None,
             include_docs=False,
             include_data=True,
-            raw_dir=Path("data/raw"),
+            raw_dir=raw_dir,
         )
-        download_targets(targets, overwrite=True)
+        download_report = download_targets(targets, overwrite=True)
         downloaded_targets = [target.output_path for target in targets if target.kind == "dataset"]
         if not place_inputs:
             selected_place_inputs = downloaded_targets
+        reports["place_download"] = download_report
 
     for path in selected_place_inputs:
         if not path.exists():
@@ -70,19 +96,24 @@ def run_agent1(
             boe_input, compute_sha=force_rebuild or limit_boe is not None
         ),
         "opentender": _input_artifact_metadata(
-            open_tender_input,
+            effective_open_tender_input,
             compute_sha=force_rebuild or limit_ot is not None,
         ),
         "place_files": [
             _input_artifact_metadata(path, compute_sha=force_rebuild or limit_place is not None)
             for path in selected_place_inputs
         ],
+        "buyer_catalog": _input_artifact_metadata(buyer_catalog_path, compute_sha=force_rebuild)
+        if buyer_catalog_path is not None
+        else None,
     }
     reports["inputs"] = {
         "boe_input": str(boe_input),
-        "open_tender_input": str(open_tender_input),
+        "open_tender_input": str(effective_open_tender_input),
+        "open_tender_download_url": open_tender_download_url,
         "place_inputs": [str(path) for path in selected_place_inputs],
         "downloaded_targets": [str(path) for path in downloaded_targets],
+        "downloaded_opentender_inputs": [str(path) for path in downloaded_opentender_inputs],
         "year": year,
         "cpv_prefix": cpv_prefix,
         "limits": {"boe": limit_boe, "place": limit_place, "opentender": limit_ot},
@@ -150,10 +181,10 @@ def run_agent1(
         _hydrate_artifact_from_report(input_artifacts["opentender"], reports["opentender"])
     else:
         input_artifacts["opentender"] = _input_artifact_metadata(
-            open_tender_input, compute_sha=True
+            effective_open_tender_input, compute_sha=True
         )
         reports["opentender"] = normalize_opentender_file(
-            input_path=open_tender_input,
+            input_path=effective_open_tender_input,
             output_dir=output_dir,
             year=year,
             cpv_prefix=cpv_prefix,
@@ -170,6 +201,15 @@ def run_agent1(
         cpv_prefix=cpv_prefix,
         year=year,
     )
+    from .analytical_dataset import build_analytical_datasets
+
+    analytical = build_analytical_datasets(
+        canonical_path=Path(canonical["path"]),
+        output_dir=output_dir,
+        buyer_catalog_path=buyer_catalog_path,
+        postgres_dsn=postgres_dsn,
+        write_postgres=write_postgres,
+    )
     quality_summary = build_agent1_quality_summary(
         output_dir=output_dir,
         coverage=coverage,
@@ -184,12 +224,25 @@ def run_agent1(
     reports["agent1_run_report_path"] = str(output_dir / "agent1_run_report.json")
     reports["coverage"] = coverage
     reports["canonical_agent2"] = canonical
+    reports["analytical_datasets"] = analytical
     reports["quality_summary"] = quality_summary
+    if analytical.get("postgres_write") is not None:
+        reports["postgres_write"] = analytical["postgres_write"]
 
     (output_dir / "agent1_run_report.json").write_text(
         json.dumps(reports, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+
+    if cleanup_downloads and (downloaded_targets or downloaded_opentender_inputs):
+        for path in downloaded_targets:
+            if path.exists():
+                path.unlink()
+        _cleanup_empty_parents(downloaded_targets, stop_dir=raw_dir)
+        for path in downloaded_opentender_inputs:
+            if path.exists():
+                path.unlink()
+        _cleanup_empty_parents(downloaded_opentender_inputs, stop_dir=raw_dir)
     return reports
 
 
@@ -201,7 +254,12 @@ def build_source_coverage(
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_path = output_dir / "contracts_boe_cpv71.parquet"
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
     place_path = output_dir / "contracts_place_cpv71.parquet"
     op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
@@ -304,12 +362,18 @@ def build_agent2_canonical_dataset(
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_path = output_dir / "contracts_boe_cpv71.parquet"
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
     place_path = output_dir / "contracts_place_cpv71.parquet"
     op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
     boe_columns = [
         "contract_id",
+        "notice_id",
         "file_number",
         "institution",
         "buyer_name",
@@ -379,6 +443,8 @@ def build_agent2_canonical_dataset(
             "contract_key_canon",
             "source",
             "source_record_id",
+            "source_notice_id",
+            "source_tender_id",
             "source_dataset",
             "buyer_name",
             "buyer_id",
@@ -427,6 +493,7 @@ def build_agent1_quality_summary(
     coverage: dict[str, Any],
     canonical: dict[str, Any],
 ) -> dict[str, Any]:
+    import pandas as pd
 
     canonical_path = Path(canonical["path"])
     critical_fields = [
@@ -436,9 +503,10 @@ def build_agent1_quality_summary(
         "publication_date",
         "cpv_codes_raw",
     ]
+    quality_columns = [*critical_fields, "supplier_id", "award_date"]
     dataframe = _read_parquet_columns(
         canonical_path,
-        critical_fields,
+        quality_columns,
     )
     field_quality = {}
     for field in critical_fields:
@@ -456,13 +524,116 @@ def build_agent1_quality_summary(
             else None,
         }
 
+    total_rows = int(len(dataframe))
+    complete_critical_rows = 0
+    if total_rows:
+        critical_present = dataframe[critical_fields].notna()
+        for field in critical_fields:
+            critical_present[field] &= dataframe[field].astype("string").str.strip() != ""
+        complete_critical_rows = int(critical_present.all(axis=1).sum())
+
+    critical_cells = total_rows * len(critical_fields)
+    present_critical_cells = sum(
+        total_rows - int(field_quality[field]["missing"] or 0) for field in critical_fields
+    )
+    completeness = {
+        "critical_fields": critical_fields,
+        "present_cells": present_critical_cells,
+        "total_cells": critical_cells,
+        "coverage_ratio": round(present_critical_cells / critical_cells, 6)
+        if critical_cells
+        else None,
+        "complete_rows": complete_critical_rows,
+        "complete_rows_ratio": round(complete_critical_rows / total_rows, 6)
+        if total_rows
+        else None,
+        "target_ratio": 0.90,
+    }
+    completeness["target_met"] = bool(
+        completeness["coverage_ratio"] is not None
+        and completeness["coverage_ratio"] > completeness["target_ratio"]
+    )
+
+    supplier_ids = (
+        dataframe["supplier_id"].astype("string").fillna("").str.strip()
+        if "supplier_id" in dataframe.columns
+        else None
+    )
+    supplier_ids_present = int((supplier_ids != "").sum()) if supplier_ids is not None else 0
+    valid_supplier_ids = (
+        sum(_is_valid_spanish_tax_id(value) for value in supplier_ids.tolist())
+        if supplier_ids is not None
+        else 0
+    )
+    nif_quality = {
+        "valid": valid_supplier_ids,
+        "invalid": supplier_ids_present - valid_supplier_ids,
+        "missing": total_rows - supplier_ids_present,
+        "coverage_ratio": round(supplier_ids_present / total_rows, 6) if total_rows else None,
+        "valid_ratio_total": round(valid_supplier_ids / total_rows, 6) if total_rows else None,
+        "valid_ratio_present": round(valid_supplier_ids / supplier_ids_present, 6)
+        if supplier_ids_present
+        else None,
+        "target_ratio_total": 0.85,
+    }
+    nif_quality["target_met"] = bool(
+        nif_quality["valid_ratio_total"] is not None
+        and nif_quality["valid_ratio_total"] > nif_quality["target_ratio_total"]
+    )
+
+    publication_dates = (
+        dataframe["publication_date"].astype("string").fillna("").str.strip()
+        if "publication_date" in dataframe.columns
+        else None
+    )
+    award_dates = (
+        dataframe["award_date"].astype("string").fillna("").str.strip()
+        if "award_date" in dataframe.columns
+        else None
+    )
+    comparable_dates = 0
+    coherent_dates = 0
+    invalid_date_values = 0
+    if publication_dates is not None and award_dates is not None and total_rows:
+        date_candidates = (publication_dates != "") & (award_dates != "")
+        parsed_publication = pd.to_datetime(
+            publication_dates.where(date_candidates), errors="coerce", utc=True
+        )
+        parsed_award = pd.to_datetime(award_dates.where(date_candidates), errors="coerce", utc=True)
+        parsed_pairs = date_candidates & parsed_publication.notna() & parsed_award.notna()
+        comparable_dates = int(parsed_pairs.sum())
+        coherent_dates = int((parsed_pairs & (parsed_publication <= parsed_award)).sum())
+        invalid_date_values = int((date_candidates & ~parsed_pairs).sum())
+
+    temporal_quality = {
+        "comparable_rows": comparable_dates,
+        "coherent_rows": coherent_dates,
+        "incoherent_rows": comparable_dates - coherent_dates,
+        "invalid_or_unparseable_rows": invalid_date_values,
+        "not_evaluable_rows": total_rows - comparable_dates - invalid_date_values,
+        "coverage_ratio": round(comparable_dates / total_rows, 6) if total_rows else None,
+        "coherence_ratio": round(coherent_dates / comparable_dates, 6)
+        if comparable_dates
+        else None,
+        "target_ratio": 0.98,
+    }
+    temporal_quality["target_met"] = bool(
+        temporal_quality["coherence_ratio"] is not None
+        and temporal_quality["coherence_ratio"] > temporal_quality["target_ratio"]
+    )
+
     duplicate_keys = (
         int(dataframe.duplicated(subset=["source", "contract_key_canon"]).sum())
         if not dataframe.empty and {"source", "contract_key_canon"}.issubset(dataframe.columns)
         else 0
     )
     status = "ok"
-    if not dataframe.empty and duplicate_keys:
+    if not dataframe.empty and (
+        duplicate_keys
+        or not completeness["target_met"]
+        or not nif_quality["target_met"]
+        or not temporal_quality["target_met"]
+    ):
         status = "warning"
     if int(canonical.get("rows", 0)) == 0:
         status = "error"
@@ -473,6 +644,11 @@ def build_agent1_quality_summary(
         "canonical_rows": int(canonical.get("rows", 0)),
         "coverage": coverage,
         "field_quality": field_quality,
+        "quality_metrics": {
+            "ocds_critical_completeness": completeness,
+            "supplier_tax_id": nif_quality,
+            "temporal_coherence": temporal_quality,
+        },
         "duplicate_source_contract_keys": duplicate_keys,
         "acceptance_criteria": {
             "agent1_run_report": True,
@@ -489,10 +665,42 @@ def build_agent1_quality_summary(
     return summary
 
 
+def _is_valid_spanish_tax_id(value: Any) -> bool:
+    normalized = re.sub(r"[^A-Z0-9]", "", str(value).upper())
+    if re.fullmatch(r"\d{8}[A-Z]", normalized):
+        letters = "TRWAGMYFPDXBNJZSQVHLCKE"
+        return normalized[-1] == letters[int(normalized[:8]) % 23]
+    if re.fullmatch(r"[XYZ]\d{7}[A-Z]", normalized):
+        letters = "TRWAGMYFPDXBNJZSQVHLCKE"
+        number = f"{'XYZ'.index(normalized[0])}{normalized[1:8]}"
+        return normalized[-1] == letters[int(number) % 23]
+    if not re.fullmatch(r"[ABCDEFGHJKLMNPQRSUVW]\d{7}[0-9A-J]", normalized):
+        return False
+
+    initial = normalized[0]
+    digits = normalized[1:8]
+    even_sum = sum(int(digits[index]) for index in (1, 3, 5))
+    odd_sum = sum(
+        sum(divmod(int(digits[index]) * 2, 10))
+        for index in (0, 2, 4, 6)
+    )
+    control = (10 - (even_sum + odd_sum) % 10) % 10
+    expected_digit = str(control)
+    expected_letter = "JABCDEFGHI"[control]
+    actual = normalized[-1]
+    if initial in "ABEH":
+        return actual == expected_digit
+    if initial in "KPQS":
+        return actual == expected_letter
+    return actual in {expected_digit, expected_letter}
+
+
 CANONICAL_AGENT2_COLUMNS = [
     "contract_key_canon",
     "source",
     "source_record_id",
+    "source_notice_id",
+    "source_tender_id",
     "source_dataset",
     "buyer_name",
     "buyer_id",
@@ -515,15 +723,16 @@ def _canonical_from_boe(dataframe: Any) -> pd.DataFrame:
 
     if dataframe.empty:
         return pd.DataFrame(columns=CANONICAL_AGENT2_COLUMNS)
+    from .boe_units import add_boe_unit_ids
+
+    dataframe = add_boe_unit_ids(dataframe)
     return pd.DataFrame(
         {
-            "contract_key_canon": _build_contract_keys(
-                dataframe,
-                source="boe",
-                id_columns=("file_number", "institution", "buyer_name", "publication_date"),
-            ),
+            "contract_key_canon": _series_or_empty(dataframe, "id_linea_adjudicacion"),
             "source": "boe",
-            "source_record_id": _series_or_empty(dataframe, "contract_id"),
+            "source_record_id": _series_or_empty(dataframe, "id_linea_adjudicacion"),
+            "source_notice_id": _series_or_empty(dataframe, "id_aviso"),
+            "source_tender_id": _series_or_empty(dataframe, "id_expediente"),
             "source_dataset": "boe_2014_2024",
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "institution"),
@@ -562,6 +771,8 @@ def _canonical_from_place(dataframe: Any) -> pd.DataFrame:
             ),
             "source": "place",
             "source_record_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_notice_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_tender_id": _series_or_empty(dataframe, "contract_folder_id"),
             "source_dataset": _series_or_empty(dataframe, "source_dataset"),
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "buyer_dir3"),
@@ -594,6 +805,8 @@ def _canonical_from_opentender(dataframe: Any) -> pd.DataFrame:
             ),
             "source": "opentender",
             "source_record_id": _series_or_empty(dataframe, "source_record_id"),
+            "source_notice_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_tender_id": _series_or_empty(dataframe, "source_record_id"),
             "source_dataset": _series_or_empty(dataframe, "source_file"),
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "buyer_id"),
@@ -635,6 +848,8 @@ def _agent2_schema() -> dict[str, Any]:
             ],
             "nullable": [
                 "source_record_id",
+                "source_notice_id",
+                "source_tender_id",
                 "source_dataset",
                 "buyer_id",
                 "supplier_name",
@@ -652,6 +867,8 @@ def _agent2_schema() -> dict[str, Any]:
             "contract_key_canon": "Clave normalizada para cobertura y deduplicacion entre fuentes.",
             "source": "Fuente normalizada: boe, place u opentender.",
             "source_record_id": "Identificador original del registro en la fuente.",
+            "source_notice_id": "Identificador del aviso o publicación de origen.",
+            "source_tender_id": "Identificador de licitación o expediente dentro de la fuente.",
             "source_dataset": "Dataset o subfuente de procedencia.",
             "buyer_name": "Organismo contratante normalizado por la fuente.",
             "buyer_id": "Identificador de organismo si existe: DIR3, NIF, institucion u otro.",
@@ -920,6 +1137,20 @@ def _load_json_dict(path: Path) -> dict[str, Any]:
         return raw if isinstance(raw, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def _cleanup_empty_parents(paths: list[Path], *, stop_dir: Path) -> None:
+    roots = sorted({path.parent for path in paths}, key=lambda item: len(item.parts), reverse=True)
+    for start in roots:
+        current = start
+        while current != stop_dir.parent:
+            try:
+                current.rmdir()
+            except OSError:
+                break
+            if current == stop_dir:
+                break
+            current = current.parent
 
 
 def _jsonish(value: Any) -> str:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .mvp_pipeline import run_agent2_mvp
 from .pipeline import (
     DEFAULT_AGENT2_INPUT_PATH,
     DEFAULT_AGENT2_OUTPUT_DIR,
@@ -29,6 +30,7 @@ __all__ = [
     "contract_from_record",
     "risk_level_from_score",
     "run_agent2",
+    "run_agent2_mvp",
     "score_contract",
     "score_output_record",
 ]

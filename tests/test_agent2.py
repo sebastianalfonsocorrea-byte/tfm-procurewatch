@@ -7,7 +7,7 @@ from io import StringIO
 from pathlib import Path
 from uuid import uuid4
 
-from procurewatch.agent2 import Agent2Contract, run_agent2, score_contract
+from procurewatch.agent2 import Agent2Contract, run_agent2, run_agent2_mvp, score_contract
 from procurewatch.cli import main
 
 
@@ -98,6 +98,96 @@ class Agent2Tests(unittest.TestCase):
         self.assertIn("Agente 2 ejecutado", output.getvalue())
         self.assertTrue((output_dir / "agent2_scoring_report.json").exists())
 
+    def test_run_agent2_mvp_generates_traceable_flags_and_scores(self) -> None:
+        import pandas as pd
+
+        workspace = _test_workspace("mvp")
+        input_path = workspace / "canonical.parquet"
+        output_dir = workspace / "processed"
+        pd.DataFrame(_mvp_contracts()).to_parquet(input_path, index=False)
+
+        report = run_agent2_mvp(input_path=input_path, output_dir=output_dir)
+        flags = pd.read_parquet(report["outputs"]["risk_flags"])
+        scores = pd.read_parquet(report["outputs"]["risk_scores"])
+        scores_by_contract = scores.set_index("contract_key_canon")
+
+        self.assertEqual(report["rows"], 5)
+        self.assertEqual(report["evaluable_rows"], 5)
+        self.assertEqual(report["not_evaluable_rows"], 0)
+        self.assertEqual(report["activated_contract_rows"], 5)
+        self.assertEqual(report["activated_flags"], 14)
+        self.assertEqual(
+            set(report["flag_breakdown"].keys()),
+            {"RF-01", "RF-02", "RF-03", "RF-04", "RF-05", "RF-06"},
+        )
+        self.assertIn("RF-05", flags["flag_code"].tolist())
+        self.assertIn("RF-06", flags["flag_code"].tolist())
+
+        rf05_row = scores_by_contract.loc["contract-rf01-rf05"]
+        self.assertEqual(rf05_row["risk_score"], 40.0)
+        self.assertEqual(rf05_row["risk_level"], "medio")
+        self.assertCountEqual(json.loads(rf05_row["top_flags"]), ["RF-01", "RF-05"])
+
+        rf01_row = scores_by_contract.loc["contract-rf01-rf02"]
+        self.assertEqual(rf01_row["risk_score"], 50.0)
+        self.assertEqual(rf01_row["risk_level"], "alto")
+        self.assertCountEqual(json.loads(rf01_row["top_flags"]), ["RF-01", "RF-02", "RF-06"])
+
+        recurrent_row = scores_by_contract.loc["contract-rf02-rf03-rf04"]
+        self.assertEqual(recurrent_row["risk_score"], 60.0)
+        self.assertEqual(recurrent_row["risk_level"], "alto")
+        self.assertCountEqual(
+            json.loads(recurrent_row["top_flags"]),
+            ["RF-02", "RF-03", "RF-04"],
+        )
+
+        temporal_row = scores_by_contract.loc["contract-rf02-rf06"]
+        self.assertEqual(temporal_row["risk_score"], 50.0)
+        self.assertEqual(temporal_row["risk_level"], "alto")
+        self.assertCountEqual(
+            json.loads(temporal_row["top_flags"]),
+            ["RF-01", "RF-02", "RF-06"],
+        )
+
+        self.assertTrue((scores["evaluation_status"] == "evaluado").all())
+        self.assertIn("source_snapshot_id", report)
+        self.assertTrue((output_dir / "agent2_run_report.json").exists())
+
+    def test_run_agent2_mvp_rf05_threshold_is_configurable(self) -> None:
+        import pandas as pd
+
+        workspace = _test_workspace("mvp-threshold")
+        input_path = workspace / "canonical.parquet"
+        output_dir = workspace / "processed"
+        pd.DataFrame(
+            [
+                {
+                    "contract_key_canon": "contract-1",
+                    "buyer_name": "Organismo",
+                    "supplier_name": "Proveedor",
+                    "source_tender_id": "t-x",
+                    "procedure": "Abierto",
+                    "publication_date": "2024-01-01",
+                    "award_date": "2024-01-03",
+                    "estimated_value_eur": 100.0,
+                    "awarded_value_eur": 115.0,
+                }
+            ]
+        ).to_parquet(input_path, index=False)
+
+        report = run_agent2_mvp(
+            input_path=input_path,
+            output_dir=output_dir,
+            deviation_threshold=0.20,
+        )
+
+        self.assertEqual(report["evaluable_rows"], 1)
+        self.assertEqual(report["flag_breakdown"].get("RF-05", 0), 0)
+        scores = pd.read_parquet(report["outputs"]["risk_scores"])
+        self.assertEqual(scores.loc[0, "risk_score"], 30.0)
+        self.assertEqual(scores.loc[0, "risk_level"], "medio")
+        self.assertCountEqual(json.loads(scores.loc[0, "top_flags"]), ["RF-01", "RF-06"])
+
 
 def _contracts() -> list[dict[str, object]]:
     return [
@@ -127,6 +217,66 @@ def _contracts() -> list[dict[str, object]]:
             "procedure": "abierto",
             "estimated_value_eur": 300.0,
             "awarded_value_eur": 250.0,
+        },
+    ]
+
+
+def _mvp_contracts() -> list[dict[str, object]]:
+    return [
+        {
+            "contract_key_canon": "contract-rf01-rf05",
+            "buyer_name": "Organismo B",
+            "supplier_name": "Proveedor C",
+            "source_tender_id": "t-1",
+            "procedure": "Abierto",
+            "publication_date": "2024-01-01",
+            "award_date": "2024-01-05",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 120.0,
+        },
+        {
+            "contract_key_canon": "contract-rf01-rf02",
+            "buyer_name": "Organismo A",
+            "supplier_name": "",
+            "source_tender_id": "t-2",
+            "procedure": "Menor",
+            "publication_date": "2024-02-10",
+            "award_date": "2024-02-12",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 90.0,
+        },
+        {
+            "contract_key_canon": "contract-rf02-rf03-rf04",
+            "buyer_name": "Organismo A",
+            "supplier_name": "Proveedor X",
+            "source_tender_id": "t-3",
+            "procedure": "Negociado sin publicidad",
+            "publication_date": "2024-03-01",
+            "award_date": "2024-03-04",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 95.0,
+        },
+        {
+            "contract_key_canon": "contract-rf02-rf03-rf04-b",
+            "buyer_name": "Organismo A",
+            "supplier_name": "Proveedor X",
+            "source_tender_id": "t-3",
+            "procedure": "Negociado sin publicidad",
+            "publication_date": "2024-03-02",
+            "award_date": "2024-03-05",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 95.0,
+        },
+        {
+            "contract_key_canon": "contract-rf02-rf06",
+            "buyer_name": "Organismo A",
+            "supplier_name": "Proveedor Y",
+            "source_tender_id": "t-4",
+            "procedure": "Menor",
+            "publication_date": "2024-04-10",
+            "award_date": "2024-04-09",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 95.0,
         },
     ]
 

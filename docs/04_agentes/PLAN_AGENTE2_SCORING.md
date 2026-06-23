@@ -34,6 +34,15 @@ procurewatch run-agent2 --input data/processed/agent2_contracts_canonical.parque
   - `data/processed/agent2_scoring_report.json`
   - schemas JSON y previews CSV asociados.
 
+Integracion `integration/multiagent`:
+
+- Se conserva `run-agent2` como contrato estable de `sebas`, usado por Agent4 para scoring
+  determinista compatible.
+- Se incorpora el MVP de `Satu` como `run-agent2-mvp`, con reglas RF-01..RF-06, scoring 0-100,
+  umbral configurable para RF-05 y salidas trazables en los mismos artefactos de riesgo.
+- La separacion evita romper imports y consumidores existentes mientras se valida el encaje entre
+  Agent1/2 y Agent3/4 en la rama de laboratorio.
+
 Regla de estructura: `data/` guarda datasets y artefactos; `scr/procurewatch/data_sources/`
 guarda conectores/parsers externos; `scr/procurewatch/agent2/` guarda la logica de scoring.
 
