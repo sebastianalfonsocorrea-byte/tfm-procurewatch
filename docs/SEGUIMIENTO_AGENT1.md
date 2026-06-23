@@ -18,6 +18,11 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 - La comprobación de calidad del agente deja visible qué campos críticos están cubiertos y
   cuáles siguen nulos; si el matching entre fuentes no mejora, se documenta como limitación
   reproducible y no como coincidencia artificial.
+- La política de `contract_key_canon` queda fijada como regla de prioridad por identificadores
+  fuertes, con fallback progresivo y sin forzar equivalencias cuando faltan datos suficientes.
+- El cruce entre BOE, PLACE y OpenTender se traza explícitamente por fuente y por clave canónica;
+  si no hay intersecciones útiles, eso se registra como limitación del canónico y no como error
+  del pipeline.
 
 ### Diferencia operativa entre los dos comandos
 
@@ -140,6 +145,8 @@ La lógica base es la misma; `run-mvp` solo reduce fricción para arrancar el pi
   corregirá en la memoria si no puede reproducirse.
 - Mientras las intersecciones por `contract_key_canon` sigan en 0, el canónico debe tratarse como
   frontera trazable y no como prueba de cruce real entre fuentes.
+- La política de construcción del canónico prioriza identificadores fuertes, luego expediente o
+  carpeta, y por último combinaciones estables de comprador, fecha y objeto si no hay otra opción.
 
 ## 20/06/2026
 

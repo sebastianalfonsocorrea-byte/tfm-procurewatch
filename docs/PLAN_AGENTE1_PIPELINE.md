@@ -231,11 +231,45 @@ Para trazabilidad del TFM, documentar siempre:
 - Antes de comparar, los textos pasan a mayusculas, sin espacios, sin tildes y sin caracteres ajenos a identificadores (`A-Z`, `0-9`, guion, barra baja y barra).
 - Las fechas se reducen a forma compacta `YYYYMMDD` cuando la fuente aporta fecha parseable.
 
+### Politica operativa de `contract_key_canon`
+
+La clave canónica no pretende inventar una identidad nueva; su función es homogeneizar la identidad
+que ya traen las fuentes para poder comparar, deduplicar y trazar contratos entre sistemas.
+
+Prioridad de campos:
+
+1. identificadores contractuales explícitos de la fuente;
+2. identificadores de expediente o carpeta;
+3. combinaciones estables de comprador, fecha y objeto cuando no exista identificador fuerte;
+4. fallback técnico de la fuente si todavía no hay una combinación suficiente.
+
+Criterios de equivalencia:
+
+- dos filas solo se consideran equivalentes si comparten la misma clave canónica normalizada;
+- diferencias menores de formato no deben crear claves distintas si representan el mismo identificador;
+- si faltan campos críticos y no se puede construir una clave estable, la fila queda trazada pero no se fuerza el match.
+
+Qué pasa si falta información:
+
+- si falta el identificador fuerte, se baja al siguiente nivel de prioridad;
+- si la fuente no aporta campos suficientes para una clave segura, la fila mantiene su trazabilidad
+  intra-fuente pero no se usa como prueba de cruce inter-fuente;
+- el resultado debe documentarse como ausencia de evidencia suficiente, no como coincidencia negativa.
+
+Trazabilidad del cruce:
+
+- el pipeline conserva la fuente de origen, el identificador original y la clave canónica;
+- las intersecciones entre fuentes se reportan explícitamente en cobertura;
+- si el cruce sigue sin producir intersecciones útiles, eso se registra como limitación reproducible del canonico y no se interpreta como fallo del agente de scoring.
+
 ### Deduplicacion
 
 - PLACE conserva la version mas reciente por `contract_folder_id` o `source_entry_id`.
 - OpenTender conserva la version mas reciente por `source_record_id` y filtra CPV antes de materializar la tabla final.
 - Agent2 recibe una tabla sin duplicados por `source`, `source_record_id` y `contract_key_canon`.
+- La ausencia de intersecciones útiles entre BOE, PLACE y OpenTender no invalida la tabla canónica;
+  solo indica que el criterio de cruce debe tratarse como frontera trazable y no como prueba de
+  identidad compartida entre fuentes.
 
 ### Contrato estricto para Agent2
 
