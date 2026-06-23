@@ -99,6 +99,9 @@ python -m pip install -e ".[dev,data,db,graph,rag,frontend]"
     - `normalize-opentender`
     - `run-agent1`
     - `run-batch`
+  - `run-batch` imprime también la ruta del `freeze_manifest.json` cuando la ejecución es
+    mensual o forzada; ese manifiesto es el artefacto de referencia para el cierre reproducible
+    del TFM.
 - `scr/procurewatch/__main__.py`
   - Ejecuta `procurewatch` como entrada estandar.
 
