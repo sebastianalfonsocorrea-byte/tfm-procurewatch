@@ -21,7 +21,7 @@ def write_agent1_analytical_tables_to_postgres(
 ) -> dict[str, Any]:
     import pandas as pd
 
-    engine = create_engine(postgres_dsn, future=True)
+    engine = create_engine(_normalize_postgres_dsn(postgres_dsn), future=True)
     contract_frame = _prepare_entity_frame(pd.DataFrame(contracts), "contrato")
     supplier_frame = _prepare_entity_frame(pd.DataFrame(suppliers), "adjudicatario")
     with engine.begin() as connection:
@@ -123,3 +123,9 @@ def _sanitize_dsn(postgres_dsn: str) -> str:
         username = credentials.split(":", 1)[0]
         return f"{prefix}://{username}:***@{host_part}" if prefix else f"{username}:***@{host_part}"
     return f"{prefix}://***@{host_part}" if prefix else f"***@{host_part}"
+
+
+def _normalize_postgres_dsn(postgres_dsn: str) -> str:
+    if postgres_dsn.startswith("postgresql://"):
+        return "postgresql+psycopg://" + postgres_dsn.removeprefix("postgresql://")
+    return postgres_dsn

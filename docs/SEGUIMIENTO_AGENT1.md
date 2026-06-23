@@ -2,6 +2,20 @@
 
 Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibilidad de decisiones.
 
+
+## 23/06/2026
+
+### Hecho
+
+- Se ejecuta el MVP real con PostgreSQL de Docker usando `procurewatch run-mvp`.
+- El runner reutiliza los artefactos cacheados de BOE y OpenTender y un placeholder local de PLACE
+  para no forzar descargas durante la prueba.
+- La persistencia en PostgreSQL queda verificada con filas reales en:
+  - `agent1_contracts_analytical`;
+  - `agent1_suppliers_analytical`.
+- El entorno local necesitaba el driver `psycopg` para que SQLAlchemy pudiera abrir el DSN
+  `postgresql://...`; el conector lo normaliza a `postgresql+psycopg://...`.
+
 ## 22/06/2026
 
 ### Hecho
