@@ -19,9 +19,11 @@ dist/
 data/raw/*
 data/processed/*
 data/synthetic/*
+data/tmp/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/synthetic/.gitkeep
+!data/tmp/.gitkeep
 
 models/*
 !models/.gitkeep

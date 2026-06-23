@@ -175,6 +175,8 @@ viven bajo `data/`.
 
 - `data/raw/`: inmutable (input original descargado).
 - `data/processed/`: limpio y modelado.
+- `data/tmp/`: temporal de trabajo para descargas o descompresiones intermedias; se limpia al
+  terminar y no se versiona.
 - `data/processed_sample/`: salidas de prueba.
 - `data/synthetic/`: datos de prueba/demos.
 

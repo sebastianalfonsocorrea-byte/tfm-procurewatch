@@ -40,6 +40,11 @@ está en roadmap y qué solo puede presentarse como evaluación proxy.
 - Arquitectura futura:
   - Agent3, Agent4, grafo completo y capa documental avanzada siguen en roadmap.
 
+## Qué es temporal y no debe versionarse
+
+- `data/tmp/` se usa solo como espacio intermedio para descargas o descompresiones temporales;
+  debe limpiarse al terminar y no formar parte de la evidencia final.
+
 ## Qué es evaluación proxy
 
 Usar una señal operativa o derivada como referencia de contraste cuando no existe ground truth.
@@ -68,4 +73,3 @@ En este proyecto:
 - `docs/SEGUIMIENTO_AGENT1.md`
 - `docs/PLAN_AGENTE1_PIPELINE.md`
 - `docs/PLAN_AGENTE2_SCORING.md`
-
