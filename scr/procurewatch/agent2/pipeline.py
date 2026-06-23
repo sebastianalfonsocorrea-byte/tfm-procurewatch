@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..db import write_agent2_risk_tables_to_postgres
-from .comparison import build_agent2_model_comparison
+from .comparison import build_agent2_model_comparison, evaluate_agent2_model_comparison
 from .schemas import Agent2Contract
 from .scoring import FLAG_WEIGHTS, score_contract
 
@@ -228,6 +228,7 @@ def run_agent2(
         scores=scores,
         deviation_threshold=deviation_threshold,
     )
+    comparison_evaluation = evaluate_agent2_model_comparison(model_comparison)
     stability_check = _build_stability_check(
         contracts=contracts,
         deviation_threshold=deviation_threshold,
@@ -380,6 +381,7 @@ def run_agent2(
         "activated_contract_rows": int((scores["flags_count"] > 0).sum()),
         "supplier_rows": int(len(supplier_summary)),
         "comparison_rows": int(len(model_comparison)),
+        "comparison_evaluation": comparison_evaluation,
         "stability_check": stability_check,
         "rules": {
             **RULE_METADATA,

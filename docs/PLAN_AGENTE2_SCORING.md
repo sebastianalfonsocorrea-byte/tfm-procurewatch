@@ -182,6 +182,28 @@ implementación formal completa si no existen positivas y no etiquetadas suficie
 La comparativa se construye sobre covariables del contrato y señales de completitud, no sobre el
 propio `risk_score`, para evitar fuga de información desde las reglas hacia el modelo.
 
+## Evaluación formal de la comparativa
+
+Cuando no hay etiquetas de fraude verdaderas, la evaluación del contraste se hace contra
+`rule_positive` como referencia proxy. Eso permite medir precisión, recall, F1, exactitud,
+balanced accuracy y AUC de manera reproducible, pero no sustituye una validación supervisada real.
+
+La salida de evaluación incluye, para Isolation Forest y para PU learning:
+
+- soporte total;
+- positivos de referencia;
+- positivos predichos;
+- TP, FP, TN y FN;
+- accuracy;
+- balanced accuracy;
+- precision;
+- recall;
+- F1;
+- ROC AUC cuando es calculable.
+
+En la memoria conviene presentar esta evaluación como contraste técnico, no como estimación
+definitiva de rendimiento frente a fraude real.
+
 ## Uso de PostgreSQL
 
 Tablas destino:

@@ -182,3 +182,101 @@ def build_agent2_model_comparison(
         comparison["pu_label"].astype(bool) == comparison["rule_positive"].astype(bool)
     )
     return comparison
+
+
+def evaluate_agent2_model_comparison(comparison: Any) -> dict[str, Any]:
+    import pandas as pd
+    from sklearn.metrics import (
+        accuracy_score,
+        balanced_accuracy_score,
+        confusion_matrix,
+        f1_score,
+        precision_score,
+        recall_score,
+        roc_auc_score,
+    )
+
+    frame = pd.DataFrame(comparison).copy()
+    if frame.empty:
+        return {
+            "reference": "rule_positive",
+            "rows": 0,
+            "iforest": _empty_comparison_metrics(),
+            "pu": _empty_comparison_metrics(),
+        }
+
+    y_true = frame["rule_positive"].astype(int)
+    return {
+        "reference": "rule_positive",
+        "rows": int(len(frame)),
+        "iforest": _comparison_metrics(
+            y_true=y_true,
+            y_pred=frame["iforest_anomaly_flag"].astype(int),
+            y_score=frame["iforest_anomaly_score"],
+        ),
+        "pu": _comparison_metrics(
+            y_true=y_true,
+            y_pred=frame["pu_label"].astype(int),
+            y_score=frame["pu_probability"],
+        ),
+    }
+
+
+def _comparison_metrics(*, y_true: Any, y_pred: Any, y_score: Any) -> dict[str, Any]:
+    import pandas as pd
+    from sklearn.metrics import roc_auc_score
+
+    truth = pd.Series(y_true).astype(int)
+    pred = pd.Series(y_pred).astype(int)
+    score = pd.Series(y_score)
+    truth_array = truth.to_numpy()
+    pred_array = pred.to_numpy()
+    tp = int(((truth_array == 1) & (pred_array == 1)).sum())
+    tn = int(((truth_array == 0) & (pred_array == 0)).sum())
+    fp = int(((truth_array == 0) & (pred_array == 1)).sum())
+    fn = int(((truth_array == 1) & (pred_array == 0)).sum())
+    precision = tp / (tp + fp) if (tp + fp) else 0.0
+    recall = tp / (tp + fn) if (tp + fn) else 0.0
+    tnr = tn / (tn + fp) if (tn + fp) else 0.0
+    accuracy = (tp + tn) / len(truth_array) if len(truth_array) else 0.0
+    balanced_accuracy = (recall + tnr) / 2.0 if len(truth_array) else 0.0
+    f1 = (2.0 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+    metrics = {
+        "support": int(len(truth)),
+        "positive_support": int(truth.sum()),
+        "predicted_positive": int(pred.sum()),
+        "tp": int(tp),
+        "fp": int(fp),
+        "tn": int(tn),
+        "fn": int(fn),
+        "accuracy": round(float(accuracy), 4),
+        "balanced_accuracy": round(float(balanced_accuracy), 4),
+        "precision": round(float(precision), 4),
+        "recall": round(float(recall), 4),
+        "f1": round(float(f1), 4),
+        "roc_auc": None,
+    }
+    try:
+        if truth.nunique() > 1 and pd.Series(score).nunique(dropna=True) > 1:
+            metrics["roc_auc"] = round(float(roc_auc_score(truth, score)), 4)
+    except Exception:
+        metrics["roc_auc"] = None
+    return metrics
+
+
+def _empty_comparison_metrics() -> dict[str, Any]:
+    return {
+        "support": 0,
+        "positive_support": 0,
+        "predicted_positive": 0,
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "accuracy": 0.0,
+        "balanced_accuracy": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "roc_auc": None,
+    }

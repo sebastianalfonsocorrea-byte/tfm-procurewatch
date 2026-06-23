@@ -38,6 +38,8 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
   score y la comparativa no cambian al barajar el orden de entrada.
 - La comparativa con Isolation Forest y PU learning usa covariables del contrato y no el propio
   `risk_score`, para evitar fuga de información.
+- La comparativa ya devuelve métricas formales de contraste contra `rule_positive` como proxy
+  cuando no hay etiquetas reales de fraude.
 - `run-agent2-mvp` lee `data/processed/agent2_contracts_canonical.parquet` y genera las salidas
   analíticas del agente sin pedir parámetros extra.
 - El resultado ya permite enseñar un ranking mínimo de casos y no depende todavía de grafos ni
