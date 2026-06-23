@@ -183,6 +183,15 @@ persistencia en PostgreSQL automáticamente.
 
 Si quieres un guion de demo muy corto para la defensa, mira `docs/DEMO_MVP.md`.
 
+Para Agent 2, el equivalente mínimo es:
+
+```powershell
+procurewatch run-agent2-mvp
+```
+
+Ese comando lee `data/processed/agent2_contracts_canonical.parquet` y genera las señales
+deterministas del MVP de red flags y scoring.
+
 ## 10. Siguiente foco: Agent2 y Agent4
 
 Despues de validar Agent1:

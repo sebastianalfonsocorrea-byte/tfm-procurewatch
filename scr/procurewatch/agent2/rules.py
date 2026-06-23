@@ -7,7 +7,24 @@ def missing_supplier(contract: Agent2Contract) -> bool:
     return not contract.supplier_name.strip()
 
 
-def awarded_above_estimate(contract: Agent2Contract) -> bool:
+def risky_procedure(contract: Agent2Contract) -> bool:
+    normalized = _normalize_text(contract.procedure)
+    return any(marker in normalized for marker in ("MENOR", "EMERGENCIA", "NEGOCIADO"))
+
+
+def awarded_above_estimate(
+    contract: Agent2Contract,
+    *,
+    deviation_threshold: float = 0.10,
+) -> bool:
     if contract.estimated_value_eur is None or contract.awarded_value_eur is None:
         return False
-    return contract.awarded_value_eur > contract.estimated_value_eur
+    if contract.estimated_value_eur <= 0:
+        return False
+    deviation_ratio = (
+        (contract.awarded_value_eur - contract.estimated_value_eur)
+        / contract.estimated_value_eur
+    )
+    return deviation_ratio > deviation_threshold
+def _normalize_text(value: str) -> str:
+    return value.strip().upper()

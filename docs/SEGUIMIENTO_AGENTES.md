@@ -8,7 +8,7 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 | Agente | Estado | Entrada principal | Salida principal | Siguiente paso |
 |---|---|---|---|---|
 | Agent1 | Operativo | BOE, PLACE, OpenTender raw | `agent2_contracts_canonical.parquet` | Mejorar matching entre fuentes |
-| Agent2 | RF-05 implementada | Canonico Agent1 | `agent2_risk_flags.parquet`, `agent2_risk_scores.parquet` | Validar resultados y añadir RF-02 |
+| Agent2 | MVP de red flags v1 | Canonico Agent1 | `agent2_risk_flags.parquet`, `agent2_risk_scores.parquet` | Validar resultados y preparar carga a PostgreSQL |
 | Agent3 | Planificado | Canonico Agent1/PostgreSQL | nodos, edges y metricas | Crear generador de grafo |
 | Agent4 | Scaffold y plan | Contratos y documentos | chunks, retrieval y contexto | PoC RAG con evidencia |
 
@@ -18,6 +18,30 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 - `scr/procurewatch/data_sources/` guarda conectores y parsers de fuentes externas.
 - `scr/procurewatch/agentN/` guarda la logica propia de cada agente.
 - Ningun agente debe afirmar fraude; todos priorizan revision humana con evidencia trazable.
+
+## Avance Agent2 23/06/2026
+
+- Se amplía el MVP de Agent2 a un conjunto pequeño de red flags explicables:
+  - RF-01: adjudicatario ausente;
+  - RF-02: procedimiento sensible o de urgencia;
+  - RF-03: recurrencia comprador-proveedor;
+  - RF-04: concentración de importe en la pareja comprador-proveedor;
+  - RF-05: desviación entre importe estimado y adjudicado.
+- El score pasa a escalar de 0 a 100 y conserva evidencia por contrato.
+- `run-agent2-mvp` lee `data/processed/agent2_contracts_canonical.parquet` y genera las salidas
+  analíticas del MVP sin pedir parámetros extra.
+- El resultado ya permite enseñar un ranking mínimo de casos y no depende todavía de grafos ni
+  documentos.
+- Ejecución real sobre el canonico Agent1 actual:
+  - 17.927 contratos analizados;
+  - 12.536 contratos con alguna señal;
+  - 17.530 señales activadas en total;
+  - reparto por red flag:
+    - RF-01: 3.420;
+    - RF-02: 232;
+    - RF-03: 5.321;
+    - RF-04: 568;
+    - RF-05: 7.989.
 
 ## Avance Agent2 21/06/2026
 

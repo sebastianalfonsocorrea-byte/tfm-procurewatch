@@ -34,6 +34,22 @@ class CliTests(unittest.TestCase):
         self.assertTrue(kwargs["write_postgres"])
         self.assertEqual(kwargs["output_dir"], Path("data/processed"))
 
+    def test_run_agent2_mvp_uses_default_canonical(self) -> None:
+        with mock.patch("procurewatch.agent2.run_agent2") as run_agent2_mock:
+            run_agent2_mock.return_value = {
+                "rows": 1,
+                "activated_contract_rows": 1,
+                "activated_flags": 1,
+                "report_path": "agent2_run_report.json",
+            }
+            exit_code = main(["run-agent2-mvp"])
+
+        self.assertEqual(exit_code, 0)
+        run_agent2_mock.assert_called_once()
+        kwargs = run_agent2_mock.call_args.kwargs
+        self.assertEqual(kwargs["input_path"], Path("data/processed/agent2_contracts_canonical.parquet"))
+        self.assertEqual(kwargs["output_dir"], Path("data/processed"))
+
 
 if __name__ == "__main__":
     unittest.main()

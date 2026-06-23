@@ -50,6 +50,16 @@ Prioridad inicial:
 - RF-06: patrones temporales anomalos.
 - RF-07: repeticion de CPV, titulos o importes entre contratos cercanos.
 
+### MVP ejecutable actual
+
+Para el borrador del TFM, el MVP deja operativas estas señales deterministas:
+
+- RF-01: adjudicatario ausente.
+- RF-02: procedimiento sensible o de urgencia.
+- RF-03: recurrencia comprador-proveedor en el canonico.
+- RF-04: concentracion de importe en la pareja comprador-proveedor.
+- RF-05: desviacion entre importe estimado y adjudicado.
+
 ### Primera implementación: RF-05
 
 La primera regla ejecutable compara `awarded_value_eur` con `estimated_value_eur`:

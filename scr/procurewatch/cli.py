@@ -263,6 +263,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=0.10,
         help="Desviacion relativa minima para activar RF-05 (por defecto: 0.10).",
     )
+    agent2_mvp_parser = subparsers.add_parser(
+        "run-agent2-mvp",
+        help="Ejecuta Agent 2 sobre el canonico de Agent 1 con el conjunto minimo de red flags.",
+    )
+    agent2_mvp_parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("data/processed/agent2_contracts_canonical.parquet"),
+    )
+    agent2_mvp_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    agent2_mvp_parser.add_argument(
+        "--deviation-threshold",
+        type=float,
+        default=0.10,
+        help="Desviacion relativa minima para activar RF-05 (por defecto: 0.10).",
+    )
     batch_parser = subparsers.add_parser(
         "run-batch",
         help="Orquesta ingesta semanal o mensual y estado de batch para cadenas futuras.",
@@ -499,7 +515,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Agente 2 ejecutado")
         print(f"- Contratos de entrada: {report['rows']}")
         print(f"- Contratos evaluables: {report['evaluable_rows']}")
-        print(f"- RF-05 activadas: {report['activated_flags']}")
+        print(f"- Contratos con alguna señal: {report['activated_contract_rows']}")
+        print(f"- Señales activadas: {report['activated_flags']}")
+        print(f"- Reporte: {report['report_path']}")
+        return 0
+    if args.command == "run-agent2-mvp":
+        from .agent2 import run_agent2
+
+        report = run_agent2(
+            input_path=args.input,
+            output_dir=args.output_dir,
+            deviation_threshold=args.deviation_threshold,
+        )
+        print("Agente 2 MVP ejecutado")
+        print(f"- Contratos de entrada: {report['rows']}")
+        print(f"- Contratos con alguna señal: {report['activated_contract_rows']}")
+        print(f"- Señales activadas: {report['activated_flags']}")
         print(f"- Reporte: {report['report_path']}")
         return 0
     if args.command == "run-batch":
