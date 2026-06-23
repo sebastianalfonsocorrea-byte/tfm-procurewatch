@@ -14,6 +14,7 @@ RF02_CODE = "RF-02"
 RF03_CODE = "RF-03"
 RF04_CODE = "RF-04"
 RF05_CODE = "RF-05"
+RF06_CODE = "RF-06"
 
 RULE_VERSIONS = {
     RF01_CODE: "1.0.0",
@@ -21,6 +22,7 @@ RULE_VERSIONS = {
     RF03_CODE: "1.0.0",
     RF04_CODE: "1.0.0",
     RF05_CODE: "1.0.0",
+    RF06_CODE: "1.0.0",
 }
 
 RULE_METADATA = {
@@ -43,6 +45,10 @@ RULE_METADATA = {
     RF05_CODE: {
         "description": "Importe adjudicado superior al estimado.",
         "weight": FLAG_WEIGHTS[RF05_CODE],
+    },
+    RF06_CODE: {
+        "description": "Patrón temporal anómalo entre publicación y adjudicación.",
+        "weight": FLAG_WEIGHTS[RF06_CODE],
     },
 }
 
@@ -101,12 +107,54 @@ def run_agent2(
     snapshot_id = _sha256(input_path)
     created_at = datetime.now(UTC).isoformat()
 
+    contracts["publication_date_parsed"] = pd.to_datetime(contracts["publication_date"], errors="coerce")
+    contracts["award_date_parsed"] = pd.to_datetime(contracts["award_date"], errors="coerce")
+    contracts["resolution_days"] = (
+        contracts["award_date_parsed"] - contracts["publication_date_parsed"]
+    ).dt.days.astype("Int64")
+
+    contracts["_supplier_key"] = contracts["supplier_name"].map(_normalize_key)
+    contracts["_procedure_key"] = contracts["procedure"].map(_normalize_key)
+    contracts["_buyer_key"] = contracts["buyer_name"].map(_normalize_key)
+    tender_record_counts = contracts[contracts["source_tender_id"].ne("")].groupby(
+        "source_tender_id", dropna=False
+    ).size()
+    tender_supplier_counts = (
+        contracts[contracts["_supplier_key"].ne("") & contracts["source_tender_id"].ne("")]
+        .groupby("source_tender_id", dropna=False)["_supplier_key"]
+        .nunique(dropna=True)
+    )
+    buyer_procedure_counts = (
+        contracts[contracts["_buyer_key"].ne("") & contracts["_procedure_key"].ne("")]
+        .groupby(["_buyer_key", "_procedure_key"], dropna=False)
+        .size()
+    )
+
     base_scores: list[dict[str, Any]] = []
     flag_records: list[dict[str, Any]] = []
     rf05_evaluable_mask = contracts["estimated_value_eur"].gt(0) & contracts["awarded_value_eur"].notna()
 
     for index, record in enumerate(contracts.to_dict(orient="records")):
         contract = _record_to_contract(record)
+        source_tender_id = _clean_text(record.get("source_tender_id"))
+        buyer_key = _normalize_key(_clean_text(record.get("buyer_name")))
+        procedure_key = _normalize_key(_clean_text(record.get("procedure")))
+        tender_count = _int_or_none(tender_record_counts.get(source_tender_id, None))
+        contract = Agent2Contract(
+            **{
+                **contract.__dict__,
+                "source_tender_id": source_tender_id,
+                "supplier_count_in_tender": _int_or_none(
+                    tender_supplier_counts.get(source_tender_id, None)
+                    if tender_count == 1
+                    else None
+                ),
+                "buyer_procedure_count": _int_or_none(
+                    buyer_procedure_counts.get((buyer_key, procedure_key), None)
+                ),
+                "resolution_days": _int_or_none(record.get("resolution_days")),
+            }
+        )
         score = score_contract(contract, deviation_threshold=deviation_threshold)
         active_flags = list(score.red_flags)
         base_scores.append(
@@ -211,12 +259,17 @@ def run_agent2(
         "not_evaluable_rows": int((~rf05_evaluable_mask).sum()),
         "activated_flags": int(len(flags)),
         "activated_contract_rows": int((scores["flags_count"] > 0).sum()),
-        "rules": RULE_METADATA | {
+        "rules": {
+            **RULE_METADATA,
             RF05_CODE: {
                 **RULE_METADATA[RF05_CODE],
                 "deviation_threshold": deviation_threshold,
                 "rule_version": RULE_VERSIONS[RF05_CODE],
-            }
+            },
+            RF06_CODE: {
+                **RULE_METADATA[RF06_CODE],
+                "rule_version": RULE_VERSIONS[RF06_CODE],
+            },
         },
         "score_version": SCORE_VERSION,
         "flag_breakdown": flags.groupby("flag_code").size().to_dict() if not flags.empty else {},
@@ -342,13 +395,14 @@ def _record_to_contract(record: dict[str, Any]) -> Agent2Contract:
         "contract_key_canon": str(record.get("contract_key_canon", "")),
         "source": str(record.get("source", "")),
         "source_record_id": str(record.get("source_record_id", "")),
+        "source_tender_id": _clean_text(record.get("source_tender_id")),
         "source_dataset": str(record.get("source_dataset", "")),
-        "buyer_name": str(record.get("buyer_name", "") or ""),
+        "buyer_name": _clean_text(record.get("buyer_name")),
         "buyer_id": str(record.get("buyer_id", "")),
-        "supplier_name": str(record.get("supplier_name", "") or ""),
+        "supplier_name": _clean_text(record.get("supplier_name")),
         "supplier_id": str(record.get("supplier_id", "")),
         "contract_title": str(record.get("contract_title", "")),
-        "procedure": str(record.get("procedure", "") or ""),
+        "procedure": _clean_text(record.get("procedure")),
         "publication_date": str(record.get("publication_date", "")),
         "award_date": str(record.get("award_date", "")),
         "estimated_value_eur": _coerce_float(record.get("estimated_value_eur")),
@@ -370,6 +424,34 @@ def _coerce_float(value: Any) -> float | None:
         if converted != converted:
             return None
         return converted
+    except (TypeError, ValueError):
+        return None
+
+
+def _clean_text(value: Any) -> str:
+    if value is None:
+        return ""
+    try:
+        import pandas as pd
+
+        if pd.isna(value):
+            return ""
+    except Exception:
+        pass
+    return str(value).strip()
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        import pandas as pd
+
+        if value is None or pd.isna(value):
+            return None
+    except Exception:
+        if value is None:
+            return None
+    try:
+        return int(value)
     except (TypeError, ValueError):
         return None
 
@@ -434,9 +516,18 @@ def _evidence_text_for_row_local(
     evidence: dict[str, object],
 ) -> str:
     if flag_code == RF01_CODE:
+        if contract.supplier_count_in_tender == 1:
+            return (
+                f"El expediente {contract.source_tender_id} solo muestra un adjudicatario "
+                "en los registros disponibles."
+            )
         return "No se ha identificado adjudicatario normalizado en el canonico."
     if flag_code == RF02_CODE:
-        return f"Procedimiento '{contract.procedure}' clasificado como señal sensible del MVP."
+        count = contract.buyer_procedure_count
+        return (
+            f"Procedimiento '{contract.procedure}' repetido {count} veces para el comprador "
+            "en los registros disponibles."
+        )
     if flag_code == RF05_CODE:
         estimate = float(evidence.get("estimated_value_eur") or 0.0)
         award = float(evidence.get("awarded_value_eur") or 0.0)
@@ -444,6 +535,11 @@ def _evidence_text_for_row_local(
         return (
             f"Importe adjudicado {award:.2f} EUR frente a estimado {estimate:.2f} EUR; "
             f"desviación {ratio:.2%}, superior al umbral {deviation_threshold:.2%}."
+        )
+    if flag_code == RF06_CODE:
+        return (
+            f"Resolución en {contract.resolution_days} días entre publicación y adjudicación, "
+            "fuera del patrón temporal esperado."
         )
     return "Señal determinista del MVP."
 

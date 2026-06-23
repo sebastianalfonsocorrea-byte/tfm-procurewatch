@@ -12,6 +12,17 @@ def risky_procedure(contract: Agent2Contract) -> bool:
     return any(marker in normalized for marker in ("MENOR", "EMERGENCIA", "NEGOCIADO"))
 
 
+def temporal_anomaly(contract: Agent2Contract) -> bool:
+    if contract.resolution_days is None:
+        return False
+    if contract.resolution_days < 0:
+        return True
+    normalized = _normalize_text(contract.procedure)
+    if "EMERGENCIA" in normalized:
+        return False
+    return contract.resolution_days <= 2
+
+
 def awarded_above_estimate(
     contract: Agent2Contract,
     *,
