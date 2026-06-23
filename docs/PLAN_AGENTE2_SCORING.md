@@ -148,6 +148,24 @@ Fórmula operativa:
 La idea es evitar que un único expediente extremo distorsione todo el perfil, pero sin perder el
 peso de picos puntuales ni la recurrencia de activaciones.
 
+## Validación de estabilidad
+
+Agent2 incluye una comprobación sencilla sobre una muestra fija ordenada por `contract_key_canon`.
+La muestra se vuelve a evaluar tras barajar las filas y se verifica que el score y la comparativa
+se mantienen iguales.
+
+La validación registra:
+
+- tamaño de la muestra;
+- número de filas evaluadas;
+- coincidencia exacta de scores;
+- coincidencia exacta de la comparativa;
+- máxima diferencia observada en `risk_score`;
+- número de contratos no coincidentes, si los hubiera.
+
+Se usa como control de regresión y como evidencia de que el pipeline no depende del orden de
+entrada de los datos.
+
 Salida comparativa del agente:
 
 - `iforest_anomaly_score`

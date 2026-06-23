@@ -125,6 +125,10 @@ class Agent2Tests(unittest.TestCase):
             self.assertIn("iforest_anomaly_score", comparison.columns)
             self.assertIn("pu_probability", comparison.columns)
             self.assertEqual(len(comparison), 5)
+            self.assertIn("stability_check", report)
+            self.assertTrue(report["stability_check"]["score_exact_match"])
+            self.assertTrue(report["stability_check"]["model_exact_match"])
+            self.assertEqual(report["stability_check"]["max_score_delta"], 0.0)
             self.assertIn("source_snapshot_id", report)
             self.assertTrue((root / "processed" / "agent2_run_report.json").exists())
 

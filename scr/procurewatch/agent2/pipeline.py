@@ -58,6 +58,7 @@ SCORE_VERSION = "2.0.0"
 DEFAULT_DEVIATION_THRESHOLD = 0.10
 RECURRENCE_THRESHOLD = 2
 CONCENTRATION_THRESHOLD = 0.50
+STABILITY_SAMPLE_SIZE = 25
 
 
 def run_agent2(
@@ -227,6 +228,11 @@ def run_agent2(
         scores=scores,
         deviation_threshold=deviation_threshold,
     )
+    stability_check = _build_stability_check(
+        contracts=contracts,
+        deviation_threshold=deviation_threshold,
+        sample_size=min(STABILITY_SAMPLE_SIZE, len(contracts)),
+    )
 
     flags = pd.DataFrame(
         flag_records,
@@ -374,6 +380,7 @@ def run_agent2(
         "activated_contract_rows": int((scores["flags_count"] > 0).sum()),
         "supplier_rows": int(len(supplier_summary)),
         "comparison_rows": int(len(model_comparison)),
+        "stability_check": stability_check,
         "rules": {
             **RULE_METADATA,
             RF05_CODE: {
@@ -440,6 +447,188 @@ def _build_pair_context(contracts: Any) -> Any:
     context["pair_share"] = context["pair_awarded"] / context["buyer_total_awarded"]
     context["pair_count"] = context["pair_count"].fillna(0).astype("Int64")
     return context
+
+
+def _build_stability_check(*, contracts: Any, deviation_threshold: float, sample_size: int) -> dict[str, Any]:
+    import pandas as pd
+
+    if sample_size <= 0 or contracts.empty:
+        return {
+            "sample_size": 0,
+            "score_rows": 0,
+            "model_rows": 0,
+            "score_exact_match": True,
+            "model_exact_match": True,
+            "max_score_delta": 0.0,
+            "mismatched_contracts": 0,
+        }
+
+    sample = contracts.sort_values("contract_key_canon").head(sample_size).copy()
+    shuffled = sample.sample(frac=1.0, random_state=42).reset_index(drop=True)
+    sample = sample.reset_index(drop=True)
+
+    sample_scores = _score_contract_frame(sample, deviation_threshold=deviation_threshold)
+    shuffled_scores = _score_contract_frame(shuffled, deviation_threshold=deviation_threshold)
+
+    score_compare = sample_scores[["contract_key_canon", "risk_score", "top_flags"]].sort_values(
+        "contract_key_canon"
+    ).reset_index(drop=True)
+    shuffled_compare = shuffled_scores[["contract_key_canon", "risk_score", "top_flags"]].sort_values(
+        "contract_key_canon"
+    ).reset_index(drop=True)
+
+    merged = score_compare.merge(
+        shuffled_compare,
+        on="contract_key_canon",
+        how="outer",
+        suffixes=("_sample", "_shuffled"),
+        indicator=True,
+    )
+    merged["risk_score_sample"] = pd.to_numeric(merged["risk_score_sample"], errors="coerce")
+    merged["risk_score_shuffled"] = pd.to_numeric(merged["risk_score_shuffled"], errors="coerce")
+    merged["top_flags_sample"] = merged["top_flags_sample"].astype("string")
+    merged["top_flags_shuffled"] = merged["top_flags_shuffled"].astype("string")
+
+    score_exact_match = bool(
+        merged["_merge"].eq("both").all()
+        and merged["risk_score_sample"].equals(merged["risk_score_shuffled"])
+        and merged["top_flags_sample"].equals(merged["top_flags_shuffled"])
+    )
+    max_score_delta = float(
+        (merged["risk_score_sample"] - merged["risk_score_shuffled"]).abs().fillna(0).max()
+        if not merged.empty
+        else 0.0
+    )
+    mismatched_contracts = int(
+        (
+            merged["_merge"].ne("both")
+            | merged["risk_score_sample"].ne(merged["risk_score_shuffled"])
+            | merged["top_flags_sample"].ne(merged["top_flags_shuffled"])
+        ).sum()
+    )
+
+    sample_comparison = build_agent2_model_comparison(
+        contracts=sample,
+        scores=sample_scores,
+        deviation_threshold=deviation_threshold,
+    ).sort_values("contract_key_canon").reset_index(drop=True)
+    shuffled_comparison = build_agent2_model_comparison(
+        contracts=shuffled,
+        scores=shuffled_scores,
+        deviation_threshold=deviation_threshold,
+    ).sort_values("contract_key_canon").reset_index(drop=True)
+
+    model_columns = [
+        "contract_key_canon",
+        "rule_score",
+        "rule_flags_count",
+        "rule_positive",
+        "iforest_anomaly_score",
+        "iforest_anomaly_flag",
+        "pu_probability",
+        "pu_label",
+        "agreement_iforest_rule",
+        "agreement_pu_rule",
+    ]
+    model_exact_match = bool(
+        sample_comparison[model_columns].equals(shuffled_comparison[model_columns])
+    )
+
+    return {
+        "sample_size": int(sample_size),
+        "score_rows": int(len(sample_scores)),
+        "model_rows": int(len(sample_comparison)),
+        "score_exact_match": score_exact_match,
+        "model_exact_match": model_exact_match,
+        "max_score_delta": round(max_score_delta, 6),
+        "mismatched_contracts": mismatched_contracts,
+    }
+
+
+def _score_contract_frame(contracts: Any, *, deviation_threshold: float) -> Any:
+    import pandas as pd
+
+    frame = contracts.copy()
+    for column in [
+        "buyer_name",
+        "supplier_name",
+        "procedure",
+        "estimated_value_eur",
+        "awarded_value_eur",
+        "source",
+        "source_record_id",
+        "source_dataset",
+        "buyer_id",
+        "supplier_id",
+        "contract_title",
+        "publication_date",
+        "award_date",
+        "cpv_codes_raw",
+        "cpv_code_list",
+        "source_file",
+    ]:
+        if column not in frame.columns:
+            frame[column] = pd.NA if column not in {"buyer_name", "supplier_name", "procedure"} else ""
+    frame["buyer_name"] = frame["buyer_name"].astype("string").fillna("").str.strip()
+    frame["supplier_name"] = frame["supplier_name"].astype("string").fillna("").str.strip()
+    frame["procedure"] = frame["procedure"].astype("string").fillna("").str.strip()
+    frame["estimated_value_eur"] = pd.to_numeric(frame["estimated_value_eur"], errors="coerce")
+    frame["awarded_value_eur"] = pd.to_numeric(frame["awarded_value_eur"], errors="coerce")
+    frame["publication_date_parsed"] = pd.to_datetime(frame["publication_date"], errors="coerce")
+    frame["award_date_parsed"] = pd.to_datetime(frame["award_date"], errors="coerce")
+    frame["resolution_days"] = (
+        frame["award_date_parsed"] - frame["publication_date_parsed"]
+    ).dt.days.astype("Int64")
+    frame["_supplier_key"] = frame["supplier_name"].map(_normalize_key)
+    frame["_procedure_key"] = frame["procedure"].map(_normalize_key)
+    frame["_buyer_key"] = frame["buyer_name"].map(_normalize_key)
+    tender_record_counts = frame[frame["source_tender_id"].ne("")].groupby(
+        "source_tender_id", dropna=False
+    ).size()
+    tender_supplier_counts = (
+        frame[frame["_supplier_key"].ne("") & frame["source_tender_id"].ne("")]
+        .groupby("source_tender_id", dropna=False)["_supplier_key"]
+        .nunique(dropna=True)
+    )
+    buyer_procedure_counts = (
+        frame[frame["_buyer_key"].ne("") & frame["_procedure_key"].ne("")]
+        .groupby(["_buyer_key", "_procedure_key"], dropna=False)
+        .size()
+    )
+
+    rows: list[dict[str, Any]] = []
+    for record in frame.to_dict(orient="records"):
+        contract = _record_to_contract(record)
+        source_tender_id = _clean_text(record.get("source_tender_id"))
+        buyer_key = _normalize_key(_clean_text(record.get("buyer_name")))
+        procedure_key = _normalize_key(_clean_text(record.get("procedure")))
+        tender_count = _int_or_none(tender_record_counts.get(source_tender_id, None))
+        contract = Agent2Contract(
+            **{
+                **contract.__dict__,
+                "source_tender_id": source_tender_id,
+                "supplier_count_in_tender": _int_or_none(
+                    tender_supplier_counts.get(source_tender_id, None)
+                    if tender_count == 1
+                    else None
+                ),
+                "buyer_procedure_count": _int_or_none(
+                    buyer_procedure_counts.get((buyer_key, procedure_key), None)
+                ),
+                "resolution_days": _int_or_none(record.get("resolution_days")),
+            }
+        )
+        score = score_contract(contract, deviation_threshold=deviation_threshold)
+        rows.append(
+            {
+                "contract_key_canon": contract.contract_key_canon,
+                "risk_score": min(float(score.risk_score), 100.0),
+                "flags_count": len(score.red_flags),
+                "top_flags": json.dumps(list(score.red_flags), ensure_ascii=False),
+            }
+        )
+
+    return pd.DataFrame(rows)
 
 
 def _build_supplier_summary(*, contracts: Any, scores: Any, snapshot_id: str) -> Any:
