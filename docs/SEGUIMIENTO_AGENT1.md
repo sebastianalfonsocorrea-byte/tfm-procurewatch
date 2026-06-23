@@ -23,6 +23,9 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 - El cruce entre BOE, PLACE y OpenTender se traza explícitamente por fuente y por clave canónica;
   si no hay intersecciones útiles, eso se registra como limitación del canónico y no como error
   del pipeline.
+- Se añade un diagnóstico agregado de cobertura en
+  `agent1_contract_key_coverage_diagnostics.json`, con conteos observables de clave primaria,
+  fallback y ausencia de clave suficiente por fuente.
 
 ### Diferencia operativa entre los dos comandos
 

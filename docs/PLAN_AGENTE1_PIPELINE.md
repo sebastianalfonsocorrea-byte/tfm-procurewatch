@@ -261,6 +261,9 @@ Trazabilidad del cruce:
 - el pipeline conserva la fuente de origen, el identificador original y la clave canónica;
 - las intersecciones entre fuentes se reportan explícitamente en cobertura;
 - si el cruce sigue sin producir intersecciones útiles, eso se registra como limitación reproducible del canonico y no se interpreta como fallo del agente de scoring.
+- el diagnóstico agregado de cobertura se guarda en `agent1_contract_key_coverage_diagnostics.json`
+  y resume cuántas filas pudieron construir clave primaria, cuántas dependieron de fallback y
+  cuántas quedaron sin clave suficiente por fuente.
 
 ### Deduplicacion
 

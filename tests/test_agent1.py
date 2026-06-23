@@ -164,6 +164,7 @@ class Agent1Tests(unittest.TestCase):
             quality = build_agent1_quality_summary(output_dir=processed, coverage=coverage, canonical=canonical)
 
             self.assertTrue((processed / "agent1_contract_key_coverage.parquet").exists())
+            self.assertTrue((processed / "agent1_contract_key_coverage_diagnostics.json").exists())
             self.assertTrue((processed / "agent2_contracts_canonical.parquet").exists())
             self.assertTrue((processed / "agent2_contracts_canonical_schema.json").exists())
             self.assertEqual(canonical["rows"], 3)
@@ -171,6 +172,7 @@ class Agent1Tests(unittest.TestCase):
             self.assertIn("source_notice_id", canonical_df.columns)
             self.assertIn("source_tender_id", canonical_df.columns)
             self.assertIn(quality["status"], {"ok", "warning"})
+            self.assertIn("contract_key_coverage_diagnostics_path", coverage)
 
     def test_run_agent1_reuses_cached_source_outputs(self) -> None:
         with TemporaryDirectory() as temp:

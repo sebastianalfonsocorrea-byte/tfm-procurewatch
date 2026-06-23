@@ -310,12 +310,50 @@ def build_source_coverage(
 
     key_rows = _build_universe_rows_from_sets(boe_keys, place_keys, op_keys)
     key_path = output_dir / "agent1_contract_key_coverage.parquet"
+    diagnostics_path = output_dir / "agent1_contract_key_coverage_diagnostics.json"
     key_df = pd.DataFrame(key_rows)
     key_df.to_parquet(key_path, index=False)
     key_df.head(500).to_csv(output_dir / "agent1_contract_key_coverage_preview.csv", index=False)
 
+    diagnostics = {
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "sources": {
+            "boe": _contract_key_source_diagnostics(
+                boe_df,
+                primary_fields=("file_number", "buyer_name", "publication_date"),
+                fallback_field="contract_id",
+            ),
+            "place": _contract_key_source_diagnostics(
+                place_df,
+                primary_fields=("contract_folder_id", "buyer_dir3", "published_date"),
+                fallback_field="source_entry_id",
+            ),
+            "opentender": _contract_key_source_diagnostics(
+                op_df,
+                primary_fields=("source_record_id", "buyer_name", "publication_date"),
+                fallback_field="source_entry_id",
+            ),
+        },
+        "pairwise_key_overlap": {
+            "boe_place": len(boe_keys & place_keys),
+            "boe_opentender": len(boe_keys & op_keys),
+            "place_opentender": len(place_keys & op_keys),
+        },
+        "unique_key_counts": {
+            "boe": len(boe_keys),
+            "place": len(place_keys),
+            "opentender": len(op_keys),
+        },
+        "coverage_interpretation": (
+            "This report records key construction completeness and observed overlaps. "
+            "It does not infer a semantic cause for non-matches beyond the fields present."
+        ),
+    }
+    diagnostics_path.write_text(json.dumps(diagnostics, ensure_ascii=False, indent=2), encoding="utf-8")
+
     return {
         "contract_key_coverage_path": str(key_path),
+        "contract_key_coverage_diagnostics_path": str(diagnostics_path),
         "boe_contract_keys": len(boe_keys),
         "place_contract_keys": len(place_keys),
         "op_contract_keys": len(op_keys),
@@ -352,6 +390,71 @@ def build_source_coverage(
             ).sum()
         ),
     }
+
+
+def _contract_key_source_diagnostics(
+    dataframe: Any,
+    *,
+    primary_fields: tuple[str, ...],
+    fallback_field: str,
+) -> dict[str, Any]:
+    import pandas as pd
+
+    total_rows = int(len(dataframe))
+    if total_rows == 0:
+        return {
+            "rows": 0,
+            "primary_buildable_rows": 0,
+            "fallback_available_rows": 0,
+            "primary_or_fallback_rows": 0,
+            "no_key_rows": 0,
+            "missing_primary_fields_rows": 0,
+        }
+
+    present_masks = []
+    for field in primary_fields:
+        if field in dataframe.columns:
+            present_masks.append(_present_mask(dataframe[field]))
+        else:
+            present_masks.append(pd.Series(False, index=dataframe.index))
+    primary_buildable = present_masks[0]
+    for mask in present_masks[1:]:
+        primary_buildable &= mask
+    fallback_available = (
+        _present_mask(dataframe[fallback_field])
+        if fallback_field in dataframe.columns
+        else pd.Series(False, index=dataframe.index)
+    )
+    primary_or_fallback = primary_buildable | fallback_available
+    missing_primary_fields = ~primary_buildable
+
+    return {
+        "rows": total_rows,
+        "primary_fields": list(primary_fields),
+        "fallback_field": fallback_field,
+        "primary_buildable_rows": int(primary_buildable.sum()),
+        "fallback_available_rows": int(fallback_available.sum()),
+        "primary_or_fallback_rows": int(primary_or_fallback.sum()),
+        "no_key_rows": int((~primary_or_fallback).sum()),
+        "missing_primary_fields_rows": int(missing_primary_fields.sum()),
+    }
+
+
+def _present_mask(series: Any) -> Any:
+    import pandas as pd
+
+    def is_present(value: Any) -> bool:
+        if value is None:
+            return False
+        if isinstance(value, (list, tuple, set, dict)):
+            return len(value) > 0
+        if pd.isna(value):
+            return False
+        if isinstance(value, str):
+            return bool(value.strip())
+        return True
+
+    return series.map(is_present)
 
 
 def build_agent2_canonical_dataset(
