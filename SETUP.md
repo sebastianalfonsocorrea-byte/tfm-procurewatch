@@ -163,7 +163,7 @@ python -m procurewatch run-agent1 --year 2024 --cpv-prefix 71 --force-rebuild
 La corrida normal reutiliza cache de BOE/PLACE/OpenTender si ya existen los Parquet y los reportes de calidad asociados. La salida esperada incluye `agent1_run_report.json`, `agent1_data_quality_summary.json`, `agent1_contract_key_coverage.parquet` y `agent2_contracts_canonical.parquet`.
 
 Si el entorno Docker tiene PostgreSQL levantado y `PROCUREWATCH_POSTGRES_DSN` está configurado,
-puedes persistir el resultado analítico mínimo del flujo del TFM con:
+puedes persistir el resultado analítico del flujo del TFM con:
 
 ```powershell
 procurewatch run-agent1 --year 2024 --cpv-prefix 71 --write-postgres
@@ -172,7 +172,7 @@ procurewatch run-agent1 --year 2024 --cpv-prefix 71 --write-postgres
 Eso escribe las tablas analíticas de `CONTRATO` y `ADJUDICATARIO` en PostgreSQL además de los
 artefactos Parquet.
 
-También existe un envoltorio más corto para el borrador del TFM:
+También existe un envoltorio más corto para el flujo operativo del TFM:
 
 ```powershell
 procurewatch run-mvp
@@ -183,7 +183,7 @@ persistencia en PostgreSQL automáticamente.
 
 Si quieres un guion de demo muy corto para la defensa, mira `docs/DEMO_MVP.md`.
 
-Para Agent 2, el equivalente mínimo es:
+Para Agent 2, el equivalente rápido es:
 
 ```powershell
 procurewatch run-agent2-mvp

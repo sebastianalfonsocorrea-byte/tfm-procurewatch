@@ -7,7 +7,7 @@ Objetivo: registrar avances del pipeline para trazabilidad del TFM y reproducibi
 
 ### Hecho
 
-- Se ejecuta el MVP real con PostgreSQL de Docker usando `procurewatch run-mvp`.
+- Se ejecuta el flujo operativo con PostgreSQL de Docker usando `procurewatch run-mvp`.
 - El runner reutiliza los artefactos cacheados de BOE y OpenTender y un placeholder local de PLACE
   para no forzar descargas durante la prueba.
 - La persistencia en PostgreSQL queda verificada con filas reales en:
@@ -29,10 +29,10 @@ La lógica base es la misma; `run-mvp` solo reduce fricción para arrancar el pi
 
 ### Hecho
 
-- Se añade `procurewatch run-mvp` como envoltorio mínimo para el borrador:
+- Se añade `procurewatch run-mvp` como envoltorio rápido para el borrador:
   ejecuta Agent 1 y activa la persistencia en PostgreSQL cuando `PROCUREWATCH_POSTGRES_DSN`
   está configurado en el entorno.
-- Se añade la persistencia mínima de Agent 1 a PostgreSQL para el MVP:
+- Se añade la persistencia operativa de Agent 1 a PostgreSQL:
   `procurewatch run-agent1 --write-postgres`.
 - El pipeline guarda las tablas analíticas `CONTRATO` y `ADJUDICATARIO` en la base de datos
   configurada por `PROCUREWATCH_POSTGRES_DSN`, manteniendo los Parquet como salida principal.
