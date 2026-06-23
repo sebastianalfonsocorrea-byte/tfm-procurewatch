@@ -4,7 +4,7 @@ Objetivo: plantear Agent2 como motor determinista y explicable de red flags, usa
 canonico producido por Agent1 y preparando su posterior uso con PostgreSQL y Neo4j.
 
 Nota de lectura para memoria: este plan mezcla diseño, implementación parcial y criterios de
-aceptación. Para separar lo realizado de lo pendiente, usar `docs/BASE_MEMORIA_TFM.md` y
+aceptación. Para separar lo realizado de lo que sigue en desarrollo, usar `docs/BASE_MEMORIA_TFM.md` y
 `SEGUIMIENTO_AGENTES.md`.
 
 ## Estado de partida
@@ -91,7 +91,7 @@ La primera regla ejecutable compara `awarded_value_eur` con `estimated_value_eur
 
 - solo se evalúa cuando ambos importes están disponibles y el estimado es mayor que cero;
 - se activa cuando la desviación positiva supera el 10 %;
-- el umbral es una decisión operativa inicial, configurable y pendiente de análisis de
+- el umbral es una decisión operativa inicial, configurable y a validar con análisis de
   sensibilidad; no se presenta como un umbral normativo ni como prueba de fraude;
 - una fila sin los importes necesarios queda como `no_evaluable`, no recibe artificialmente un
   score cero.

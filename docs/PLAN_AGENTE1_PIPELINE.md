@@ -8,7 +8,7 @@ Ubicacion de codigo: `scr/procurewatch/agent1/pipeline.py`, reexportado desde
 Modelo analítico objetivo: `scr/procurewatch/agent1/analytical_schema.py`, documentado en
 `docs/MODELO_DATOS_ANALITICO.md`.
 
-Nota de lectura para memoria: este plan mezcla diseño, estado parcial y tareas pendientes. Para
+Nota de lectura para memoria: este plan mezcla diseño, estado parcial y tareas en curso. Para
 redactar resultados conviene contrastarlo con `docs/BASE_MEMORIA_TFM.md` y `SEGUIMIENTO_AGENT1.md`.
 
 ## Estado al 31/05/2026

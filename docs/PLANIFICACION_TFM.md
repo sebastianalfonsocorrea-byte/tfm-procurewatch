@@ -450,4 +450,4 @@ Prioridad de ejecucion:
 7. Ejecutar primera PoC de recuperacion documental.
 ## Cierre de sesion 31/05/2026
 
-Agent1 ya ejecuta BOE, PLACE y OpenTender, reutiliza cache de outputs procesados, genera reporte de ejecucion, cobertura por fuente, resumen de calidad y dataset canonico para Agent2. Queda pendiente mejorar el enlace entre fuentes porque las intersecciones actuales por `contract_key_canon` son 0.
+Agent1 ya ejecuta BOE, PLACE y OpenTender, reutiliza cache de outputs procesados, genera reporte de ejecucion, cobertura por fuente, resumen de calidad y dataset canonico para Agent2. La mejora del enlace entre fuentes queda asumida como línea de trabajo separada porque las intersecciones actuales por `contract_key_canon` son 0.
