@@ -24,7 +24,7 @@ Este documento es el seguimiento transversal. Los detalles historicos de Agent1 
 
 ## Avance Agent2 23/06/2026
 
-- Se amplía el MVP de Agent2 a un conjunto pequeño de red flags explicables:
+- Se amplía el alcance operativo de Agent2 a un conjunto pequeño de red flags explicables:
   - RF-01: adjudicatario ausente;
   - RF-02: procedimiento sensible o de urgencia;
   - RF-03: recurrencia comprador-proveedor;

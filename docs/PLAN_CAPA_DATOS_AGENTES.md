@@ -52,7 +52,7 @@ Tablas objetivo para el primer ciclo:
 - `etl_runs`
 - `data_quality_issues`
 
-El MVP de Agent2 ya escribe una version operativa reducida en PostgreSQL con:
+La version operativa de Agent2 ya escribe una capa reducida en PostgreSQL con:
 
 - `agent2_risk_flags`
 - `agent2_risk_scores`
