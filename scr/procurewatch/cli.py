@@ -602,6 +602,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"agent1_report: {result['agent1_run_report_path']}")
         if result.get("agent2_run_report_path"):
             print(f"agent2_report: {result['agent2_run_report_path']}")
+        if result.get("freeze_manifest_path"):
+            print(f"freeze_manifest: {result['freeze_manifest_path']}")
         return 0
 
     parser.print_help()
