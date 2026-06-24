@@ -79,10 +79,32 @@ class BuyerCatalogTests(unittest.TestCase):
     def test_index_uses_safe_unique_matches(self) -> None:
         index = build_buyer_catalog_index(self.catalog)
 
-        self.assertEqual(index.loc[index["_buyer_catalog_key"] == "AYUNTAMIENTO DE AVILA", "codigo_organismo_catalog"].iloc[0], "L01010012")
-        self.assertEqual(index.loc[index["_buyer_catalog_key"] == "AYUNTAMIENTO DE AVILA", "nivel_administracion_catalog"].iloc[0], "local")
-        self.assertEqual(index.loc[index["_buyer_catalog_key"] == "ENTIDAD AMBIGUA", "catalog_match_method"].iloc[0], "ambiguous")
-        self.assertTrue(pd.isna(index.loc[index["_buyer_catalog_key"] == "ENTIDAD OTRAS", "nivel_administracion_catalog"].iloc[0]))
+        self.assertEqual(
+            index.loc[
+                index["_buyer_catalog_key"] == "AYUNTAMIENTO DE AVILA", "codigo_organismo_catalog"
+            ].iloc[0],
+            "L01010012",
+        )
+        self.assertEqual(
+            index.loc[
+                index["_buyer_catalog_key"] == "AYUNTAMIENTO DE AVILA",
+                "nivel_administracion_catalog",
+            ].iloc[0],
+            "local",
+        )
+        self.assertEqual(
+            index.loc[
+                index["_buyer_catalog_key"] == "ENTIDAD AMBIGUA", "catalog_match_method"
+            ].iloc[0],
+            "ambiguous",
+        )
+        self.assertTrue(
+            pd.isna(
+                index.loc[
+                    index["_buyer_catalog_key"] == "ENTIDAD OTRAS", "nivel_administracion_catalog"
+                ].iloc[0]
+            )
+        )
 
     def test_enrichment_fills_only_missing_fields(self) -> None:
         enriched, report = enrich_contracts_with_buyer_catalog_frame(self.contracts, self.catalog)

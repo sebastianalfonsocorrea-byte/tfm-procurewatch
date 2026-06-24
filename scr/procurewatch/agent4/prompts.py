@@ -26,8 +26,12 @@ def build_case_context_prompt(
             "Incluye las citas document_id/chunk_id/contract_key_canon relevantes."
         ),
     }
-    return CASE_CONTEXT_PROMPT.strip() + "\n\n" + json.dumps(
-        payload,
-        ensure_ascii=False,
-        indent=2,
+    return (
+        CASE_CONTEXT_PROMPT.strip()
+        + "\n\n"
+        + json.dumps(
+            payload,
+            ensure_ascii=False,
+            indent=2,
+        )
     )

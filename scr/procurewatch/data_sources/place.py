@@ -3,10 +3,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
-import time
 
 import requests
 
@@ -161,7 +161,9 @@ def download_target(target: DownloadTarget, *, overwrite: bool = False) -> dict[
 
             digest = hashlib.sha256()
             size = 0
-            temp_path = target.output_path.with_suffix(f"{target.output_path.suffix}.tmp" if target.output_path.suffix else ".tmp")
+            temp_path = target.output_path.with_suffix(
+                f"{target.output_path.suffix}.tmp" if target.output_path.suffix else ".tmp"
+            )
             with temp_path.open("wb") as file:
                 for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                     if not chunk:
@@ -275,9 +277,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{target.id}: {target.url} -> {target.output_path}")
         return 0
 
-    report = inspect_targets(targets) if args.inspect else download_targets(
-        targets,
-        overwrite=args.overwrite,
+    report = (
+        inspect_targets(targets)
+        if args.inspect
+        else download_targets(
+            targets,
+            overwrite=args.overwrite,
+        )
     )
     write_report(report, args.report)
 

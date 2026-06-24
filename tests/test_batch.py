@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import importlib.util
+import json
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import hashlib
-import json
-import importlib.util
-import unittest
 from unittest import mock
 
 from procurewatch.batch import run_batch
@@ -56,7 +56,10 @@ class BatchTests(unittest.TestCase):
             )
 
             batch_state_path = processed_dir / "run_batch_state.json"
-            hash_file = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+            def hash_file(path: Path) -> str:
+                return hashlib.sha256(path.read_bytes()).hexdigest()
+
             batch_state_path.write_text(
                 json.dumps(
                     {

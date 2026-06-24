@@ -680,10 +680,7 @@ def _is_valid_spanish_tax_id(value: Any) -> bool:
     initial = normalized[0]
     digits = normalized[1:8]
     even_sum = sum(int(digits[index]) for index in (1, 3, 5))
-    odd_sum = sum(
-        sum(divmod(int(digits[index]) * 2, 10))
-        for index in (0, 2, 4, 6)
-    )
+    odd_sum = sum(sum(divmod(int(digits[index]) * 2, 10)) for index in (0, 2, 4, 6))
     control = (10 - (even_sum + odd_sum) % 10) % 10
     expected_digit = str(control)
     expected_letter = "JABCDEFGHI"[control]

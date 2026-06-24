@@ -52,9 +52,7 @@ def build_agent2_feature_records(
                 ),
                 "buyer_degree": contract_metrics_record.get("buyer_degree"),
                 "supplier_degree": contract_metrics_record.get("supplier_degree"),
-                "supplier_contracts_count": contract_metrics_record.get(
-                    "supplier_contracts_count"
-                ),
+                "supplier_contracts_count": contract_metrics_record.get("supplier_contracts_count"),
                 "contract_neighbor_count": contract_entity.get("neighbor_count", 0),
                 "contract_degree_centrality": contract_entity.get("degree_centrality", 0.0),
                 "contract_betweenness_centrality": contract_entity.get(
@@ -66,9 +64,7 @@ def build_agent2_feature_records(
                 "buyer_betweenness_centrality": buyer_entity.get("betweenness_centrality"),
                 "supplier_neighbor_count": supplier_entity.get("neighbor_count"),
                 "supplier_degree_centrality": supplier_entity.get("degree_centrality"),
-                "supplier_betweenness_centrality": supplier_entity.get(
-                    "betweenness_centrality"
-                ),
+                "supplier_betweenness_centrality": supplier_entity.get("betweenness_centrality"),
                 "component_id": contract_entity.get("component_id"),
                 "component_size": contract_entity.get("component_size"),
                 "community_id": contract_entity.get("community_id"),

@@ -1,22 +1,22 @@
 from __future__ import annotations
 
+import gzip
+import hashlib
+import io
+import json
+import re
+import zipfile
 from collections import Counter
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-import hashlib
-import gzip
-import io
-import json
-import re
-import zipfile
 from urllib.parse import urljoin
 
-import requests
 import pandas as pd
+import requests
 
 PARSER_VERSION = "1.3.0"
 
@@ -89,7 +89,9 @@ def normalize_opentender_file(
                 total_lines += 1
                 if not raw_line.strip():
                     continue
-                if cpv_prefix != "all" and not _raw_line_may_contain_cpv_prefix(raw_line, cpv_prefix):
+                if cpv_prefix != "all" and not _raw_line_may_contain_cpv_prefix(
+                    raw_line, cpv_prefix
+                ):
                     continue
 
                 try:
@@ -102,7 +104,9 @@ def normalize_opentender_file(
                     if cpv_prefix != "all" and not record.is_cpv_71:
                         continue
                     old_record = latest_records.get(record.source_record_id)
-                    if old_record is None or _prefer_newer(old_record.publication_date, record.publication_date):
+                    if old_record is None or _prefer_newer(
+                        old_record.publication_date, record.publication_date
+                    ):
                         latest_records[record.source_record_id] = record
                 except Exception as exc:  # noqa: BLE001
                     errors.append(
@@ -177,7 +181,9 @@ def download_opentender_zip(
             "sha256": sha256_file(output_path),
         }
 
-    temp_path = output_path.with_suffix(f"{output_path.suffix}.tmp" if output_path.suffix else ".tmp")
+    temp_path = output_path.with_suffix(
+        f"{output_path.suffix}.tmp" if output_path.suffix else ".tmp"
+    )
     try:
         response = requests.get(
             resolved_url,
@@ -256,12 +262,16 @@ def _download_output_path_for_url(output_path: Path, resolved_url: str) -> Path:
     return output_path
 
 
-def resolve_opentender_download_url(url: str, *, year: int | None = None, preferred_format: str = "json") -> str:
+def resolve_opentender_download_url(
+    url: str, *, year: int | None = None, preferred_format: str = "json"
+) -> str:
     if url.lower().endswith((".zip", ".gz", ".csv", ".json")):
         return url
     if "opentender.eu/es/download" in url:
         try:
-            return discover_opentender_download_url(page_url=url, year=year, preferred_format=preferred_format)
+            return discover_opentender_download_url(
+                page_url=url, year=year, preferred_format=preferred_format
+            )
         except Exception:  # noqa: BLE001
             return discover_opentender_download_url(
                 page_url=DEFAULT_REGISTRY_FALLBACK_PAGE,
@@ -269,7 +279,9 @@ def resolve_opentender_download_url(url: str, *, year: int | None = None, prefer
                 preferred_format=preferred_format,
             )
     if "data.open-contracting.org/en/publication/94" in url:
-        return discover_opentender_download_url(page_url=url, year=year, preferred_format=preferred_format)
+        return discover_opentender_download_url(
+            page_url=url, year=year, preferred_format=preferred_format
+        )
     return url
 
 
@@ -321,7 +333,13 @@ def parse_opentender_record(
     if release is None:
         raise ValueError("registro sin datos OCDS normalizables")
 
-    ocid = release.get("ocid") or payload.get("ocid") or payload.get("id") or payload.get("uri") or "unknown"
+    ocid = (
+        release.get("ocid")
+        or payload.get("ocid")
+        or payload.get("id")
+        or payload.get("uri")
+        or "unknown"
+    )
     tender = release.get("tender") or {}
     buyer = release.get("buyer") or {}
     buyer_name = buyer.get("name")
@@ -370,8 +388,11 @@ def parse_opentender_record(
         source_record_id=release.get("id") or ocid,
         source_entry_id=payload.get("id") or payload.get("uri") or ocid,
         source_url=payload.get("uri") or payload.get("id"),
-        publication_date=release.get("date") or tender.get("datePublished") or (payload.get("metaData") or {}).get("publishedAt"),
-        updated=(payload.get("metaData") or {}).get("lastModified") or (payload.get("metaData") or {}).get("lastModifiedDate"),
+        publication_date=release.get("date")
+        or tender.get("datePublished")
+        or (payload.get("metaData") or {}).get("publishedAt"),
+        updated=(payload.get("metaData") or {}).get("lastModified")
+        or (payload.get("metaData") or {}).get("lastModifiedDate"),
         buyer_id=buyer_id,
         buyer_name=buyer_name,
         buyer_nif=buyer_nif,
@@ -383,7 +404,8 @@ def parse_opentender_record(
             or tender.get("procurementMethodDetails")
             or tender.get("procurementMethod")
         ),
-        procurement_category=release.get("mainProcurementCategory") or tender.get("mainProcurementCategory"),
+        procurement_category=release.get("mainProcurementCategory")
+        or tender.get("mainProcurementCategory"),
         cpv_codes_raw=cpv_codes_raw,
         cpv_code_list=cpv_code_list,
         is_cpv_71=is_cpv_71,
@@ -505,7 +527,11 @@ def _iter_opentender_records(
     year: int | None,
 ):
     suffixes = input_path.suffixes
-    if suffixes[-2:] == [".jsonl", ".gz"] or suffixes[-1:] == [".gz"] and input_path.name.endswith(".jsonl.gz"):
+    if (
+        suffixes[-2:] == [".jsonl", ".gz"]
+        or suffixes[-1:] == [".gz"]
+        and input_path.name.endswith(".jsonl.gz")
+    ):
         with gzip.open(input_path, "rb") as raw:
             yield input_path.name, io.TextIOWrapper(raw, encoding="utf-8"), year
         return
@@ -522,13 +548,21 @@ def _iter_opentender_records(
 
 
 def _iter_opentender_entries_from_zip(zf: zipfile.ZipFile, *, year: int | None) -> list[str]:
-    names = [name for name in zf.namelist() if name.startswith("data-es-ocds-") and name.endswith(".json")]
+    names = [
+        name
+        for name in zf.namelist()
+        if name.startswith("data-es-ocds-") and name.endswith(".json")
+    ]
     selected = []
     for name in sorted(names):
         extracted_year = _extract_year_from_entry_name(name)
         if extracted_year is None:
             continue
-        if year is None or extracted_year == year or name.endswith("data-es-ocds-year-unavailable.json"):
+        if (
+            year is None
+            or extracted_year == year
+            or name.endswith("data-es-ocds-year-unavailable.json")
+        ):
             selected.append(name)
     return selected
 
@@ -573,7 +607,11 @@ def _extract_links(html: str, *, base_url: str) -> list[str]:
     links: list[str] = []
     for href, text in parser.links:
         absolute = urljoin(base_url, href)
-        if "download" in absolute.lower() or ".jsonl.gz" in absolute.lower() or ".csv.gz" in absolute.lower():
+        if (
+            "download" in absolute.lower()
+            or ".jsonl.gz" in absolute.lower()
+            or ".csv.gz" in absolute.lower()
+        ):
             links.append(absolute)
         elif text and ("2024" in text or "json" in text.lower() or "csv" in text.lower()):
             links.append(absolute)
@@ -656,7 +694,9 @@ def sha256_file(path: Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     from argparse import ArgumentParser
 
-    parser = ArgumentParser(description="Normaliza descargas OpenTender JSON por lotes (formato OCDS).")
+    parser = ArgumentParser(
+        description="Normaliza descargas OpenTender JSON por lotes (formato OCDS)."
+    )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--year", type=int, default=None)

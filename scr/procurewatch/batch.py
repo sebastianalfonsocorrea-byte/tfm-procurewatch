@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +40,7 @@ def run_batch(
     cleanup_downloads: bool = False,
 ) -> dict[str, Any]:
     from .data_sources import place as place_module
+
     if run_mode not in {"weekly", "monthly"}:
         raise ValueError(f"run_mode invalido: {run_mode}")
     if not boe_input.exists():
@@ -49,7 +50,9 @@ def run_batch(
 
     started_at = datetime.now(UTC)
     batch_id = f"{run_mode}_{started_at.strftime('%Y%m%dT%H%M%SZ')}"
-    requested_place_datasets = sorted(place_datasets) if place_datasets else DEFAULT_PLACE_DOWNLOAD_DATASETS
+    requested_place_datasets = (
+        sorted(place_datasets) if place_datasets else DEFAULT_PLACE_DOWNLOAD_DATASETS
+    )
     place_download = bool(place_download if place_download is not None else run_mode == "monthly")
 
     # Snapshots de entradas principales
@@ -106,9 +109,7 @@ def run_batch(
         place_inputs: list[Path] = []
         if not place_download:
             place_inputs = [
-                target.output_path
-                for target in place_targets
-                if target.kind == "dataset"
+                target.output_path for target in place_targets if target.kind == "dataset"
             ]
         run_agent1_report = run_agent1(
             boe_input=boe_input,
@@ -245,7 +246,9 @@ def _load_batch_state(path: Path) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Orquesta lote semanal/mensual de fuentes de datos.")
+    parser = argparse.ArgumentParser(
+        description="Orquesta lote semanal/mensual de fuentes de datos."
+    )
     parser.add_argument("--run-mode", default="weekly", choices=["weekly", "monthly"])
     parser.add_argument("--year", type=int, default=2024)
     parser.add_argument("--cpv-prefix", default="71")

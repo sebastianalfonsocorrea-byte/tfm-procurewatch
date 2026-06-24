@@ -15,8 +15,8 @@ class BoeParserTests(unittest.TestCase):
     def test_parse_standard_raw_line(self) -> None:
         raw_line = (
             '"MINISTERIO DE DEFENSA,Dirección General del INTA,500083225200.,03/01/2014,'
-            'Contratación,Suministros,LCVRS de calificación y vuelo de SO/PHI.,'
-            'Negociado sin publicidad,Comunidad de Madrid,'
+            "Contratación,Suministros,LCVRS de calificación y vuelo de SO/PHI.,"
+            "Negociado sin publicidad,Comunidad de Madrid,"
             '""38000000 Equipo de laboratorio, óptico y de precisión (excepto gafas)"",'
             '""38000000 (Equipo de laboratorio, óptico y de precisión (excepto gafas))."",'
             '""120.000,00 euros"",""120.000,00 euros"",""Arcopix, S.A."",'
@@ -38,12 +38,12 @@ class BoeParserTests(unittest.TestCase):
     def test_parse_line_with_commas_in_institution_object_and_supplier(self) -> None:
         raw_line = (
             '"MINISTERIO DE SANIDAD, SERVICIOS SOCIALES E IGUALDAD,'
-            'Subsecretaría de Sanidad, Servicios Sociales e Igualdad.,2013/01PA011.,'
-            '03/01/2014,Contratación,Servicios,Servicio de vigilancia en Prado, Alcalá, '
-            'Bravo Murillo y Núñez de Balboa.,Abierto,Comunidad de Madrid,'
-            '79000000 Servicios a empresas: legislación, mercadotecnia, asesoría, selección '
-            'de personal, imprenta y seguridad,79710000 (Servicios de seguridad).,'
-            '1.514.342,42 euros,993.924,19 euros,Sasegur, S.L., FBS Seguridad, S.A.,'
+            "Subsecretaría de Sanidad, Servicios Sociales e Igualdad.,2013/01PA011.,"
+            "03/01/2014,Contratación,Servicios,Servicio de vigilancia en Prado, Alcalá, "
+            "Bravo Murillo y Núñez de Balboa.,Abierto,Comunidad de Madrid,"
+            "79000000 Servicios a empresas: legislación, mercadotecnia, asesoría, selección "
+            "de personal, imprenta y seguridad,79710000 (Servicios de seguridad).,"
+            "1.514.342,42 euros,993.924,19 euros,Sasegur, S.L., FBS Seguridad, S.A.,"
             'https://www.boe.es/diario_boe/txt.php?id=BOE-B-2014-219";;;;;\n'
         )
 

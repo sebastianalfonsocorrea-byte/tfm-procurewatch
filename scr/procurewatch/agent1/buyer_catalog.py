@@ -6,7 +6,6 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-
 BUYER_CATALOG_REQUIRED_COLUMNS = (
     "ID Plataforma",
     "Nombre Órgano Contratación",
@@ -28,7 +27,6 @@ def enrich_contracts_with_buyer_catalog(
     contracts: Any,
     buyer_catalog_path: Path | None = None,
 ) -> tuple[Any, dict[str, Any]]:
-    import pandas as pd
 
     if buyer_catalog_path is None:
         return contracts.copy(), {
@@ -49,7 +47,6 @@ def enrich_contracts_with_buyer_catalog_frame(
     buyer_catalog: Any,
     buyer_catalog_path: Path | None = None,
 ) -> tuple[Any, dict[str, Any]]:
-    import pandas as pd
 
     if contracts.empty:
         return contracts.copy(), {
@@ -104,7 +101,9 @@ def enrich_contracts_with_buyer_catalog_frame(
         "buyer_catalog_path": str(buyer_catalog_path) if buyer_catalog_path else None,
         "catalog_rows": int(len(buyer_catalog)),
         "catalog_unique_names": int(len(index)),
-        "matched_rows": int((~_is_blank_series(catalog_code) | ~_is_blank_series(catalog_level)).sum()),
+        "matched_rows": int(
+            (~_is_blank_series(catalog_code) | ~_is_blank_series(catalog_level)).sum()
+        ),
         "filled_codigo_organismo": int(code_fill_mask.sum()),
         "filled_nivel_administracion": int(level_fill_mask.sum()),
         "rows_with_any_fill": int((code_fill_mask | level_fill_mask).sum()),
@@ -129,8 +128,7 @@ def build_buyer_catalog_index(buyer_catalog: Any) -> Any:
 
     if buyer_catalog.empty:
         return pd.DataFrame(
-            columns=
-            [
+            columns=[
                 "_buyer_catalog_key",
                 "buyer_catalog_name",
                 "codigo_organismo_catalog",
@@ -144,14 +142,11 @@ def build_buyer_catalog_index(buyer_catalog: Any) -> Any:
     missing = sorted(required_columns - set(buyer_catalog.columns))
     if missing:
         raise ValueError(
-            "El catalogo de compradores no contiene las columnas requeridas: "
-            + ", ".join(missing)
+            "El catalogo de compradores no contiene las columnas requeridas: " + ", ".join(missing)
         )
 
     frame = buyer_catalog.copy()
-    frame["_buyer_catalog_key"] = _normalize_text_series(
-        frame, "Nombre Órgano Contratación"
-    )
+    frame["_buyer_catalog_key"] = _normalize_text_series(frame, "Nombre Órgano Contratación")
     frame = frame[frame["_buyer_catalog_key"] != ""].copy()
 
     records: list[dict[str, Any]] = []
@@ -240,7 +235,9 @@ def _normalize_text_series(dataframe: Any, column: str) -> Any:
 
 def _normalize_text_key(value: Any) -> str:
     normalized = unicodedata.normalize("NFKD", str(value))
-    ascii_text = "".join(character for character in normalized if not unicodedata.combining(character))
+    ascii_text = "".join(
+        character for character in normalized if not unicodedata.combining(character)
+    )
     return re.sub(r"[^A-Z0-9]+", " ", ascii_text.upper()).strip()
 
 

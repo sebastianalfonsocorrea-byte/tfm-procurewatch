@@ -195,9 +195,7 @@ def build_qdrant_filter(filters: QdrantSearchFilters) -> Any | None:
         models = _qdrant_models()
     except ImportError:
         return {
-            "must": [
-                {"key": item["key"], "match": {"value": item["value"]}} for item in conditions
-            ]
+            "must": [{"key": item["key"], "match": {"value": item["value"]}} for item in conditions]
         }
     return models.Filter(
         must=[

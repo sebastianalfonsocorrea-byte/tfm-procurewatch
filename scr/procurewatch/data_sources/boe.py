@@ -10,7 +10,10 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 PARSER_VERSION = "1.0.0"
 
@@ -123,7 +126,6 @@ def normalize_boe_file(
     *,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    import pandas as pd
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -222,9 +224,7 @@ def build_boe_award_lines(dataframe: pd.DataFrame) -> pd.DataFrame:
         "awarded_value_eur",
         "cpv_codes_raw",
     ]
-    available_fields = [
-        field for field in deduplication_fields if field in selected.columns
-    ]
+    available_fields = [field for field in deduplication_fields if field in selected.columns]
     if available_fields:
         selected = selected.drop_duplicates(subset=available_fields, keep="first")
 
@@ -430,8 +430,10 @@ def looks_like_amount_decimal_part(value: str) -> bool:
 
 def is_value_field(value: str) -> bool:
     normalized = normalize_text(value).lower()
-    return normalized == "no disponible" or "euro" in normalized or bool(
-        re.search(r"\d[\d.]*,\d{2}", normalized)
+    return (
+        normalized == "no disponible"
+        or "euro" in normalized
+        or bool(re.search(r"\d[\d.]*,\d{2}", normalized))
     )
 
 
@@ -524,7 +526,6 @@ def build_quality_report(
     raw_field_counts: Counter[int],
     replacement_lines: int,
 ) -> dict[str, Any]:
-    import pandas as pd
 
     parsed_rows = int(len(dataframe))
     missing = (
@@ -586,7 +587,6 @@ def build_quality_report(
 
 
 def counter_from_series(dataframe, column: str, *, limit: int = 20) -> dict[str, int]:
-    import pandas as pd
 
     if dataframe.empty or column not in dataframe:
         return {}

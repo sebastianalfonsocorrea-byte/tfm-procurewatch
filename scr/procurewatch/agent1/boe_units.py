@@ -71,12 +71,9 @@ def build_boe_analysis_units_report(
 
 
 def add_boe_unit_ids(dataframe: Any) -> Any:
-    import pandas as pd
 
     result = dataframe.copy()
-    result["id_aviso"] = _series(result, "notice_id").combine_first(
-        _series(result, "contract_id")
-    )
+    result["id_aviso"] = _series(result, "notice_id").combine_first(_series(result, "contract_id"))
     result["id_expediente"] = [
         _stable_id(
             "expediente",

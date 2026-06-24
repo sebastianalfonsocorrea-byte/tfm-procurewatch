@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import gzip
 import json
-import zipfile
 import unittest
+import zipfile
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import mock
 
-from procurewatch.data_sources.opentender import discover_opentender_download_url
-from procurewatch.data_sources.opentender import download_opentender_zip
-from procurewatch.data_sources.opentender import normalize_opentender_file
+from procurewatch.data_sources.opentender import (
+    discover_opentender_download_url,
+    download_opentender_zip,
+    normalize_opentender_file,
+)
 
 
 def _make_opentender_payload(*, record_id: str, cpv: str, date: str = "2024-01-01") -> str:
@@ -54,7 +56,9 @@ def _make_opentender_payload(*, record_id: str, cpv: str, date: str = "2024-01-0
     )
 
 
-def _make_compiled_opentender_payload(*, record_id: str, cpv: str, date: str = "2024-01-01") -> dict:
+def _make_compiled_opentender_payload(
+    *, record_id: str, cpv: str, date: str = "2024-01-01"
+) -> dict:
     return {
         "id": record_id,
         "tag": ["compiled"],
@@ -113,7 +117,9 @@ class OpenTenderTests(unittest.TestCase):
                 year=2024,
             )
 
-        self.assertEqual(url, "https://data.open-contracting.org/downloads/opentender-2024.jsonl.gz")
+        self.assertEqual(
+            url, "https://data.open-contracting.org/downloads/opentender-2024.jsonl.gz"
+        )
 
     def test_resolve_opentender_download_url_uses_spanish_page_first(self) -> None:
         response = mock.Mock()
@@ -132,7 +138,9 @@ class OpenTenderTests(unittest.TestCase):
 
             url = resolve_opentender_download_url("https://opentender.eu/es/download", year=2024)
 
-        self.assertEqual(url, "https://data.open-contracting.org/downloads/opentender-2024.jsonl.gz")
+        self.assertEqual(
+            url, "https://data.open-contracting.org/downloads/opentender-2024.jsonl.gz"
+        )
 
     def test_download_opentender_zip_uses_real_extension_for_jsonl_gz(self) -> None:
         with TemporaryDirectory() as temp:
@@ -145,12 +153,15 @@ class OpenTenderTests(unittest.TestCase):
             download_response.iter_content = mock.Mock(return_value=[b"abc"])
             download_response.raise_for_status = mock.Mock()
 
-            with mock.patch(
-                "procurewatch.data_sources.opentender.resolve_opentender_download_url",
-                return_value="https://data.example.org/opentender-2024.jsonl.gz",
-            ), mock.patch(
-                "procurewatch.data_sources.opentender.requests.get",
-                return_value=download_response,
+            with (
+                mock.patch(
+                    "procurewatch.data_sources.opentender.resolve_opentender_download_url",
+                    return_value="https://data.example.org/opentender-2024.jsonl.gz",
+                ),
+                mock.patch(
+                    "procurewatch.data_sources.opentender.requests.get",
+                    return_value=download_response,
+                ),
             ):
                 report = download_opentender_zip(
                     url="https://data.open-contracting.org/en/publication/94",
@@ -224,8 +235,14 @@ class OpenTenderTests(unittest.TestCase):
             output_dir.mkdir()
 
             with zipfile.ZipFile(input_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                zf.writestr("data-es-ocds-2024.json", _make_opentender_payload(record_id="ot-1", cpv="71300000"))
-                zf.writestr("data-es-ocds-2023.json", _make_opentender_payload(record_id="ot-2", cpv="45100000"))
+                zf.writestr(
+                    "data-es-ocds-2024.json",
+                    _make_opentender_payload(record_id="ot-1", cpv="71300000"),
+                )
+                zf.writestr(
+                    "data-es-ocds-2023.json",
+                    _make_opentender_payload(record_id="ot-2", cpv="45100000"),
+                )
 
             report = normalize_opentender_file(
                 input_path=input_path,

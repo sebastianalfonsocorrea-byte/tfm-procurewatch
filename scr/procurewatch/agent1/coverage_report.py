@@ -66,9 +66,7 @@ def build_agent1_coverage_report(
         critical_complete_rows = int(complete.sum())
 
     critical_ratio = (
-        round(critical_present_cells / critical_total_cells, 6)
-        if critical_total_cells
-        else None
+        round(critical_present_cells / critical_total_cells, 6) if critical_total_cells else None
     )
     nif_present = field_coverage["nif_adjudicatario"]["present"]
     nif_ratio = round(nif_present / len(contracts), 6) if len(contracts) else None
@@ -78,9 +76,7 @@ def build_agent1_coverage_report(
     comparable = publication.notna() & award.notna()
     comparable_rows = int(comparable.sum())
     coherent_rows = int((comparable & (publication <= award)).sum())
-    temporal_ratio = (
-        round(coherent_rows / comparable_rows, 6) if comparable_rows else None
-    )
+    temporal_ratio = round(coherent_rows / comparable_rows, 6) if comparable_rows else None
 
     numeric_columns = ("importe_estimado", "importe_adjudicado")
     negative_amounts = {
@@ -133,7 +129,8 @@ def build_agent1_coverage_report(
             "rows": int(len(contracts)),
             "domain": "CPV 71",
             "warning": (
-                "Este informe describe el dataset analítico actual. No acredita integración completa "
+                "Este informe describe el dataset analítico actual. "
+                "No acredita integración completa "
                 "de PLACE u OpenTender si esas fuentes no aparecen en fuentes_cruzadas."
             ),
         },
@@ -166,7 +163,10 @@ def build_agent1_coverage_report(
             {
                 "requirement": "Actualización incremental por registros",
                 "status": "partial",
-                "note": "Existe batch y reutilización de caché, pero no carga incremental en base de datos.",
+                "note": (
+                    "Existe batch y reutilización de caché, "
+                    "pero no carga incremental en base de datos."
+                ),
             },
         ],
     }
@@ -227,12 +227,8 @@ def _target_status(ratio: float | None, target: float) -> str:
 
 
 def _overall_status(report: dict[str, Any]) -> str:
-    metric_statuses = {
-        metric["status"] for metric in report["quality_metrics"].values()
-    }
-    implementation_statuses = {
-        item["status"] for item in report["implementation_requirements"]
-    }
+    metric_statuses = {metric["status"] for metric in report["quality_metrics"].values()}
+    implementation_statuses = {item["status"] for item in report["implementation_requirements"]}
     if report["schema"]["status"] != "complete":
         return "incomplete"
     if metric_statuses == {"met"} and implementation_statuses == {"complete"}:
@@ -260,8 +256,7 @@ def _to_markdown(report: dict[str, Any]) -> str:
         ratio = metric.get("coverage_ratio", metric.get("coherence_ratio"))
         shown_ratio = "no evaluable" if ratio is None else f"{ratio:.2%}"
         lines.append(
-            f"| `{name}` | {shown_ratio} | > {metric['target_ratio']:.0%} | "
-            f"{metric['status']} |"
+            f"| `{name}` | {shown_ratio} | > {metric['target_ratio']:.0%} | {metric['status']} |"
         )
 
     lines.extend(

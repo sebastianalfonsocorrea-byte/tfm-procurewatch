@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from .schemas import Agent2Contract
 
@@ -33,9 +33,8 @@ def awarded_above_estimate(
     if contract.estimated_value_eur <= 0:
         return False
     deviation_ratio = (
-        (contract.awarded_value_eur - contract.estimated_value_eur)
-        / contract.estimated_value_eur
-    )
+        contract.awarded_value_eur - contract.estimated_value_eur
+    ) / contract.estimated_value_eur
     return deviation_ratio > deviation_threshold
 
 

@@ -19,6 +19,15 @@ Se genera un cierre demostrable conjunto para Agent3 y Agent4 en:
 - [Cierre integrado Agent3-Agent4 2026-06-23](CIERRE_AGENT3_AGENT4_2026_06_23.md)
 - Artefactos locales: `data/processed/agent3_agent4_demo_2026_06_23/`
 
+## Cierre operativo TFM 24/06/2026
+
+La hoja de ruta de cierre del dia queda en:
+
+- [Hoja de ruta cierre TFM 2026-06-24](HOJA_RUTA_CIERRE_TFM_2026_06_24.md)
+
+Prioridad: validar `integration/multiagent`, ejecutar la demo reproducible y alinear memoria,
+dashboard y limitaciones con el alcance realmente implementado.
+
 Resumen de la demo:
 
 - Agent3 se ejecuta sobre un canonico sintetico minimo con 3 contratos.

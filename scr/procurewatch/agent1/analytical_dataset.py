@@ -81,9 +81,9 @@ def map_contracts_to_analytical_schema(canonical: Any) -> Any:
 
     result = pd.DataFrame(index=canonical.index)
     result["id_contrato"] = _string_series(canonical, "contract_key_canon")
-    result["id_licitacion"] = _nullable_string_series(
-        canonical, "source_tender_id"
-    ).combine_first(_nullable_string_series(canonical, "source_record_id"))
+    result["id_licitacion"] = _nullable_string_series(canonical, "source_tender_id").combine_first(
+        _nullable_string_series(canonical, "source_record_id")
+    )
     result["organismo_contratante"] = _string_series(canonical, "buyer_name")
     sources = _nullable_string_series(canonical, "source")
     buyer_ids = _nullable_string_series(canonical, "buyer_id")
@@ -102,8 +102,7 @@ def map_contracts_to_analytical_schema(canonical: Any) -> Any:
     result["importe_adjudicado"] = _numeric_series(canonical, "awarded_value_eur")
     valid_estimate = result["importe_estimado"].notna() & (result["importe_estimado"] != 0)
     result["ratio_desviacion_importe"] = (
-        (result["importe_adjudicado"] - result["importe_estimado"])
-        / result["importe_estimado"]
+        (result["importe_adjudicado"] - result["importe_estimado"]) / result["importe_estimado"]
     ).where(valid_estimate & result["importe_adjudicado"].notna())
 
     publication = pd.to_datetime(
@@ -115,9 +114,7 @@ def map_contracts_to_analytical_schema(canonical: Any) -> Any:
     result["dias_resolucion"] = (award - publication).dt.days.astype("Int64")
     result.loc[result["dias_resolucion"] < 0, "dias_resolucion"] = pd.NA
 
-    result["numero_ofertas_recibidas"] = pd.Series(
-        pd.NA, index=canonical.index, dtype="Int64"
-    )
+    result["numero_ofertas_recibidas"] = pd.Series(pd.NA, index=canonical.index, dtype="Int64")
     result["id_adjudicatario"] = _nullable_string_series(canonical, "supplier_id")
     result["nif_adjudicatario"] = _nullable_string_series(canonical, "supplier_id")
     result["nombre_adjudicatario"] = _nullable_string_series(canonical, "supplier_name")
@@ -134,9 +131,7 @@ def map_contracts_to_analytical_schema(canonical: Any) -> Any:
     result["fragmentos_documentales_recuperados"] = _empty_object_series(canonical.index)
 
     result["fuentes_cruzadas"] = sources.map(lambda value: [value] if pd.notna(value) else None)
-    result["estado_revision"] = pd.Series(
-        "pendiente", index=canonical.index, dtype="string"
-    )
+    result["estado_revision"] = pd.Series("pendiente", index=canonical.index, dtype="string")
 
     return result[list(CONTRACT_REQUIRED_FIELDS)]
 
@@ -257,5 +252,7 @@ def _extract_cpv_description(value: Any) -> Any:
 
 def _normalize_text_key(value: Any) -> str:
     normalized = unicodedata.normalize("NFKD", str(value))
-    ascii_text = "".join(character for character in normalized if not unicodedata.combining(character))
+    ascii_text = "".join(
+        character for character in normalized if not unicodedata.combining(character)
+    )
     return re.sub(r"[^A-Z0-9]+", " ", ascii_text.upper()).strip()

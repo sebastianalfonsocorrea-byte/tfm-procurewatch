@@ -30,9 +30,7 @@ class Settings:
         return cls(
             environment=os.getenv("PROCUREWATCH_ENV", "local"),
             data_dir=data_dir,
-            raw_data_dir=Path(
-                os.getenv("PROCUREWATCH_RAW_DATA_DIR", str(data_dir / "raw"))
-            ),
+            raw_data_dir=Path(os.getenv("PROCUREWATCH_RAW_DATA_DIR", str(data_dir / "raw"))),
             processed_data_dir=Path(
                 os.getenv("PROCUREWATCH_PROCESSED_DATA_DIR", str(data_dir / "processed"))
             ),

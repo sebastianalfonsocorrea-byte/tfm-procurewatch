@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from .mvp_rules import (
     awarded_above_estimate,
@@ -42,9 +42,8 @@ def score_contract_mvp(
         evidence["awarded_value_eur"] = contract.awarded_value_eur
         if contract.estimated_value_eur and contract.estimated_value_eur > 0:
             evidence["deviation_ratio"] = (
-                (contract.awarded_value_eur - contract.estimated_value_eur)
-                / contract.estimated_value_eur
-            )
+                contract.awarded_value_eur - contract.estimated_value_eur
+            ) / contract.estimated_value_eur
     if temporal_anomaly(contract):
         red_flags.append("RF-06")
         evidence["publication_date"] = contract.publication_date

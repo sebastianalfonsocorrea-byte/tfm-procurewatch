@@ -336,11 +336,7 @@ def _case_summary(state: Agent4State, evidences: list[dict[str, object]]) -> str
 def _used_fields(values: object) -> dict[str, object]:
     if not isinstance(values, dict):
         return {}
-    return {
-        key: value
-        for key, value in sorted(values.items())
-        if _has_value(value)
-    }
+    return {key: value for key, value in sorted(values.items()) if _has_value(value)}
 
 
 def _has_value(value: object) -> bool:

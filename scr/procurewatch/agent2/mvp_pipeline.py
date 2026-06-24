@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import json
@@ -99,8 +99,7 @@ def run_agent2_mvp(
         if column not in contracts.columns:
             contracts[column] = (
                 pd.NA
-                if column
-                not in {"buyer_name", "supplier_name", "procedure", "source_tender_id"}
+                if column not in {"buyer_name", "supplier_name", "procedure", "source_tender_id"}
                 else ""
             )
 
@@ -131,9 +130,11 @@ def run_agent2_mvp(
     contracts["_supplier_key"] = contracts["supplier_name"].map(_normalize_key)
     contracts["_procedure_key"] = contracts["procedure"].map(_normalize_key)
     contracts["_buyer_key"] = contracts["buyer_name"].map(_normalize_key)
-    tender_record_counts = contracts[contracts["source_tender_id"].ne("")].groupby(
-        "source_tender_id", dropna=False
-    ).size()
+    tender_record_counts = (
+        contracts[contracts["source_tender_id"].ne("")]
+        .groupby("source_tender_id", dropna=False)
+        .size()
+    )
     tender_supplier_counts = (
         contracts[contracts["_supplier_key"].ne("") & contracts["source_tender_id"].ne("")]
         .groupby("source_tender_id", dropna=False)["_supplier_key"]
@@ -355,20 +356,17 @@ def _apply_batch_flag(
     for _, row in affected.iterrows():
         buyer_key = str(row["_buyer_key"])
         supplier_key = str(row["_supplier_key"])
-        mask = (
-            contracts["buyer_name"].astype("string").fillna("").map(_normalize_key).eq(buyer_key)
-            & contracts["supplier_name"].astype("string").fillna("").map(_normalize_key).eq(
-                supplier_key
-            )
+        mask = contracts["buyer_name"].astype("string").fillna("").map(_normalize_key).eq(
+            buyer_key
+        ) & contracts["supplier_name"].astype("string").fillna("").map(_normalize_key).eq(
+            supplier_key
         )
         row_indices = list(contracts.index[mask])
         if not row_indices:
             continue
         for index in row_indices:
             current_flags = (
-                json.loads(updated.at[index, "top_flags"])
-                if updated.at[index, "top_flags"]
-                else []
+                json.loads(updated.at[index, "top_flags"]) if updated.at[index, "top_flags"] else []
             )
             if flag_code in current_flags:
                 continue
