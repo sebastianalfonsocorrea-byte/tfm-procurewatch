@@ -10,6 +10,7 @@ Documentos de vision global, stack, cronograma y explicacion del proyecto.
 - [Planificacion TFM](00_vision/PLANIFICACION_TFM.md)
 - [Stack tecnico del proyecto](00_vision/STACK_TECNICO_PROYECTO.md)
 - [Guia de entrevista TFM](00_vision/GUIA_ENTREVISTA_TFM.md)
+- [Hoja de ruta final TFM 2026-06-24](00_vision/HOJA_RUTA_FINAL_TFM_2026_06_24.md)
 
 ## 01_arquitectura
 

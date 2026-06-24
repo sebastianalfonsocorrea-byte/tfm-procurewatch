@@ -23,6 +23,7 @@ Se genera un cierre demostrable conjunto para Agent3 y Agent4 en:
 
 La hoja de ruta de cierre del dia queda en:
 
+- [Hoja de ruta final TFM 2026-06-24](../00_vision/HOJA_RUTA_FINAL_TFM_2026_06_24.md)
 - [Hoja de ruta cierre TFM 2026-06-24](HOJA_RUTA_CIERRE_TFM_2026_06_24.md)
 
 Prioridad: validar `integration/multiagent`, ejecutar la demo reproducible y alinear memoria,
