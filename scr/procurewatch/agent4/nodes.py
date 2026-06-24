@@ -9,6 +9,7 @@ from .prompts import CASE_CONTEXT_PROMPT, build_case_context_prompt
 from .qdrant_store import QdrantSearchFilters
 from .retrieval import keyword_retrieve
 from .schemas import DocumentChunk, RetrievalResult
+from .source_registry import build_agent4_capabilities, build_agent4_source_registry_summary
 from .state import Agent4State
 
 
@@ -254,11 +255,17 @@ def _build_case_context(
     }
     if generation_metadata:
         generation.update(generation_metadata)
+    capabilities = build_agent4_capabilities()
     return {
         "schema_version": "agent4_case_context_v1",
         "contract_key_canon": state.get("contract_key_canon"),
         "question": state.get("question"),
         "summary": generated_answer or _case_summary(state, evidences),
+        "agent4_scope": capabilities["scope"],
+        "document_source_policy": capabilities["document_source_policy"],
+        "implemented_in_mvp": capabilities["implemented_in_mvp"],
+        "not_implemented_in_mvp": capabilities["not_implemented_in_mvp"],
+        "official_source_registry": build_agent4_source_registry_summary(),
         "evidences": evidences,
         "citations": citations,
         "warnings": warnings,
@@ -370,10 +377,13 @@ def _ensure_decision_boundary(text: str) -> str:
 
 
 def _agent_output(state: Agent4State) -> dict[str, object]:
+    capabilities = build_agent4_capabilities()
     return {
         "run_id": state.get("run_id"),
         "contract_key_canon": state.get("contract_key_canon"),
         "question": state.get("question"),
+        "agent4_scope": capabilities["scope"],
+        "document_source_policy": capabilities["document_source_policy"],
         "answer": state.get("answer"),
         "citations": state.get("citations", []),
         "warnings": state.get("warnings", []),

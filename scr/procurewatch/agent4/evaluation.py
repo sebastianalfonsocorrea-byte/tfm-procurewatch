@@ -9,6 +9,7 @@ from typing import Any
 from .corpus import DEFAULT_SYNTHETIC_CORPUS_INDEX
 from .graph import run_agent4_case_flow
 from .qdrant_store import DEFAULT_QDRANT_COLLECTION
+from .source_registry import build_agent4_capabilities, build_agent4_source_registry_summary
 
 DEFAULT_AGENT4_EVAL_SET_PATH = Path("data/synthetic/agent4_corpus/agent4_eval_set.json")
 DEFAULT_AGENT4_EVALUATION_REPORT_PATH = Path("data/processed/agent4_evaluation_report.json")
@@ -154,6 +155,7 @@ def build_agent4_evaluation_report(
     cases_with_evidence = sum(1 for case in case_reports if case["has_evidence"])
     expectations_met = sum(1 for case in case_reports if case["expectation_met"])
     total_warnings = sum(len(case["warnings"]) for case in case_reports)
+    capabilities = build_agent4_capabilities()
     return {
         "dataset": "agent4_evaluation_report",
         "schema_version": AGENT4_EVALUATION_SCHEMA_VERSION,
@@ -162,6 +164,11 @@ def build_agent4_evaluation_report(
         "corpus_index": str(corpus_index),
         "mode": "services" if use_services else "offline",
         "retrieval_limit": retrieval_limit,
+        "agent4_scope": capabilities["scope"],
+        "document_source_policy": capabilities["document_source_policy"],
+        "implemented_in_mvp": capabilities["implemented_in_mvp"],
+        "not_implemented_in_mvp": capabilities["not_implemented_in_mvp"],
+        "official_source_registry": build_agent4_source_registry_summary(),
         "summary": {
             "cases_count": total_cases,
             "cases_with_evidence": cases_with_evidence,

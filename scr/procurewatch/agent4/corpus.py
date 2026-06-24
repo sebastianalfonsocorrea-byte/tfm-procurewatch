@@ -7,6 +7,7 @@ from typing import Any
 
 from .document_loader import load_document
 from .schemas import DocumentRef
+from .source_registry import build_agent4_capabilities, build_agent4_source_registry_summary
 
 AGENT4_DOCUMENTS_MANIFEST = "agent4_documents_manifest"
 AGENT4_DOCUMENTS_MANIFEST_VERSION = "0.1.0"
@@ -64,10 +65,16 @@ def build_documents_manifest(
     *,
     corpus_index_path: Path | None = None,
 ) -> dict[str, Any]:
+    capabilities = build_agent4_capabilities()
     return {
         "dataset": AGENT4_DOCUMENTS_MANIFEST,
         "version": AGENT4_DOCUMENTS_MANIFEST_VERSION,
         "corpus_index": str(corpus_index_path) if corpus_index_path else None,
+        "agent4_scope": capabilities["scope"],
+        "document_source_policy": capabilities["document_source_policy"],
+        "implemented_in_mvp": capabilities["implemented_in_mvp"],
+        "not_implemented_in_mvp": capabilities["not_implemented_in_mvp"],
+        "official_source_registry": build_agent4_source_registry_summary(),
         "documents_count": len(documents),
         "documents": [document.manifest_record() for document in documents],
     }

@@ -19,8 +19,13 @@ from procurewatch.agent4 import (
     OllamaEmbeddingClient,
     QdrantSearchFilters,
     QdrantVectorStore,
+    build_agent4_capabilities,
+    build_agent4_source_registry,
+    build_boe_html_fetch_report,
     chunk_text,
     evaluate_agent4_case_state,
+    extract_boe_b_id,
+    fetch_boe_html_document,
     keyword_retrieve,
     load_corpus_documents,
     load_html_document,
@@ -29,6 +34,7 @@ from procurewatch.agent4 import (
     run_agent4_case_flow,
     run_agent4_evaluation,
     run_agent4_graph,
+    write_agent4_source_registry,
     write_documents_manifest,
 )
 from procurewatch.agent4.qdrant_store import (
@@ -141,6 +147,80 @@ class Agent4Tests(unittest.TestCase):
         self.assertNotIn("ignored", document.text)
         self.assertIn("html_parser", document.metadata)
 
+    def test_agent4_source_registry_documents_scope_and_official_sources(self) -> None:
+        output_path = _test_workspace("source-registry") / "agent4_source_registry.json"
+
+        registry = write_agent4_source_registry(output_path)
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+        source_ids = {source["source_id"] for source in registry["sources"]}
+
+        self.assertEqual(payload["dataset"], "agent4_source_registry")
+        self.assertEqual(payload["source_count"], len(registry["sources"]))
+        self.assertIn("boe_html_individual", source_ids)
+        self.assertIn("placsp_buyer_profiles", source_ids)
+        self.assertIn(
+            "No hace crawling",
+            " ".join(payload["capabilities"]["document_source_policy"]),
+        )
+        self.assertIn(
+            "Descarga anuncios BOE-B HTML individuales",
+            " ".join(payload["capabilities"]["implemented_in_mvp"]),
+        )
+        self.assertIn(
+            "Scraping en vivo masivo",
+            " ".join(payload["capabilities"]["not_implemented_in_mvp"]),
+        )
+
+    def test_agent4_capabilities_are_reusable_in_artifacts(self) -> None:
+        capabilities = build_agent4_capabilities()
+        registry = build_agent4_source_registry()
+
+        self.assertIn("Agent4 es el agente documental/RAG", capabilities["scope"])
+        self.assertGreaterEqual(registry["source_count"], 10)
+        self.assertEqual(registry["capabilities"]["scope"], capabilities["scope"])
+
+    def test_extract_boe_b_id_accepts_only_official_boe_html_urls(self) -> None:
+        self.assertEqual(
+            extract_boe_b_id("https://www.boe.es/diario_boe/txt.php?id=BOE-B-2024-12345"),
+            "BOE-B-2024-12345",
+        )
+
+        invalid_urls = [
+            "http://www.boe.es/diario_boe/txt.php?id=BOE-B-2024-12345",
+            "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2024-12345",
+            "https://example.org/diario_boe/txt.php?id=BOE-B-2024-12345",
+            "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2024-12345&x=1",
+        ]
+        for url in invalid_urls:
+            with self.subTest(url=url):
+                with self.assertRaises(ValueError):
+                    extract_boe_b_id(url)
+
+    def test_fetch_boe_html_document_downloads_mocked_html_and_loads_text(self) -> None:
+        temp = _test_workspace("boe-fetch")
+        url = "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2024-12345"
+
+        with patch(
+            "procurewatch.agent4.boe_fetch.urlopen",
+            return_value=_FakeHttpResponse(),
+        ) as mocked:
+            document = fetch_boe_html_document(
+                url=url,
+                contract_key_canon="PW-2024-BOE",
+                output_dir=temp,
+            )
+
+        report = build_boe_html_fetch_report(document)
+
+        self.assertEqual(document.source, "boe_html")
+        self.assertEqual(document.contract_key_canon, "PW-2024-BOE")
+        self.assertEqual(document.source_record_id, "BOE-B-2024-12345")
+        self.assertEqual(document.metadata["source_url"], url)
+        self.assertIn("Adjudicacion del contrato", document.text)
+        self.assertTrue((temp / "BOE-B-2024-12345.html").exists())
+        self.assertEqual(report["source_registry_id"], "boe_html_individual")
+        self.assertEqual(mocked.call_args.args[0].full_url, url)
+
     def test_synthetic_corpus_loads_documents_and_manifest(self) -> None:
         documents = load_corpus_documents(
             Path("data/synthetic/agent4_corpus/agent4_corpus_index.json")
@@ -153,6 +233,13 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(len(documents), 3)
         self.assertEqual(payload["dataset"], "agent4_documents_manifest")
         self.assertEqual(manifest["documents_count"], 3)
+        self.assertIn("agent4_scope", payload)
+        self.assertIn("document_source_policy", payload)
+        self.assertIn("not_implemented_in_mvp", payload)
+        self.assertEqual(
+            payload["official_source_registry"]["dataset"],
+            "agent4_source_registry",
+        )
         for item in payload["documents"]:
             self.assertTrue(item["document_id"])
             self.assertTrue(item["contract_key_canon"])
@@ -261,6 +348,9 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(report["summary"]["average_expected_document_recall"], 1.0)
         self.assertEqual(payload["summary"], report["summary"])
         self.assertEqual(payload["ragas"]["status"], "not_run")
+        self.assertIn("agent4_scope", payload)
+        self.assertIn("document_source_policy", payload)
+        self.assertIn("not_implemented_in_mvp", payload)
 
     def test_deterministic_embedding_client_returns_stable_dimensions(self) -> None:
         client = DeterministicEmbeddingClient(dimension=8)
@@ -497,6 +587,64 @@ class Agent4Tests(unittest.TestCase):
         self.assertTrue(output_path.exists())
         self.assertIn("Manifiesto Agent4 generado", output.getvalue())
 
+    def test_cli_agent4_source_registry_command(self) -> None:
+        output = io.StringIO()
+        output_path = _test_workspace("cli-source-registry") / "registry.json"
+
+        with redirect_stdout(output):
+            exit_code = main(["agent4-source-registry", "--output", str(output_path)])
+
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["dataset"], "agent4_source_registry")
+        self.assertIn("Registro de fuentes Agent4 generado", output.getvalue())
+
+    def test_cli_agent4_fetch_boe_html_command_uses_fetcher_and_writes_report(self) -> None:
+        output = io.StringIO()
+        temp = _test_workspace("cli-boe-fetch")
+        report_output = temp / "fetch_report.json"
+        document = DocumentRef(
+            document_id="BOE-B-2024-12345-abcdef",
+            source="boe_html",
+            text="Adjudicacion del contrato",
+            contract_key_canon="PW-2024-BOE",
+            source_record_id="BOE-B-2024-12345",
+            document_type="html",
+            text_hash="a" * 64,
+            metadata={
+                "path": str(temp / "BOE-B-2024-12345.html"),
+                "source_registry_id": "boe_html_individual",
+                "source_url": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2024-12345",
+                "downloaded_bytes": "128",
+                "html_parser": "html.parser",
+            },
+        )
+
+        with patch("procurewatch.agent4.fetch_boe_html_document", return_value=document) as mocked:
+            with redirect_stdout(output):
+                exit_code = main(
+                    [
+                        "agent4-fetch-boe-html",
+                        "--url",
+                        "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2024-12345",
+                        "--contract-key",
+                        "PW-2024-BOE",
+                        "--output-dir",
+                        str(temp),
+                        "--report-output",
+                        str(report_output),
+                    ]
+                )
+
+        report = json.loads(report_output.read_text(encoding="utf-8"))
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(mocked.call_args.kwargs["contract_key_canon"], "PW-2024-BOE")
+        self.assertEqual(mocked.call_args.kwargs["output_dir"], temp)
+        self.assertEqual(report["source_registry_id"], "boe_html_individual")
+        self.assertIn("Anuncio BOE HTML descargado", output.getvalue())
+
     def test_cli_agent4_index_corpus_command_uses_indexing_flow(self) -> None:
         output = io.StringIO()
         report = Agent4IndexReport(
@@ -563,6 +711,9 @@ class Agent4Tests(unittest.TestCase):
         self.assertTrue(payload["citations"])
         self.assertEqual(state["case_context"]["schema_version"], "agent4_case_context_v1")
         self.assertTrue(state["case_context"]["evidences"])
+        self.assertIn("agent4_scope", state["case_context"])
+        self.assertIn("document_source_policy", state["case_context"])
+        self.assertIn("not_implemented_in_mvp", state["case_context"])
         self.assertEqual(
             state["case_context"]["contract_fields_used"]["contract_key_canon"],
             "PW-2024-0001",
@@ -979,6 +1130,28 @@ class _FakeQdrantClient:
         point = self.upserted_points[0]
         payload = point["payload"] if isinstance(point, dict) else point.payload
         return [SimpleNamespace(payload=payload, score=0.92)]
+
+
+class _FakeHttpHeaders:
+    def get_content_charset(self) -> str:
+        return "utf-8"
+
+
+class _FakeHttpResponse:
+    headers = _FakeHttpHeaders()
+
+    def __enter__(self) -> _FakeHttpResponse:
+        return self
+
+    def __exit__(self, _exc_type: object, _exc: object, _traceback: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return (
+            b"<html><body><h1>Anuncio BOE-B</h1>"
+            b"<p>Adjudicacion del contrato con evidencia documental.</p>"
+            b"<script>ignored()</script></body></html>"
+        )
 
 
 def _qdrant_test_chunk() -> DocumentChunk:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import sys
 from collections.abc import Sequence
@@ -42,6 +43,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("doctor", help="Comprueba el entorno local basico.")
+    agent4_source_registry_parser = subparsers.add_parser(
+        "agent4-source-registry",
+        help="Genera el registro trazable de fuentes oficiales y alcance MVP de Agent4.",
+    )
+    agent4_source_registry_parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("data/processed/agent4_source_registry.json"),
+    )
+    agent4_fetch_boe_parser = subparsers.add_parser(
+        "agent4-fetch-boe-html",
+        help="Descarga un anuncio BOE-B HTML concreto para incorporarlo al corpus documental.",
+    )
+    agent4_fetch_boe_parser.add_argument("--url", required=True)
+    agent4_fetch_boe_parser.add_argument("--contract-key", required=True)
+    agent4_fetch_boe_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/raw/agent4/boe_html"),
+    )
+    agent4_fetch_boe_parser.add_argument(
+        "--report-output",
+        type=Path,
+        default=Path("data/processed/agent4_boe_html_fetch_report.json"),
+    )
+    agent4_fetch_boe_parser.add_argument("--timeout", type=float, default=30.0)
     agent4_smoke_parser = subparsers.add_parser(
         "agent4-smoke",
         help="Comprueba scaffold local de Agent4 y, opcionalmente, servicios RAG.",
@@ -431,6 +458,36 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "doctor":
         return doctor()
+    if args.command == "agent4-source-registry":
+        from .agent4 import write_agent4_source_registry
+
+        registry = write_agent4_source_registry(args.output)
+        print("Registro de fuentes Agent4 generado")
+        print(f"- Fuentes: {registry['source_count']}")
+        print(f"- Output: {args.output}")
+        return 0
+    if args.command == "agent4-fetch-boe-html":
+        from .agent4 import build_boe_html_fetch_report, fetch_boe_html_document
+
+        document = fetch_boe_html_document(
+            url=args.url,
+            contract_key_canon=args.contract_key,
+            output_dir=args.output_dir,
+            timeout=args.timeout,
+        )
+        report = build_boe_html_fetch_report(document)
+        args.report_output.parent.mkdir(parents=True, exist_ok=True)
+        args.report_output.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print("Anuncio BOE HTML descargado para Agent4")
+        print(f"- BOE id: {document.source_record_id}")
+        print(f"- Contrato: {document.contract_key_canon}")
+        print(f"- Documento: {document.document_id}")
+        print(f"- HTML local: {document.metadata.get('path')}")
+        print(f"- Reporte: {args.report_output}")
+        return 0
     if args.command == "agent4-smoke":
         from .agent4.smoke import run_agent4_smoke
 
