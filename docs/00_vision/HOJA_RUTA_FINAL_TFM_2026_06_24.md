@@ -1,100 +1,118 @@
 # Hoja de ruta final TFM 2026-06-24
 
-Objetivo: cerrar hoy una version defendible de ProcureWatch Analytics para entrega, con codigo,
-demo, memoria y relato academico alineados. El criterio no es implementar mas funcionalidad, sino
-dejar claro que existe un MVP reproducible, explicable y limitado honestamente.
+Objetivo: cerrar `integration/multiagent` como rama candidata a entrega y promocion a la rama
+principal, con las ramas de Sebas y Satu unificadas, todos los agentes funcionando en conjunto,
+dashboard explorable y documentacion alineada con el MVP real.
 
-## Decision de alcance para hoy
+La prioridad ya no es ampliar alcance. La prioridad es integrar, validar, demostrar y dejar una
+ruta clara para pasar de integracion a rama principal sin introducir riesgos de ultima hora.
+
+## Decision de alcance final
 
 ProcureWatch se presenta como prototipo analitico multiagente, no como plataforma productiva.
 
 Debe quedar cerrado:
 
+- rama `integration/multiagent` como rama tecnica de entrega;
+- integracion de los trabajos de `sebas` y `Satu`;
 - pipeline de datos y salida canonica;
-- motor de red flags y scoring;
-- grafo de relaciones y metricas;
-- ficha documental/RAG trazable;
-- dashboard local para explicar un caso;
-- memoria con resultados, limitaciones y trabajo futuro.
+- Agent2 con red flags y scoring explicable;
+- Agent3 con grafo, relaciones, metricas y features;
+- Agent4 con ficha documental, evidencias y citas;
+- dashboard local para explorar resultados de forma clara;
+- memoria y documentacion sin prometer funcionalidades no implementadas;
+- gate objetivo para promocionar a rama principal.
 
-Queda fuera de cierre de hoy:
+Queda fuera del cierre:
 
+- nuevas fuentes de datos;
+- nuevas reglas grandes de scoring;
+- refactors estructurales;
 - despliegue cloud;
 - autenticacion y usuarios;
 - backend FastAPI productivo;
 - matching perfecto entre BOE, PLACE y OpenTender;
 - evaluacion RAGAS completa con corpus grande;
-- Neo4j/Qdrant/Ollama obligatorios para la demo;
+- Neo4j, Qdrant, Ollama o Docker como requisitos obligatorios de demo;
 - cualquier afirmacion juridica de fraude.
 
-Docker no bloquea esta hoja de ruta. Si Docker no esta encendido, se trabaja con artefactos locales,
-capturas, JSON/Parquet ya generados y comandos documentados.
+Regla de comunicacion del TFM: el sistema prioriza revision humana con evidencia trazable; no
+declara fraude ni sustituye una auditoria.
 
-## Estado de integracion
+## Estado de integracion confirmado
 
-Rama objetivo: `integration/multiagent`.
+Rama de trabajo:
+
+```text
+integration/multiagent
+```
+
+Estado observado el 2026-06-24:
+
+- `origin/Satu` esta contenido en `integration/multiagent`.
+- `origin/sebas` esta contenido en `integration/multiagent`.
+- El arbol de trabajo esta limpio.
+- La rama local `integration/multiagent` va por delante de `origin/integration/multiagent`.
+- La rama principal local detectada es `master`; si el equipo usa el nombre `main`, debe tratarse
+  como la rama principal objetivo antes de promocionar.
+
+Comandos de control:
+
+```powershell
+git status --short --branch
+git merge-base --is-ancestor origin/Satu HEAD
+git merge-base --is-ancestor origin/sebas HEAD
+git log --oneline --graph --decorate --all -12
+```
+
+## Hito 1 - Integracion funcional de agentes
+
+Objetivo: confirmar que Agent1, Agent2, Agent3 y Agent4 estan unificados en la rama de integracion
+y que cada uno conserva una entrada, proceso, salida y limitacion explicables.
 
 Estado esperado:
 
-- rama `Satu` integrada;
-- rama `sebas` integrada;
-- `main` se mantiene estable hasta decidir promocion;
-- la documentacion final apunta a `integration/multiagent` como rama de entrega tecnica.
+| Agente | Entrada | Salida defendible | Criterio de hecho |
+|---|---|---|---|
+| Agent1 | BOE, PLACE, OpenTender | `agent2_contracts_canonical.parquet` | Canonico reproducible y calidad documentada |
+| Agent2 | Canonico Agent1 | scores y flags | Red flags deterministas y explicables |
+| Agent3 | Canonico o demo canonica | nodos, aristas, metricas y features | Grafo derivado sin depender de servicios externos |
+| Agent4 | Contrato, features y corpus | ficha con evidencias y citas | Respuesta trazable con fallback offline |
+
+Comandos base:
+
+```powershell
+$env:PYTHONPATH="scr"
+python -m procurewatch doctor
+python -m procurewatch run-agent2 --input data/processed/agent2_contracts_canonical.parquet --output-dir data/processed
+```
 
 Criterio de cierre:
 
-- no hay conflictos de Git;
-- el equipo sabe que rama entregar o exportar;
-- los cambios finales se concentran en documentacion, demo y correcciones menores.
+- no hay errores de importacion entre agentes;
+- Agent2 puede operar sobre el canonico de Agent1;
+- Agent3 puede generar features relacionales consumibles por Agent2/Agent4;
+- Agent4 puede generar ficha integrada para un contrato;
+- las limitaciones quedan documentadas, especialmente el matching actual entre fuentes.
 
-## Orden de trabajo de hoy
+## Hito 2 - Demo integrada reproducible
 
-### 1. Congelar el relato del TFM
+Objetivo: regenerar una demo pequena, estable y explicable que muestre el flujo completo sin
+depender de Docker ni servicios externos.
 
-Responsables: ambos.
-
-Tareas:
-
-- Redactar en la memoria que el sistema es una herramienta de priorizacion para revision humana.
-- Explicar la arquitectura por capas: Agent1, Agent2, Agent3, Agent4 y dashboard.
-- Alinear la memoria con lo implementado, no con el alcance ideal de la propuesta inicial.
-- Mover lo no implementado a limitaciones o trabajo futuro.
-
-Criterio de hecho:
-
-- la memoria no promete funcionalidades inexistentes;
-- el lector entiende que el MVP es reproducible y trazable;
-- queda explicito que no se declara fraude.
-
-### 2. Cerrar resultados tecnicos
-
-Responsables: Sebastian para Agent1/Agent2, Saturia para Agent3/Agent4, ambos para integracion.
-
-Tareas:
-
-- Agent1: documentar fuentes, canonico, cobertura y limitacion de matching.
-- Agent2: documentar red flags implementadas, scoring y salida explicable.
-- Agent3: documentar nodos, aristas, comunidades, centralidad y features para scoring/RAG.
-- Agent4: documentar ficha de caso, evidencias, citas y fallback offline.
-- Dashboard: documentar flujo de demo aunque Docker/servicios no esten activos.
-
-Criterio de hecho:
-
-- cada agente tiene entrada, proceso, salida y limitacion descritos;
-- existen nombres concretos de artefactos generados;
-- hay un caso demo que se puede explicar de principio a fin.
-
-### 3. Preparar la demo defendible
-
-Responsables: ambos.
-
-Ruta base de demo:
+Ruta oficial de demo:
 
 ```text
 data/processed/agent3_agent4_demo_2026_06_23/
 ```
 
-Artefactos clave:
+Caso principal:
+
+```text
+PW-2024-0001
+```
+
+Artefactos esperados:
 
 - `agent2_contracts_canonical_demo.parquet`
 - `agent3_graph_report.json`
@@ -103,112 +121,196 @@ Artefactos clave:
 - `agent3_agent2_features.parquet`
 - `agent4_case_context_integrated_demo.json`
 
-Caso principal:
+Regeneracion Agent3:
 
-```text
-PW-2024-0001
+```powershell
+$env:PYTHONPATH="scr"
+python -c "from procurewatch.cli import main; raise SystemExit(main(['run-agent3','--input','data/processed/agent3_agent4_demo_2026_06_23/agent2_contracts_canonical_demo.parquet','--output-dir','data/processed/agent3_agent4_demo_2026_06_23']))"
 ```
 
-Guion minimo:
+Regeneracion Agent4:
 
-1. Agent1/Agent2 entregan contrato canonico y score.
-2. Agent3 convierte contratos en grafo y calcula relaciones.
-3. Agent4 recupera evidencia documental y genera ficha citada.
-4. Dashboard muestra KPIs, red, caso y evidencias.
-5. Se explica que el resultado prioriza revision humana.
+```powershell
+$env:PYTHONPATH="scr"
+python -c "from procurewatch.cli import main; raise SystemExit(main(['agent4-case-context','--contract-key','PW-2024-0001','--question','evidencia documental y riesgos explicables','--canonical-path','data/processed/agent3_agent4_demo_2026_06_23/agent2_contracts_canonical_demo.parquet','--agent3-features-path','data/processed/agent3_agent4_demo_2026_06_23/agent3_agent2_features.parquet','--output','data/processed/agent3_agent4_demo_2026_06_23/agent4_case_context_integrated_demo.json']))"
+```
 
-Criterio de hecho:
+Criterio de cierre:
 
-- si Streamlit funciona, se abre la demo local;
-- si Streamlit no funciona, se muestran capturas o JSON/Parquet y se explica el flujo;
-- no se depende de servicios Docker para defender el concepto.
+- `PW-2024-0001` muestra score Agent2;
+- existen red flags explicables;
+- existen metricas relacionales Agent3;
+- existen evidencias y citas Agent4;
+- la demo puede explicarse de principio a fin en defensa.
 
-### 4. Cerrar memoria escrita
+## Hito 3 - Dashboard de exploracion
 
-Responsables: ambos.
+Objetivo: dejar un dashboard local que permita explorar resultados sin obligar al tribunal o al
+equipo a leer Parquet/JSON manualmente.
 
-Prioridad alta:
+Dashboard oficial:
 
-- Capitulo de desarrollo: arquitectura, pipeline, agentes y dashboard.
-- Capitulo de evaluacion/resultados: calidad de datos, red flags, grafo, RAG y demo.
-- Limitaciones: datos, matching, corpus documental, ausencia de etiquetas de fraude.
-- Trabajo futuro: FastAPI, despliegue, RAGAS completo, Neo4j/Qdrant persistentes, mejora de matching.
-- Conclusiones: aportacion academica y tecnica.
+```text
+frontend/agent3_demo.py
+```
 
-Prioridad media:
+Ejecucion:
 
-- revisar figuras y tablas;
-- normalizar nombres de agentes y artefactos;
-- revisar que referencias y fuentes esten citadas;
-- completar anexos de comandos.
+```powershell
+$env:PYTHONPATH="scr"
+$env:PROCUREWATCH_AGENT3_DEMO_DIR="data/processed/agent3_agent4_demo_2026_06_23"
+$env:PROCUREWATCH_AGENT4_CASE_CONTEXT="data/processed/agent3_agent4_demo_2026_06_23/agent4_case_context_integrated_demo.json"
+streamlit run frontend/agent3_demo.py
+```
 
-Criterio de hecho:
+Debe permitir explorar:
 
-- la memoria tiene una linea argumental completa;
-- todas las decisiones tecnicas importantes estan justificadas;
-- las limitaciones aparecen como parte del metodo, no como disculpas.
+- vista general y KPIs;
+- red de compradores, proveedores, contratos, CPV y fuentes;
+- caso seleccionado;
+- senales Agent2;
+- metricas Agent3;
+- evidencias y citas Agent4;
+- debug tecnico con rutas y payloads.
 
-### 5. Preparar entrega y defensa
+Criterio de cierre:
 
-Responsables: ambos.
+- Streamlit abre sin excepciones;
+- el selector de contrato permite revisar `PW-2024-0001`;
+- las pestañas principales cargan datos;
+- si Streamlit falla por dependencia local, queda documentado el fallback con artefactos
+  JSON/Parquet y capturas.
 
-Entregables:
+## Hito 4 - Validacion tecnica de integracion
 
-- repositorio en rama de integracion o rama final acordada;
-- memoria actualizada;
-- guia de demo;
-- hoja de ruta final;
-- capturas o evidencias de salida;
-- lista de comandos reproducibles;
-- presentacion breve si aplica.
+Objetivo: ejecutar una validacion suficiente para decidir si `integration/multiagent` puede pasar a
+la rama principal.
 
-Checklist antes de entregar:
+Validacion completa:
 
-- README principal indica como ejecutar o entender el MVP.
-- `docs/README.md` permite navegar la documentacion.
-- La memoria y el repositorio usan los mismos nombres de agentes.
-- Los artefactos demo estan descritos aunque `data/processed/` no se versiona completo.
-- Se decide si hacer push de `integration/multiagent`.
-- Se decide si fusionar a `main` o dejar `main` estable.
+```powershell
+$env:PYTHONPATH="scr"
+python -m procurewatch doctor
+python -m pytest tests
+python -m ruff check api scr tests frontend
+```
 
-## Triage de tareas
+Validacion enfocada si el tiempo aprieta:
+
+```powershell
+$env:PYTHONPATH="scr"
+python -m pytest tests\test_agent1.py tests\test_agent2.py tests\test_agent3.py tests\test_agent4.py tests\test_cli.py
+python -m ruff check scr\procurewatch frontend tests\test_agent3.py tests\test_agent4.py
+```
+
+Criterio de cierre:
+
+- tests verdes, o fallos documentados con causa y alcance;
+- ruff verde, o excepciones justificadas;
+- `doctor` no bloquea la demo;
+- no hay cambios sin revisar en Git.
+
+## Hito 5 - Documentacion, memoria y defensa
+
+Objetivo: alinear el repositorio y la memoria externa con lo que realmente funciona en la rama de
+integracion.
+
+Documentos de referencia:
+
+- `README.md`
+- `docs/README.md`
+- `docs/04_agentes/SEGUIMIENTO_AGENTES.md`
+- `docs/04_agentes/CIERRE_AGENT3_AGENT4_2026_06_23.md`
+- `docs/04_agentes/HOJA_RUTA_CIERRE_TFM_2026_06_24.md`
+- esta hoja de ruta final
+
+Contenido que debe pasar a la memoria:
+
+- ProcureWatch es un prototipo de priorizacion para revision humana.
+- Agent1 normaliza fuentes y produce un canonico.
+- Agent2 calcula red flags y scoring determinista.
+- Agent3 deriva una red de relaciones y metricas.
+- Agent4 recupera evidencia documental y genera ficha citada.
+- El dashboard permite explicar el caso integrado.
+- Las limitaciones son parte del metodo: matching imperfecto, corpus pequeno, muestra demo reducida
+  y ausencia de etiquetas juridicas completas.
+
+Criterio de cierre:
+
+- README y docs apuntan al flujo real;
+- la memoria no promete servicios ni funcionalidades no cerradas;
+- la defensa tiene un guion de 5 a 7 minutos basado en `PW-2024-0001`;
+- las limitaciones aparecen de forma honesta y metodologica.
+
+## Hito 6 - Promocion a rama principal
+
+Objetivo: pasar de integracion a rama principal solo cuando la rama este validada y el equipo tenga
+claro que entregar.
+
+Gate antes de promocionar:
+
+- `integration/multiagent` contiene `origin/Satu` y `origin/sebas`;
+- `git status --short --branch` esta limpio;
+- tests y ruff ejecutados o fallos documentados;
+- dashboard probado o fallback documentado;
+- hoja de ruta y documentacion actualizadas;
+- rama `integration/multiagent` subida al remoto;
+- decision explicita sobre si la rama principal sera `master` o `main`.
+
+Comandos de cierre:
+
+```powershell
+git status --short --branch
+git push origin integration/multiagent
+```
+
+Promocion si la rama principal es `master`:
+
+```powershell
+git checkout master
+git merge --no-ff integration/multiagent
+git push origin master
+```
+
+Promocion si el equipo decide usar `main`:
+
+```powershell
+git checkout -b main integration/multiagent
+git push origin main
+```
+
+Criterio final:
+
+- existe una rama principal con la integracion final;
+- el repositorio, la demo y la documentacion cuentan la misma historia;
+- el equipo puede entregar o defender sin depender de cambios pendientes.
+
+## Triage final
 
 ### Imprescindible
 
-- Hoja de ruta final creada y enlazada.
-- Memoria alineada con MVP real.
-- Guion de demo cerrado.
+- Integracion Sebas/Satu confirmada.
+- Dashboard explorable.
+- Demo Agent3-Agent4 reproducible.
+- Validacion tecnica ejecutada.
 - Limitaciones escritas.
-- Rama de integracion clara.
+- Decision de rama principal.
 
 ### Importante
 
-- Capturas del dashboard o de salidas JSON.
+- Capturas del dashboard.
 - Tabla de resultados por agente.
-- Tabla de red flags implementadas.
 - Tabla de artefactos generados.
-- Checklist de comandos reproducibles.
+- Lista de comandos reproducibles.
+- Texto breve para memoria externa.
 
-### Prescindible hoy
+### Prescindible
 
-- Nuevas fuentes de datos.
+- Nuevas fuentes.
 - Nuevas reglas de scoring.
-- Mas integraciones con servicios.
+- Servicios Docker obligatorios.
 - Ajustes esteticos no criticos.
 - Refactors no necesarios.
-
-## Tabla de cierre
-
-| Bloque | Responsable | Estado objetivo hoy | Evidencia |
-|---|---|---|---|
-| Git e integracion | Ambos | Rama integrada sin conflictos | `integration/multiagent` |
-| Agent1 | Sebastian | Canonico y calidad documentados | `agent2_contracts_canonical.parquet` |
-| Agent2 | Sebastian | Scoring v1 explicado | salidas Agent2 / docs |
-| Agent3 | Saturia | Grafo y metricas explicadas | `agent3_graph_report.json` |
-| Agent4 | Saturia | Ficha documental citada | `agent4_case_context_integrated_demo.json` |
-| Dashboard | Ambos | Demo local o guion alternativo | `frontend/agent3_demo.py` |
-| Memoria | Ambos | Resultados y limitaciones cerrados | documento TFM |
-| Defensa | Ambos | Guion de 5-7 minutos | presentacion/capturas |
 
 ## Guion de defensa de 5 minutos
 
@@ -216,11 +318,11 @@ Checklist antes de entregar:
 2. Propuesta: ProcureWatch integra datos, reglas, grafos y evidencia documental.
 3. Agent1: normaliza fuentes y genera el canonico.
 4. Agent2: calcula red flags y score explicable.
-5. Agent3: anade relaciones, comunidades y centralidad.
+5. Agent3: transforma contratos en red y calcula relaciones.
 6. Agent4: recupera evidencia documental y genera ficha citada.
-7. Dashboard: permite revisar un caso sin afirmar fraude.
-8. Limitaciones: matching, corpus pequeno, sin etiquetas completas.
-9. Futuro: mejorar matching, ampliar corpus, persistencia Neo4j/Qdrant y API productiva.
+7. Dashboard: permite explorar resultados y explicar un caso.
+8. Limitaciones: matching, corpus pequeno, muestra demo y ausencia de etiquetas de fraude.
+9. Futuro: mejorar matching, ampliar corpus, persistir Neo4j/Qdrant y crear API productiva.
 
 ## Frase final del proyecto
 
