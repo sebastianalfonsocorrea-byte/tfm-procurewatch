@@ -176,6 +176,15 @@ class Agent1Tests(unittest.TestCase):
             canonical_df = pd.read_parquet(processed / "agent2_contracts_canonical.parquet")
             self.assertIn("source_notice_id", canonical_df.columns)
             self.assertIn("source_tender_id", canonical_df.columns)
+            self.assertIn("source_snapshot_id", canonical_df.columns)
+            self.assertEqual(canonical_df["source_snapshot_id"].nunique(), 1)
+            self.assertTrue(str(canonical["source_snapshot_id"]).startswith("agent1:"))
+            self.assertEqual(
+                set(canonical_df["source_snapshot_id"].astype(str)),
+                {canonical["source_snapshot_id"]},
+            )
+            schema = json.loads((processed / "agent2_contracts_canonical_schema.json").read_text())
+            self.assertIn("source_snapshot_id", schema["columns"])
             self.assertIn(quality["status"], {"ok", "warning"})
 
     def test_run_agent1_reuses_cached_source_outputs(self) -> None:
@@ -251,7 +260,7 @@ class Agent1Tests(unittest.TestCase):
                         "schema_path": str(processed / "schema.json"),
                         "rows": 1,
                     },
-                ),
+                ) as canonical_mock,
                 mock.patch(
                     "procurewatch.agent1.analytical_dataset.build_analytical_datasets",
                     return_value={
@@ -276,6 +285,11 @@ class Agent1Tests(unittest.TestCase):
             self.assertTrue(report["boe"]["cached"])
             self.assertTrue(report["place"]["cached"])
             self.assertTrue(report["opentender"]["cached"])
+            self.assertTrue(report["inputs"]["source_snapshot_id"].startswith("agent1:"))
+            self.assertEqual(
+                canonical_mock.call_args.kwargs["source_snapshot_id"],
+                report["inputs"]["source_snapshot_id"],
+            )
 
     def test_agent2_canonical_prefers_boe_award_lines_when_available(self) -> None:
         import pandas as pd
@@ -317,6 +331,8 @@ class Agent1Tests(unittest.TestCase):
             canonical = pd.read_parquet(result["path"])
 
             self.assertEqual(result["rows"], 1)
+            self.assertIn("source_snapshot_id", canonical.columns)
+            self.assertEqual(canonical.loc[0, "source_snapshot_id"], result["source_snapshot_id"])
             self.assertEqual(canonical.loc[0, "source_notice_id"], "BOE-1")
             self.assertTrue(canonical.loc[0, "source_tender_id"].startswith("expediente:"))
 

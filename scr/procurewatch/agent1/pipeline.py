@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from datetime import UTC, datetime
@@ -191,6 +192,13 @@ def run_agent1(
             limit=limit_ot,
         )
 
+    source_snapshot_id = _build_source_snapshot_id(
+        input_artifacts,
+        year=year,
+        cpv_prefix=cpv_prefix,
+    )
+    reports["inputs"]["source_snapshot_id"] = source_snapshot_id
+
     coverage = build_source_coverage(
         output_dir=output_dir,
         cpv_prefix=cpv_prefix,
@@ -200,6 +208,7 @@ def run_agent1(
         output_dir=output_dir,
         cpv_prefix=cpv_prefix,
         year=year,
+        source_snapshot_id=source_snapshot_id,
     )
     from .analytical_dataset import build_analytical_datasets
 
@@ -310,12 +319,73 @@ def build_source_coverage(
 
     key_rows = _build_universe_rows_from_sets(boe_keys, place_keys, op_keys)
     key_path = output_dir / "agent1_contract_key_coverage.parquet"
-    key_df = pd.DataFrame(key_rows)
+    key_df = pd.DataFrame(
+        key_rows,
+        columns=[
+            "contract_key",
+            "contract_key_canon",
+            "present_in_boe",
+            "present_in_place",
+            "present_in_opentender",
+        ],
+    )
+    for column in ["present_in_boe", "present_in_place", "present_in_opentender"]:
+        key_df[column] = key_df[column].astype("bool")
     key_df.to_parquet(key_path, index=False)
     key_df.head(500).to_csv(output_dir / "agent1_contract_key_coverage_preview.csv", index=False)
 
+    source_frames = {
+        "boe": _build_matching_frame(
+            source="boe",
+            dataframe=boe_df,
+            contract_keys=boe_key_series,
+        ),
+        "place": _build_matching_frame(
+            source="place",
+            dataframe=place_df,
+            contract_keys=place_key_series,
+        ),
+        "opentender": _build_matching_frame(
+            source="opentender",
+            dataframe=op_df,
+            contract_keys=op_key_series,
+        ),
+    }
+    exact_intersections = {
+        "boe_place": len(boe_keys & place_keys),
+        "boe_opentender": len(boe_keys & op_keys),
+        "place_opentender": len(place_keys & op_keys),
+    }
+    matching_diagnostics, matching_candidates = _build_matching_diagnostics(
+        source_frames=source_frames,
+        exact_intersections=exact_intersections,
+        source_paths={
+            "boe": boe_path,
+            "place": place_path,
+            "opentender": op_path,
+        },
+    )
+    matching_diagnostics_path = output_dir / "agent1_matching_diagnostics.json"
+    matching_candidates_preview_path = output_dir / "agent1_matching_candidates_preview.csv"
+    matching_candidates.head(500).to_csv(
+        matching_candidates_preview_path,
+        index=False,
+        encoding="utf-8",
+    )
+    matching_diagnostics["outputs"] = {
+        "diagnostics_json": str(matching_diagnostics_path),
+        "candidates_preview_csv": str(matching_candidates_preview_path),
+    }
+    matching_diagnostics_path.write_text(
+        json.dumps(matching_diagnostics, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
     return {
         "contract_key_coverage_path": str(key_path),
+        "matching_diagnostics_path": str(matching_diagnostics_path),
+        "matching_candidates_preview_path": str(matching_candidates_preview_path),
+        "candidate_counts": matching_diagnostics["candidate_counts"],
         "boe_contract_keys": len(boe_keys),
         "place_contract_keys": len(place_keys),
         "op_contract_keys": len(op_keys),
@@ -359,6 +429,7 @@ def build_agent2_canonical_dataset(
     output_dir: Path,
     cpv_prefix: str,
     year: int | None = None,
+    source_snapshot_id: str | None = None,
 ) -> dict[str, Any]:
     import pandas as pd
 
@@ -428,11 +499,18 @@ def build_agent2_canonical_dataset(
         _canonical_from_place(_read_parquet_columns(place_path, place_columns)),
         _canonical_from_opentender(_read_parquet_columns(op_path, opentender_columns)),
     ]
+    snapshot_id = source_snapshot_id or _build_processed_snapshot_id(
+        output_dir=output_dir,
+        cpv_prefix=cpv_prefix,
+        year=year,
+        paths=[boe_path, place_path, op_path],
+    )
     dataframe = (
         pd.concat([frame for frame in frames if not frame.empty], ignore_index=True)
         if any(not frame.empty for frame in frames)
         else pd.DataFrame(columns=CANONICAL_AGENT2_COLUMNS)
     )
+    dataframe["source_snapshot_id"] = snapshot_id
 
     if not dataframe.empty:
         dataframe = dataframe[CANONICAL_AGENT2_COLUMNS].copy()
@@ -456,6 +534,7 @@ def build_agent2_canonical_dataset(
             "award_date",
             "cpv_codes_raw",
             "source_file",
+            "source_snapshot_id",
         ]
         for column in string_columns:
             dataframe[column] = dataframe[column].astype("string").fillna("")
@@ -481,6 +560,7 @@ def build_agent2_canonical_dataset(
         "schema_path": str(schema_path),
         "rows": int(len(dataframe)),
         "columns": CANONICAL_AGENT2_COLUMNS,
+        "source_snapshot_id": snapshot_id,
         "sources": dataframe["source"].value_counts(dropna=False).to_dict()
         if not dataframe.empty
         else {},
@@ -712,6 +792,7 @@ CANONICAL_AGENT2_COLUMNS = [
     "cpv_codes_raw",
     "cpv_code_list",
     "source_file",
+    "source_snapshot_id",
 ]
 
 
@@ -858,6 +939,7 @@ def _agent2_schema() -> dict[str, Any]:
                 "awarded_value_eur",
                 "cpv_code_list",
                 "source_file",
+                "source_snapshot_id",
             ],
         },
         "columns": {
@@ -1199,6 +1281,71 @@ def _input_artifact_metadata(path: Path, *, compute_sha: bool = True) -> dict[st
         "sha256": digest.hexdigest() if digest else None,
         "fingerprint_mode": "sha256" if digest else "size_mtime",
         "modified_utc": datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat(),
+    }
+
+
+def _build_source_snapshot_id(
+    input_artifacts: dict[str, Any],
+    *,
+    year: int,
+    cpv_prefix: str,
+) -> str:
+    payload = {
+        "agent": "agent1",
+        "year": year,
+        "cpv_prefix": cpv_prefix,
+        "input_artifacts": _stable_snapshot_payload(input_artifacts),
+    }
+    return _snapshot_id_from_payload(payload)
+
+
+def _build_processed_snapshot_id(
+    *,
+    output_dir: Path,
+    cpv_prefix: str,
+    year: int | None,
+    paths: list[Path],
+) -> str:
+    artifacts = [
+        _path_snapshot_payload(path)
+        for path in paths
+        if path.exists()
+    ]
+    payload = {
+        "agent": "agent1",
+        "year": year,
+        "cpv_prefix": cpv_prefix,
+        "output_dir": str(output_dir),
+        "processed_artifacts": artifacts,
+    }
+    return _snapshot_id_from_payload(payload)
+
+
+def _snapshot_id_from_payload(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    return f"agent1:{hashlib.sha256(encoded.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _stable_snapshot_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _stable_snapshot_payload(value[key])
+            for key in sorted(value)
+            if key != "modified_utc"
+        }
+    if isinstance(value, list):
+        return [_stable_snapshot_payload(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _path_snapshot_payload(path: Path) -> dict[str, Any]:
+    return {
+        "path": str(path),
+        "name": path.name,
+        "exists": path.exists(),
+        "size_bytes": path.stat().st_size if path.exists() else None,
     }
 
 
