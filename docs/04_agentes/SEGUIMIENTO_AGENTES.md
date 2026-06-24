@@ -42,6 +42,8 @@ Decision de continuidad:
 - Agent3 y Agent4 quedan cerrados como MVP/PoC defendibles.
 - El siguiente bloque recomendado es preparar demo integrada/dashboard y ampliar corpus documental
   real o semi-real para mejorar evaluacion RAG.
+- La hoja de ruta de cierre de `sebas` queda en
+  [Hoja de ruta sebas: cierre TFM y demo evaluable](HOJA_RUTA_SEBAS_CIERRE_TFM.md).
 
 ## Reglas comunes
 
@@ -63,4 +65,5 @@ Decision de continuidad:
 - [Plan Agent2 scoring](PLAN_AGENTE2_SCORING.md)
 - [Plan Agent3 grafos](PLAN_AGENTE3_GRAFOS.md)
 - [Plan Agent4 RAG LangGraph](PLAN_AGENTE4_RAG_LANGGRAPH.md)
+- [Hoja de ruta sebas cierre TFM](HOJA_RUTA_SEBAS_CIERRE_TFM.md)
 - [Plan capa datos agentes](../01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md)
