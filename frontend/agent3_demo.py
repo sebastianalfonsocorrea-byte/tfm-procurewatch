@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import networkx as nx
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -23,52 +25,89 @@ from procurewatch.agent3.demo import (  # noqa: E402
     load_agent3_demo_data,
     missing_demo_artifacts,
     node_type_counts,
-    select_explainable_cases,
     top_communities,
     top_entities,
 )
 
+DEFAULT_DEMO_DIR = "data/processed/agent3_agent4_demo_2026_06_23"
+
 NODE_TYPE_LABELS = {
-    "Buyer": "Comprador",
-    "Supplier": "Proveedor",
+    "Buyer": "Comprador publico",
+    "Supplier": "Empresa adjudicataria",
     "Contract": "Contrato",
-    "CPV": "CPV",
-    "Source": "Fuente",
+    "CPV": "Categoria CPV",
+    "Source": "Fuente de datos",
 }
 
 EDGE_TYPE_LABELS = {
-    "PUBLISHED": "Publica",
+    "PUBLISHED": "Publica contrato",
     "AWARDED_TO": "Adjudicado a",
-    "HAS_CPV": "CPV",
-    "FROM_SOURCE": "Fuente",
+    "HAS_CPV": "Clasificado como",
+    "FROM_SOURCE": "Procede de",
 }
 
 FLAG_LABELS = {
-    "risky_procedure": "Procedimiento sensible",
-    "awarded_above_estimate": "Adjudicado sobre el estimado",
+    "risky_procedure": "Procedimiento con menor publicidad",
+    "awarded_above_estimate": "Adjudicacion sobre el valor estimado",
     "missing_supplier": "Proveedor no informado",
     "single_bidder": "Baja concurrencia",
 }
 
 FLAG_EXPLANATIONS = {
-    "risky_procedure": "El procedimiento requiere revision porque reduce competencia o publicidad.",
-    "awarded_above_estimate": "El importe adjudicado supera el valor estimado registrado.",
-    "missing_supplier": "Falta una relacion clave para explicar la adjudicacion.",
-    "single_bidder": "La concurrencia limitada puede elevar prioridad de revision.",
+    "risky_procedure": (
+        "El procedimiento reduce publicidad o competencia y eleva la prioridad de revision."
+    ),
+    "awarded_above_estimate": (
+        "El importe adjudicado supera el valor estimado registrado para el contrato."
+    ),
+    "missing_supplier": "Falta una entidad clave para explicar la adjudicacion.",
+    "single_bidder": "La concurrencia limitada puede elevar la prioridad de revision.",
+}
+
+RISK_LEVEL_LABELS = {
+    "low": "Prioridad baja",
+    "medium": "Prioridad media",
+    "high": "Prioridad alta",
+}
+
+DOCUMENT_TYPE_LABELS = {
+    "html": "Pliego o pagina HTML",
+    "text": "Documento de texto",
+    "pdf": "Documento PDF",
+}
+
+SOURCE_LABELS = {
+    "synthetic": "Muestra demostrativa",
+    "boe": "BOE",
+    "place": "PLACE",
+    "opentender": "OpenTender",
+}
+
+NODE_COLORS = {
+    "Buyer": "#2563eb",
+    "Supplier": "#059669",
+    "Contract": "#7c3aed",
+    "CPV": "#d97706",
+    "Source": "#475569",
 }
 
 
+@dataclass(frozen=True, slots=True)
+class DashboardFilters:
+    selected_contract: str
+    filtered_contracts: pd.DataFrame
+    node_types: set[str]
+    relation_types: set[str]
+    community_id: int | None
+    max_nodes: int
+    only_case_neighborhood: bool
+
+
 def main() -> None:
-    st.set_page_config(page_title="ProcureWatch MVP", layout="wide")
+    st.set_page_config(page_title="ProcureWatch Analytics", layout="wide")
     _apply_page_style()
 
-    st.title("ProcureWatch MVP")
-    st.caption(
-        "Demo multiagente para revisar contratacion publica con grafo, scoring y evidencia "
-        "documental. No declara fraude; prioriza revision humana trazable."
-    )
-
-    output_dir, case_context_path = _render_sidebar_inputs()
+    output_dir, case_context_path = _render_data_sidebar()
     case_context = _load_case_context(case_context_path) if case_context_path else {}
 
     missing = missing_demo_artifacts(output_dir)
@@ -78,40 +117,44 @@ def main() -> None:
 
     data = load_agent3_demo_data(output_dir)
     kpis = build_demo_kpis(data)
-    selected_contract = _render_contract_selector(data, case_context)
-    case_view = _build_case_view(data, case_context, selected_contract)
+    contracts = _build_contract_table(data, case_context)
+    filters = _render_analysis_sidebar(data, contracts, case_context)
+    case_view = _build_case_view(data, case_context, filters.selected_contract)
 
-    _render_context_overview(
-        data=data,
-        kpis=kpis,
-        output_dir=output_dir,
-        case_context_path=case_context_path,
-        case_context=case_context,
-        case_view=case_view,
-    )
+    _render_header()
+    _render_decision_strip(case_view)
 
-    overview_tab, network_tab, case_tab, evidences_tab, debug_tab = st.tabs(
-        ["Vista general", "Explorar red", "Caso", "Evidencias", "Debug"]
+    summary_tab, ranking_tab, case_tab, network_tab, evidence_tab, trace_tab = st.tabs(
+        [
+            "Resumen",
+            "Contratos priorizados",
+            "Caso seleccionado",
+            "Relaciones",
+            "Evidencias",
+            "Trazabilidad",
+        ]
     )
-    with overview_tab:
-        _render_overview(data, kpis, case_view)
-    with network_tab:
-        _render_network(data, selected_contract)
+    with summary_tab:
+        _render_summary(data, kpis, contracts, case_view)
+    with ranking_tab:
+        _render_contract_ranking(filters.filtered_contracts, filters.selected_contract)
     with case_tab:
         _render_case(case_view)
-    with evidences_tab:
+    with network_tab:
+        _render_network(data, filters)
+    with evidence_tab:
         _render_evidences(case_view)
-    with debug_tab:
-        _render_debug(data, case_context, output_dir, case_context_path, case_view)
+    with trace_tab:
+        _render_traceability(data, case_context, output_dir, case_context_path, case_view)
 
 
-def _render_sidebar_inputs() -> tuple[Path, Path | None]:
-    st.sidebar.header("Datos cargados")
-    default_output_dir = os.getenv("PROCUREWATCH_AGENT3_DEMO_DIR", "data/processed")
+def _render_data_sidebar() -> tuple[Path, Path | None]:
+    st.sidebar.header("Datos de la demo")
+    default_output_dir = os.getenv("PROCUREWATCH_AGENT3_DEMO_DIR", DEFAULT_DEMO_DIR)
     output_dir_text = st.sidebar.text_input(
-        "Carpeta de demo cargada",
+        "Carpeta de resultados",
         value=default_output_dir,
-        help="Debe contener los parquet/json generados por Agent3.",
+        help="Carpeta con los artefactos generados por Agent3.",
     )
     output_dir = Path(output_dir_text)
     default_case_context_path = Path(
@@ -121,284 +164,316 @@ def _render_sidebar_inputs() -> tuple[Path, Path | None]:
         )
     )
     case_context_text = st.sidebar.text_input(
-        "Ficha documental del contrato",
+        "Ficha documental",
         value=str(default_case_context_path),
-        help="JSON generado por Agent4 con resumen, evidencias y citas.",
-    )
-    st.sidebar.caption(
-        "Agent3 alimenta el grafo. Agent4 alimenta la ficha explicable del contrato."
+        help="JSON generado por Agent4 para el contrato principal.",
     )
     return output_dir, Path(case_context_text) if case_context_text else None
 
 
-def _render_contract_selector(data, case_context: dict[str, Any]) -> str:
-    st.sidebar.header("Navegacion")
-    options = _contract_options(data)
-    if not options:
-        st.sidebar.warning("No hay contratos disponibles en los artefactos Agent3.")
-        return ""
+def _render_analysis_sidebar(
+    data,
+    contracts: pd.DataFrame,
+    case_context: dict[str, Any],
+) -> DashboardFilters:
+    st.sidebar.header("Analisis")
+    filtered = contracts.copy()
+
+    states = _sorted_text_options(filtered["estado_ficha"].tolist())
+    selected_states = st.sidebar.multiselect("Estado del caso", states, default=states)
+    if selected_states:
+        filtered = filtered[filtered["estado_ficha"].isin(selected_states)]
+
+    buyers = _sorted_text_options(filtered["comprador"].tolist())
+    selected_buyers = st.sidebar.multiselect("Comprador", buyers, default=buyers)
+    if selected_buyers:
+        filtered = filtered[filtered["comprador"].isin(selected_buyers)]
+
+    suppliers = _sorted_text_options(filtered["adjudicatario"].tolist())
+    selected_suppliers = st.sidebar.multiselect("Adjudicatario", suppliers, default=suppliers)
+    if selected_suppliers:
+        filtered = filtered[filtered["adjudicatario"].isin(selected_suppliers)]
+
+    community_options = _community_options(filtered)
+    selected_communities = st.sidebar.multiselect(
+        "Comunidad de red",
+        community_options,
+        default=community_options,
+    )
+    if selected_communities:
+        filtered = filtered[filtered["comunidad"].isin(selected_communities)]
+
+    if filtered.empty:
+        st.sidebar.warning("Los filtros no dejan contratos visibles; se muestran todos.")
+        filtered = contracts.copy()
 
     preferred_contract = _case_context_contract_key(case_context)
-    index = options.index(preferred_contract) if preferred_contract in options else 0
-    return st.sidebar.selectbox(
-        "Contrato a revisar",
-        options=options,
-        index=index,
-        format_func=lambda key: _contract_option_label(data, key),
-        help="La red sigue siendo la entrada principal; este selector fija el contrato explicado.",
+    contract_options = filtered["id_contrato"].tolist()
+    if preferred_contract not in contract_options and contract_options:
+        preferred_contract = str(contract_options[0])
+    contract_index = (
+        contract_options.index(preferred_contract)
+        if preferred_contract in contract_options
+        else 0
+    )
+    selected_contract = st.sidebar.selectbox(
+        "Contrato a explicar",
+        contract_options,
+        index=contract_index,
+        format_func=lambda value: _contract_option_label_from_table(filtered, str(value)),
+    )
+
+    st.sidebar.header("Red")
+    available_types = sorted(data.entity_metrics["node_type"].dropna().unique().tolist())
+    default_types = [item for item in ["Buyer", "Supplier", "Contract"] if item in available_types]
+    node_types = st.sidebar.multiselect(
+        "Entidades visibles",
+        available_types,
+        default=default_types,
+        format_func=_node_type_label,
+    )
+
+    available_relations = sorted(data.edges["edge_type"].dropna().unique().tolist())
+    relation_types = st.sidebar.multiselect(
+        "Relaciones visibles",
+        available_relations,
+        default=available_relations,
+        format_func=_edge_type_label,
+    )
+
+    graph_community_options = ["Todas", *_community_options(contracts)]
+    graph_community = st.sidebar.selectbox("Comunidad en el grafo", graph_community_options)
+    max_nodes = st.sidebar.slider("Tamano de red", min_value=6, max_value=40, value=18, step=2)
+    only_case_neighborhood = st.sidebar.toggle("Solo entorno del contrato", value=True)
+
+    return DashboardFilters(
+        selected_contract=str(selected_contract),
+        filtered_contracts=filtered,
+        node_types=set(node_types),
+        relation_types=set(relation_types),
+        community_id=None if graph_community == "Todas" else int(graph_community),
+        max_nodes=max_nodes,
+        only_case_neighborhood=only_case_neighborhood,
     )
 
 
-def _render_context_overview(
-    *,
+def _render_header() -> None:
+    st.title("ProcureWatch Analytics")
+    st.caption(
+        "Demo integrada para priorizar contratos revisables con datos abiertos, reglas, red de "
+        "relaciones y evidencia documental. El sistema no declara fraude."
+    )
+
+
+def _render_decision_strip(case_view: dict[str, Any]) -> None:
+    priority = _risk_level_label(case_view.get("risk_level"))
+    score = _format_score(case_view.get("risk_score"))
+    flags = len(case_view.get("red_flags", []))
+    evidences = len(case_view.get("evidences", []))
+
+    columns = st.columns([1.2, 1, 1, 1])
+    columns[0].metric("Contrato seleccionado", case_view.get("contract_key") or "Sin contrato")
+    columns[1].metric("Prioridad", priority)
+    columns[2].metric("Puntuacion", score)
+    columns[3].metric("Evidencias", str(evidences))
+
+    if flags:
+        st.info(
+            f"Lectura principal: {priority.lower()} con {flags} senales explicables y "
+            f"{evidences} evidencias documentales asociadas."
+        )
+    else:
+        st.info(
+            "Lectura principal: el contrato tiene metricas relacionales, pero la ficha Agent2/"
+            "Agent4 cargada no contiene scoring documental para este caso."
+        )
+
+
+def _render_summary(
     data,
     kpis: dict[str, int],
-    output_dir: Path,
-    case_context_path: Path | None,
-    case_context: dict[str, Any],
+    contracts: pd.DataFrame,
     case_view: dict[str, Any],
 ) -> None:
-    left, middle, right = st.columns([1.4, 1.2, 1])
+    st.subheader("Resumen ejecutivo")
+    _render_kpis(kpis, contracts, case_view)
+    _render_agent_flow(case_view)
+
+    left, right = st.columns([1.2, 1])
     with left:
-        st.markdown("### Que estas viendo")
-        st.write(
-            "La demo carga contratos transformados en una red: compradores, proveedores, "
-            "contratos, CPV y fuentes. Desde esa red se selecciona un contrato y se explica "
-            "con senales de riesgo y evidencia documental."
-        )
-    with middle:
-        st.markdown("### Datos usados")
-        st.write(f"**Grafo Agent3:** `{output_dir}`")
-        if case_context:
-            st.write(f"**Ficha Agent4:** `{case_context_path}`")
-        else:
-            st.warning("No hay ficha documental Agent4 cargada.")
+        st.markdown("#### Contratos con mayor interes de revision")
+        ranking = _display_contract_columns(contracts).head(5)
+        st.dataframe(ranking, width="stretch", hide_index=True)
     with right:
-        st.markdown("### Caso activo")
-        st.write(f"**{case_view.get('contract_key') or 'Sin contrato'}**")
-        st.write(str(case_view.get("title") or "Sin titulo disponible."))
+        st.markdown("#### Caso activo")
+        _render_case_snapshot(case_view)
 
-    if case_view.get("case_context_contract") and not case_view.get("case_context_matches"):
-        st.warning(
-            "La ficha documental cargada pertenece a "
-            f"{case_view['case_context_contract']}; el contrato seleccionado es "
-            f"{case_view['contract_key']}. Para este contrato solo se muestran senales "
-            "del grafo."
-        )
-
-    _render_kpis(kpis)
-    _render_pipeline_strip(data, case_context)
+    st.subheader("Distribucion del lote de demo")
+    _render_distribution_charts(data, contracts)
 
 
-def _render_kpis(kpis: dict[str, int]) -> None:
-    columns = st.columns(6)
+def _render_kpis(
+    kpis: dict[str, int],
+    contracts: pd.DataFrame,
+    case_view: dict[str, Any],
+) -> None:
+    buyer_count = contracts["comprador"].nunique()
+    supplier_count = contracts["adjudicatario"].nunique()
+    evidence_count = len(case_view.get("evidences", []))
     labels = [
-        ("Contratos", "contracts"),
-        ("Nodos de red", "nodes"),
-        ("Relaciones", "edges"),
-        ("Comunidades", "communities"),
-        ("Mayor componente", "largest_component_size"),
-        ("Contratos con senales", "agent2_features"),
+        ("Contratos analizados", kpis.get("contracts", 0)),
+        ("Compradores", buyer_count),
+        ("Adjudicatarios", supplier_count),
+        ("Relaciones de red", kpis.get("edges", 0)),
+        ("Comunidades", kpis.get("communities", 0)),
+        ("Evidencias del caso", evidence_count),
     ]
-    for column, (label, key) in zip(columns, labels, strict=False):
-        column.metric(label, _format_int(kpis.get(key, 0)))
+    columns = st.columns(len(labels))
+    for column, (label, value) in zip(columns, labels, strict=False):
+        column.metric(label, _format_int(value))
 
 
-def _render_pipeline_strip(data, case_context: dict[str, Any]) -> None:
-    has_agent3 = not data.agent2_features.empty
-    has_agent4 = bool(case_context)
+def _render_agent_flow(case_view: dict[str, Any]) -> None:
+    has_agent2 = not _is_blank(case_view.get("risk_score"))
+    has_agent3 = bool(case_view.get("agent3_metrics"))
+    has_agent4 = bool(case_view.get("evidences"))
     items = [
-        ("Agent1/2", "Contrato canonico y scoring determinista", True),
-        ("Agent3", "Grafo de entidades y relaciones", has_agent3),
-        ("Agent4", "Ficha documental con citas", has_agent4),
+        ("Agent1", "Contrato normalizado", True),
+        ("Agent2", "Prioridad y red flags", has_agent2),
+        ("Agent3", "Relaciones y comunidades", has_agent3),
+        ("Agent4", "Evidencias citadas", has_agent4),
     ]
     columns = st.columns(len(items))
-    for column, (title, description, active) in zip(columns, items, strict=False):
-        state = "Activo" if active else "Pendiente"
+    for column, (title, detail, active) in zip(columns, items, strict=False):
+        state = "Disponible" if active else "No disponible para este caso"
+        css_class = "pw-step-on" if active else "pw-step-off"
         column.markdown(
             f"""
-            <div class="pw-step {"pw-step-on" if active else "pw-step-off"}">
+            <div class="pw-step {css_class}">
                 <div class="pw-step-title">{title}</div>
                 <div class="pw-step-state">{state}</div>
-                <div class="pw-step-text">{description}</div>
+                <div class="pw-step-text">{detail}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
 
-def _render_overview(data, kpis: dict[str, int], case_view: dict[str, Any]) -> None:
-    st.subheader("Lectura rapida")
-    left, right = st.columns([1.2, 1])
-    with left:
-        st.write(
-            "Empieza por la red: los contratos se conectan con compradores, proveedores, CPV "
-            "y fuente. Las comunidades ayudan a ver grupos de relacion. Despues baja al caso "
-            "seleccionado para revisar senales y evidencia."
-        )
-        _render_recommended_cases(data, case_view.get("contract_key"))
-    with right:
-        st.markdown("#### Caso seleccionado")
-        _render_case_snapshot(case_view)
-
-    _render_distribution_charts(data)
-
-    st.subheader("Entidades centrales")
-    left, right = st.columns(2)
-    with left:
-        _render_entity_table(data, node_type="Buyer", title="Compradores con mas peso")
-    with right:
-        _render_entity_table(data, node_type="Supplier", title="Proveedores con mas peso")
-
-
-def _render_recommended_cases(data, selected_contract: str | None) -> None:
-    st.markdown("#### Casos sugeridos por Agent3")
-    rows = []
-    for item in select_explainable_cases(data):
-        rows.append(
-            {
-                "contrato": item["contract_key_canon"],
-                "senal": item["title"],
-                "tipo": item["signal_type"],
-                "seleccionado": "si" if item["contract_key_canon"] == selected_contract else "",
-            }
-        )
-    if rows:
-        st.dataframe(rows, width="stretch", hide_index=True)
-    else:
-        st.info("Agent3 no ha seleccionado casos explicables en este lote.")
-
-
-def _render_case_snapshot(case_view: dict[str, Any]) -> None:
-    columns = st.columns(2)
-    columns[0].metric("Riesgo Agent2", _format_metric(case_view.get("risk_score")))
-    columns[1].metric("Senales de riesgo", str(len(case_view.get("red_flags", []))))
-    st.write(f"**Comprador:** {case_view.get('buyer_name') or 'No informado'}")
-    st.write(f"**Proveedor:** {case_view.get('supplier_name') or 'No informado'}")
-    st.write(f"**Titulo:** {case_view.get('title') or 'No informado'}")
-
-
-def _render_distribution_charts(data) -> None:
-    st.subheader("Como se reparte la red")
+def _render_distribution_charts(data, contracts: pd.DataFrame) -> None:
     left, right = st.columns(2)
     with left:
         node_counts = node_type_counts(data)
-        if not node_counts.empty:
+        if node_counts.empty:
+            st.info("No hay entidades para representar.")
+        else:
             node_counts = node_counts.copy()
-            node_counts["tipo"] = node_counts["node_type"].map(_node_type_label)
+            node_counts["Tipo de entidad"] = node_counts["node_type"].map(_node_type_label)
             st.plotly_chart(
-                px.bar(node_counts, x="tipo", y="nodes", color="tipo"),
+                px.bar(
+                    node_counts,
+                    x="Tipo de entidad",
+                    y="nodes",
+                    color="Tipo de entidad",
+                    labels={"nodes": "Total"},
+                    color_discrete_sequence=["#2563eb", "#059669", "#7c3aed", "#d97706"],
+                ),
                 width="stretch",
             )
-        else:
-            st.info("No hay nodos para representar.")
     with right:
         edge_counts = edge_type_counts(data)
-        if not edge_counts.empty:
+        if edge_counts.empty:
+            st.info("No hay relaciones para representar.")
+        else:
             edge_counts = edge_counts.copy()
-            edge_counts["relacion"] = edge_counts["edge_type"].map(_edge_type_label)
+            edge_counts["Tipo de relacion"] = edge_counts["edge_type"].map(_edge_type_label)
             st.plotly_chart(
-                px.bar(edge_counts, x="relacion", y="edges", color="relacion"),
+                px.bar(
+                    edge_counts,
+                    x="Tipo de relacion",
+                    y="edges",
+                    color="Tipo de relacion",
+                    labels={"edges": "Total"},
+                    color_discrete_sequence=["#0f766e", "#9333ea", "#b45309", "#475569"],
+                ),
                 width="stretch",
             )
-        else:
-            st.info("No hay relaciones para representar.")
 
-    communities = top_communities(data, limit=12)
-    if not communities.empty:
-        st.markdown("#### Comunidades principales")
-        st.plotly_chart(
-            px.bar(
-                communities,
-                x="community_id",
-                y="contract_count",
-                color="node_count",
-                hover_data=["buyer_count", "supplier_count", "cpv_count"],
-                labels={
+    left, right = st.columns(2)
+    with left:
+        communities = top_communities(data, limit=12)
+        if communities.empty:
+            st.info("No hay comunidades calculadas.")
+        else:
+            chart = communities.rename(
+                columns={
                     "community_id": "Comunidad",
                     "contract_count": "Contratos",
-                    "node_count": "Nodos",
-                },
-            ),
-            width="stretch",
-        )
-
-
-def _render_entity_table(data, *, node_type: str, title: str) -> None:
-    st.markdown(f"#### {title}")
-    entities = top_entities(data, node_type=node_type, limit=10)
-    if entities.empty:
-        st.info("No hay entidades disponibles.")
-        return
-    table = entities[["label", "neighbor_count", "betweenness_centrality", "community_id"]].rename(
-        columns={
-            "label": "entidad",
-            "neighbor_count": "conexiones",
-            "betweenness_centrality": "centralidad",
-            "community_id": "comunidad",
-        }
-    )
-    st.dataframe(table, width="stretch", hide_index=True)
-
-
-def _render_network(data, selected_contract: str) -> None:
-    st.subheader("Explorar red")
-    st.write(
-        "El grafo muestra como se conectan contratos, compradores, proveedores, CPV y fuentes. "
-        "El contrato seleccionado aparece resaltado."
-    )
-    left, right, third = st.columns([2, 2, 1])
-    with left:
-        available_types = sorted(data.entity_metrics["node_type"].dropna().unique().tolist())
-        node_types = st.multiselect(
-            "Tipos de entidad",
-            options=available_types,
-            default=[item for item in ["Buyer", "Supplier", "Contract"] if item in available_types],
-            format_func=_node_type_label,
-        )
+                    "node_count": "Entidades",
+                    "buyer_count": "Compradores",
+                    "supplier_count": "Adjudicatarios",
+                }
+            )
+            st.plotly_chart(
+                px.bar(
+                    chart,
+                    x="Comunidad",
+                    y="Contratos",
+                    color="Entidades",
+                    hover_data=["Compradores", "Adjudicatarios"],
+                    color_continuous_scale="Teal",
+                ),
+                width="stretch",
+            )
     with right:
-        community_values = sorted(data.entity_metrics["community_id"].dropna().unique().tolist())
-        community_label = st.selectbox("Comunidad", options=["Todas", *community_values])
-    with third:
-        max_nodes = st.slider("Nodos", min_value=20, max_value=150, value=70, step=10)
+        st.markdown("#### Compradores y adjudicatarios")
+        compact = contracts[["comprador", "adjudicatario", "id_contrato"]].rename(
+            columns={
+                "comprador": "Comprador",
+                "adjudicatario": "Adjudicatario",
+                "id_contrato": "Contrato",
+            }
+        )
+        st.dataframe(compact, width="stretch", hide_index=True)
 
-    community_id = None if community_label == "Todas" else int(community_label)
-    nodes, edges = build_demo_subgraph(
-        data,
-        max_nodes=max_nodes,
-        node_types=set(node_types) if node_types else None,
-        community_id=community_id,
-    )
-    nodes, edges = _ensure_focus_contract(data, nodes, edges, selected_contract)
-    if nodes.empty:
-        st.warning("No hay nodos para el filtro actual.")
-        return
 
-    st.plotly_chart(
-        _network_figure(nodes, edges, focus_contract=selected_contract),
-        width="stretch",
+def _render_contract_ranking(contracts: pd.DataFrame, selected_contract: str) -> None:
+    st.subheader("Contratos priorizados")
+    st.write(
+        "La tabla combina scoring disponible, senales relacionales y cobertura documental para "
+        "ordenar los contratos que merecen revision humana."
     )
-    st.caption("Azul: comprador. Verde: proveedor. Violeta: contrato. Ambar: CPV. Gris: fuente.")
-    table = nodes[
+
+    display = _display_contract_columns(contracts)
+    display.insert(
+        0,
+        "Seleccionado",
+        ["si" if key == selected_contract else "" for key in contracts["id_contrato"]],
+    )
+    st.dataframe(display, width="stretch", hide_index=True)
+
+    st.markdown("#### Lectura de senales")
+    signal_rows = contracts[
         [
-            "label",
-            "node_type",
-            "neighbor_count",
-            "betweenness_centrality",
-            "community_id",
+            "id_contrato",
+            "motivo_revision",
+            "recurrencia_comprador_proveedor",
+            "peso_relacion",
+            "importancia_red",
+            "tamano_comunidad",
         ]
-    ].copy()
-    table["node_type"] = table["node_type"].map(_node_type_label)
-    table = table.rename(
+    ].rename(
         columns={
-            "label": "entidad",
-            "node_type": "tipo",
-            "neighbor_count": "conexiones",
-            "betweenness_centrality": "centralidad",
-            "community_id": "comunidad",
+            "id_contrato": "Contrato",
+            "motivo_revision": "Motivo principal",
+            "recurrencia_comprador_proveedor": "Contratos comprador-proveedor",
+            "peso_relacion": "Peso de esa relacion",
+            "importancia_red": "Importancia en la red",
+            "tamano_comunidad": "Entidades en comunidad",
         }
     )
-    st.dataframe(table, width="stretch", hide_index=True)
+    signal_rows["Peso de esa relacion"] = signal_rows["Peso de esa relacion"].map(_format_percent)
+    signal_rows["Importancia en la red"] = signal_rows["Importancia en la red"].map(_format_metric)
+    st.dataframe(signal_rows, width="stretch", hide_index=True)
 
 
 def _render_case(case_view: dict[str, Any]) -> None:
@@ -409,135 +484,159 @@ def _render_case(case_view: dict[str, Any]) -> None:
 
     if case_view.get("case_context_contract") and not case_view.get("case_context_matches"):
         st.warning(
-            "La ficha Agent4 cargada no corresponde a este contrato. Cambia el selector o "
-            "carga la ficha documental correcta."
+            "La ficha documental cargada corresponde a "
+            f"{case_view['case_context_contract']}. Para este contrato se muestran solo "
+            "datos canonicos y metricas de red."
         )
 
     columns = st.columns(4)
-    columns[0].metric("Riesgo Agent2", _format_metric(case_view.get("risk_score")))
-    columns[1].metric("Nivel", str(case_view.get("risk_level") or "n/a"))
-    columns[2].metric("Senales", str(len(case_view.get("red_flags", []))))
-    columns[3].metric("Evidencias", str(len(case_view.get("evidences", []))))
+    columns[0].metric("Prioridad Agent2", _risk_level_label(case_view.get("risk_level")))
+    columns[1].metric("Puntuacion", _format_score(case_view.get("risk_score")))
+    columns[2].metric("Red flags", str(len(case_view.get("red_flags", []))))
+    columns[3].metric("Relaciones del contrato", _format_metric(case_view.get("contract_links")))
 
-    st.markdown("#### Contexto del contrato")
-    st.dataframe(
-        _contract_context_rows(case_view),
-        width="stretch",
-        hide_index=True,
-    )
+    left, right = st.columns([1.1, 1])
+    with left:
+        st.markdown("#### Identificacion")
+        st.dataframe(_contract_context_rows(case_view), width="stretch", hide_index=True)
+    with right:
+        st.markdown("#### Lectura ejecutiva")
+        _render_case_snapshot(case_view)
+        summary = case_view.get("summary")
+        if summary:
+            st.write(str(summary))
 
     left, right = st.columns(2)
     with left:
-        st.markdown("#### Senales de riesgo Agent2")
+        st.markdown("#### Senales de riesgo")
         rows = _agent2_signal_rows(case_view)
         if rows:
             st.dataframe(rows, width="stretch", hide_index=True)
         else:
-            st.info("No hay scoring Agent2 cargado para este contrato.")
+            st.info("No hay red flags Agent2 cargadas para este contrato.")
     with right:
-        st.markdown("#### Senales relacionales Agent3")
+        st.markdown("#### Senales relacionales")
         rows = _agent3_signal_rows(case_view)
         if rows:
             st.dataframe(rows, width="stretch", hide_index=True)
         else:
-            st.info("No hay metricas Agent3 disponibles para este contrato.")
-
-    summary = case_view.get("summary")
-    if summary:
-        st.markdown("#### Resumen Agent4")
-        st.write(str(summary))
+            st.info("No hay metricas relacionales disponibles para este contrato.")
 
     warnings = case_view.get("warnings", [])
     if warnings:
         st.warning("\n".join(f"- {item}" for item in warnings))
 
 
-def _render_evidences(case_view: dict[str, Any]) -> None:
-    st.subheader("Evidencias documentales")
-    if case_view.get("case_context_contract") and not case_view.get("case_context_matches"):
-        st.warning(
-            "La ficha documental cargada pertenece a otro contrato, por eso no se muestran "
-            "evidencias aqui."
-        )
+def _render_case_snapshot(case_view: dict[str, Any]) -> None:
+    fields = [
+        ("Contrato", case_view.get("contract_key")),
+        ("Titulo", case_view.get("title")),
+        ("Comprador", case_view.get("buyer_name")),
+        ("Adjudicatario", case_view.get("supplier_name")),
+        ("Procedimiento", case_view.get("procedure")),
+        ("Importe estimado", _format_money(case_view.get("estimated_value"))),
+        ("Importe adjudicado", _format_money(case_view.get("awarded_value"))),
+    ]
+    for label, value in fields:
+        if not _is_blank(value):
+            st.write(f"**{label}:** {value}")
+
+
+def _render_network(data, filters: DashboardFilters) -> None:
+    st.subheader("Mapa de relaciones")
+    nodes, edges = _network_frames(data, filters)
+    if nodes.empty:
+        st.warning("No hay entidades para el filtro actual.")
         return
 
-    evidences = case_view.get("evidences", [])
-    citations = case_view.get("citations", [])
-    if not evidences:
-        st.info(
-            "No hay evidencias documentales recuperadas para este contrato. Agent4 debe "
-            "indicarlo explicitamente y no inventar conclusiones."
-        )
-        return
-
-    for index, evidence in enumerate(evidences, start=1):
-        with st.container(border=True):
-            st.markdown(f"#### Evidencia {index}")
-            left, right = st.columns([1, 2])
-            with left:
-                st.write(f"**Documento:** {evidence.get('document_id', 'n/a')}")
-                st.write(f"**Tipo:** {evidence.get('document_type', 'n/a')}")
-                st.write(f"**Fuente:** {evidence.get('source', 'n/a')}")
-                st.write(f"**Score retrieval:** {_format_metric(evidence.get('score'))}")
-            with right:
-                st.write(str(evidence.get("text_excerpt") or "Sin extracto disponible."))
-
-    st.markdown("#### Citas trazables")
-    if citations:
-        st.dataframe(
-            [{"cita": citation} for citation in citations],
+    left, right = st.columns([1.6, 1])
+    with left:
+        st.plotly_chart(
+            _network_figure(nodes, edges, focus_contract=filters.selected_contract),
             width="stretch",
-            hide_index=True,
         )
+    with right:
+        st.markdown("#### Entidades visibles")
+        st.dataframe(_network_node_table(nodes), width="stretch", hide_index=True)
+
+    st.markdown("#### Relaciones visibles")
+    relation_table = _network_edge_table(edges)
+    if relation_table.empty:
+        st.info("No hay relaciones visibles con los filtros actuales.")
     else:
-        st.info("No hay citas documentales asociadas.")
+        st.dataframe(relation_table, width="stretch", hide_index=True)
+
+    st.markdown("#### Entidades con mas peso en la red")
+    left, right = st.columns(2)
+    with left:
+        _render_entity_table(data, node_type="Buyer", title="Compradores principales")
+    with right:
+        _render_entity_table(data, node_type="Supplier", title="Adjudicatarios principales")
 
 
-def _render_debug(
-    data,
-    case_context: dict[str, Any],
-    output_dir: Path,
-    case_context_path: Path | None,
-    case_view: dict[str, Any],
-) -> None:
-    st.subheader("Debug / artefactos tecnicos")
-    st.write(
-        "Esta zona conserva trazabilidad para desarrollo y memoria tecnica. La demo principal "
-        "no depende de leer estos JSON manualmente."
-    )
-    outputs = data.report.get("outputs", {})
-    st.dataframe(
-        [{"artefacto": name, "ruta": path} for name, path in outputs.items()],
-        width="stretch",
-        hide_index=True,
-    )
+def _network_frames(data, filters: DashboardFilters) -> tuple[pd.DataFrame, pd.DataFrame]:
+    if filters.only_case_neighborhood:
+        nodes, edges = _contract_neighborhood(data, filters.selected_contract)
+    else:
+        nodes, edges = build_demo_subgraph(
+            data,
+            max_nodes=filters.max_nodes,
+            node_types=filters.node_types if filters.node_types else None,
+            community_id=filters.community_id,
+        )
+        nodes, edges = _ensure_focus_contract(data, nodes, edges, filters.selected_contract)
 
-    with st.expander("Rutas cargadas", expanded=False):
-        st.write(f"Carpeta Agent3: `{output_dir}`")
-        st.write(f"Ficha Agent4: `{case_context_path}`")
-    with st.expander("Resumen de red Agent3", expanded=False):
-        st.json(data.network_summary)
-    with st.expander("Fila Agent3 del contrato seleccionado", expanded=False):
-        st.json(case_view.get("agent3_metrics", {}))
-    with st.expander("Payload Agent4 completo", expanded=False):
-        if case_context:
-            st.json(case_context)
-        else:
-            st.info("No hay payload Agent4 cargado.")
+    if filters.node_types:
+        nodes = nodes[nodes["node_type"].isin(filters.node_types)].copy()
+    if filters.relation_types:
+        edges = edges[edges["edge_type"].isin(filters.relation_types)].copy()
+
+    node_ids = set(nodes["node_id"].astype(str))
+    edges = edges[
+        edges["source_node_id"].astype(str).isin(node_ids)
+        & edges["target_node_id"].astype(str).isin(node_ids)
+    ].copy()
+    if len(nodes) > filters.max_nodes:
+        nodes = nodes.sort_values(
+            by=["betweenness_centrality", "neighbor_count", "node_id"],
+            ascending=[False, False, True],
+        ).head(filters.max_nodes)
+        node_ids = set(nodes["node_id"].astype(str))
+        edges = edges[
+            edges["source_node_id"].astype(str).isin(node_ids)
+            & edges["target_node_id"].astype(str).isin(node_ids)
+        ].copy()
+    return nodes, edges
 
 
-def _network_figure(nodes, edges, *, focus_contract: str | None = None) -> go.Figure:
+def _contract_neighborhood(data, contract_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    focus_id = f"contract:{contract_key}"
+    edges = data.edges[
+        (data.edges["source_node_id"].astype(str) == focus_id)
+        | (data.edges["target_node_id"].astype(str) == focus_id)
+    ].copy()
+    node_ids = {focus_id}
+    node_ids.update(edges["source_node_id"].astype(str).tolist())
+    node_ids.update(edges["target_node_id"].astype(str).tolist())
+    nodes = data.entity_metrics[data.entity_metrics["node_id"].astype(str).isin(node_ids)].copy()
+    return nodes, edges
+
+
+def _network_figure(nodes: pd.DataFrame, edges: pd.DataFrame, *, focus_contract: str) -> go.Figure:
     graph = nx.Graph()
     labels = dict(zip(nodes["node_id"], nodes["label"], strict=False))
     node_types = dict(zip(nodes["node_id"], nodes["node_type"], strict=False))
-    focus_node_id = f"contract:{focus_contract}" if focus_contract else None
+    communities = dict(zip(nodes["node_id"], nodes["community_id"], strict=False))
+    neighbors = dict(zip(nodes["node_id"], nodes["neighbor_count"], strict=False))
+    focus_node_id = f"contract:{focus_contract}"
 
-    for node_id in nodes["node_id"]:
+    for node_id in nodes["node_id"].astype(str):
         graph.add_node(node_id)
     for row in edges.to_dict("records"):
-        graph.add_edge(row["source_node_id"], row["target_node_id"])
-    positions = nx.spring_layout(graph, seed=42) if graph.number_of_nodes() else {}
+        graph.add_edge(str(row["source_node_id"]), str(row["target_node_id"]))
+    positions = nx.spring_layout(graph, seed=42, k=0.8) if graph.number_of_nodes() else {}
 
+    figure = go.Figure()
     edge_x = []
     edge_y = []
     for source, target in graph.edges:
@@ -545,21 +644,12 @@ def _network_figure(nodes, edges, *, focus_contract: str | None = None) -> go.Fi
         target_x, target_y = positions[target]
         edge_x.extend([source_x, target_x, None])
         edge_y.extend([source_y, target_y, None])
-
-    color_map = {
-        "Buyer": "#2563eb",
-        "Supplier": "#059669",
-        "Contract": "#7c3aed",
-        "CPV": "#d97706",
-        "Source": "#475569",
-    }
-    figure = go.Figure()
     figure.add_trace(
         go.Scatter(
             x=edge_x,
             y=edge_y,
             mode="lines",
-            line={"width": 1, "color": "#cbd5e1"},
+            line={"width": 1.2, "color": "#cbd5e1"},
             hoverinfo="none",
             showlegend=False,
         )
@@ -576,9 +666,18 @@ def _network_figure(nodes, edges, *, focus_contract: str | None = None) -> go.Fi
             x_pos, y_pos = positions.get(node_id, (0, 0))
             node_x.append(x_pos)
             node_y.append(y_pos)
-            hover.append(f"{labels.get(node_id, node_id)}<br>{_node_type_label(node_type)}")
-            sizes.append(18 if node_id == focus_node_id else 10)
-            line_widths.append(3 if node_id == focus_node_id else 0)
+            hover.append(
+                "<br>".join(
+                    [
+                        f"<b>{labels.get(node_id, node_id)}</b>",
+                        _node_type_label(node_type),
+                        f"Comunidad: {_format_metric(communities.get(node_id))}",
+                        f"Conexiones: {_format_metric(neighbors.get(node_id))}",
+                    ]
+                )
+            )
+            sizes.append(24 if node_id == focus_node_id else 13)
+            line_widths.append(4 if node_id == focus_node_id else 1)
         figure.add_trace(
             go.Scatter(
                 x=node_x,
@@ -586,7 +685,7 @@ def _network_figure(nodes, edges, *, focus_contract: str | None = None) -> go.Fi
                 mode="markers",
                 marker={
                     "size": sizes,
-                    "color": color_map.get(node_type, "#111827"),
+                    "color": NODE_COLORS.get(str(node_type), "#111827"),
                     "line": {"width": line_widths, "color": "#111827"},
                 },
                 text=hover,
@@ -602,8 +701,225 @@ def _network_figure(nodes, edges, *, focus_contract: str | None = None) -> go.Fi
         xaxis={"visible": False},
         yaxis={"visible": False},
         plot_bgcolor="white",
+        paper_bgcolor="white",
     )
     return figure
+
+
+def _network_node_table(nodes: pd.DataFrame) -> pd.DataFrame:
+    if nodes.empty:
+        return pd.DataFrame()
+    table = nodes[
+        ["label", "node_type", "neighbor_count", "betweenness_centrality", "community_id"]
+    ].copy()
+    table["node_type"] = table["node_type"].map(_node_type_label)
+    table["betweenness_centrality"] = table["betweenness_centrality"].map(_format_metric)
+    return table.rename(
+        columns={
+            "label": "Entidad",
+            "node_type": "Tipo",
+            "neighbor_count": "Conexiones",
+            "betweenness_centrality": "Importancia en red",
+            "community_id": "Comunidad",
+        }
+    )
+
+
+def _network_edge_table(edges: pd.DataFrame) -> pd.DataFrame:
+    if edges.empty:
+        return pd.DataFrame()
+    table = edges[["edge_type", "contract_key_canon", "source_node_id", "target_node_id"]].copy()
+    table["edge_type"] = table["edge_type"].map(_edge_type_label)
+    return table.rename(
+        columns={
+            "edge_type": "Relacion",
+            "contract_key_canon": "Contrato asociado",
+            "source_node_id": "Origen",
+            "target_node_id": "Destino",
+        }
+    )
+
+
+def _render_entity_table(data, *, node_type: str, title: str) -> None:
+    st.markdown(f"#### {title}")
+    entities = top_entities(data, node_type=node_type, limit=10)
+    if entities.empty:
+        st.info("No hay entidades disponibles.")
+        return
+    table = entities[["label", "neighbor_count", "betweenness_centrality", "community_id"]].copy()
+    table["betweenness_centrality"] = table["betweenness_centrality"].map(_format_metric)
+    table = table.rename(
+        columns={
+            "label": "Entidad",
+            "neighbor_count": "Conexiones",
+            "betweenness_centrality": "Importancia en red",
+            "community_id": "Comunidad",
+        }
+    )
+    st.dataframe(table, width="stretch", hide_index=True)
+
+
+def _render_evidences(case_view: dict[str, Any]) -> None:
+    st.subheader("Evidencias documentales")
+    if case_view.get("case_context_contract") and not case_view.get("case_context_matches"):
+        st.warning(
+            "La ficha documental cargada pertenece a otro contrato. Para este caso solo se "
+            "muestran datos de red."
+        )
+        return
+
+    evidences = case_view.get("evidences", [])
+    citations = case_view.get("citations", [])
+    if not evidences:
+        st.info(
+            "No hay evidencia documental recuperada para este contrato. La salida debe indicar "
+            "esa ausencia y no completar conclusiones por inferencia."
+        )
+        return
+
+    for index, evidence in enumerate(evidences, start=1):
+        with st.container(border=True):
+            st.markdown(f"#### Evidencia {index}")
+            left, right = st.columns([1, 2])
+            with left:
+                st.write(f"**Documento:** {_document_type_label(evidence.get('document_type'))}")
+                st.write(f"**Fuente:** {_source_label(evidence.get('source'))}")
+                st.write(f"**Contrato:** {evidence.get('contract_key_canon', 'n/a')}")
+                st.write(f"**Relevancia:** {_format_score(evidence.get('score'))}")
+            with right:
+                st.write(str(evidence.get("text_excerpt") or "Sin extracto disponible."))
+                with st.expander("Identificadores trazables", expanded=False):
+                    st.write(f"document_id: `{evidence.get('document_id', 'n/a')}`")
+                    st.write(f"chunk_id: `{evidence.get('chunk_id', 'n/a')}`")
+
+    st.markdown("#### Citas")
+    if citations:
+        st.dataframe(
+            [{"Cita trazable": citation} for citation in citations],
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.info("No hay citas documentales asociadas.")
+
+
+def _render_traceability(
+    data,
+    case_context: dict[str, Any],
+    output_dir: Path,
+    case_context_path: Path | None,
+    case_view: dict[str, Any],
+) -> None:
+    st.subheader("Trazabilidad tecnica")
+    st.write(
+        "Esta vista conserva rutas, payloads y controles para memoria tecnica. La lectura "
+        "principal esta normalizada en las pestanas anteriores."
+    )
+
+    outputs = data.report.get("outputs", {})
+    output_rows = [
+        {"Artefacto": _artifact_label(name), "Ruta": path} for name, path in outputs.items()
+    ]
+    st.dataframe(output_rows, width="stretch", hide_index=True)
+
+    left, right = st.columns(2)
+    with left:
+        with st.expander("Rutas cargadas", expanded=False):
+            st.write(f"Carpeta Agent3: `{output_dir}`")
+            st.write(f"Ficha Agent4: `{case_context_path}`")
+        with st.expander("Resumen de red Agent3", expanded=False):
+            st.json(data.network_summary)
+    with right:
+        with st.expander("Metricas del contrato seleccionado", expanded=False):
+            st.json(case_view.get("agent3_metrics", {}))
+        with st.expander("Payload Agent4 completo", expanded=False):
+            if case_context:
+                st.json(case_context)
+            else:
+                st.info("No hay payload Agent4 cargado.")
+
+
+def _build_contract_table(data, payload: dict[str, Any]) -> pd.DataFrame:
+    rows = []
+    context_contract = _case_context_contract_key(payload)
+    for contract_key in _contract_options(data):
+        feature_row = _row_for_contract(data.agent2_features, contract_key)
+        contract_row = _contract_node_record(data, contract_key)
+        score = _agent2_score_for_contract(payload, contract_key)
+        red_flags = _list_value(score.get("red_flags"))
+        recurrence = feature_row.get("buyer_supplier_recurrence")
+        share = feature_row.get("buyer_supplier_contract_share")
+        centrality = feature_row.get("contract_betweenness_centrality")
+        community_size = feature_row.get("community_size")
+        title = _first_text(contract_row.get("contract_title"), contract_key)
+        buyer_name = _first_text(
+            _connected_node_label(data, contract_key, edge_type="PUBLISHED"),
+            "No informado",
+        )
+        supplier_name = _first_text(
+            _connected_node_label(data, contract_key, edge_type="AWARDED_TO"),
+            "No informado",
+        )
+        has_context = bool(context_contract and context_contract == contract_key)
+        rows.append(
+            {
+                "id_contrato": contract_key,
+                "contrato": f"{contract_key} - {title}",
+                "titulo": title,
+                "comprador": buyer_name,
+                "adjudicatario": supplier_name,
+                "prioridad": _risk_level_label(score.get("risk_level")),
+                "puntuacion": score.get("risk_score"),
+                "red_flags": len(red_flags),
+                "senales": _flag_list_label(red_flags),
+                "estado_ficha": "Ficha completa" if has_context else "Solo red de relaciones",
+                "comunidad": str(int(feature_row.get("community_id", 0))),
+                "recurrencia_comprador_proveedor": recurrence,
+                "peso_relacion": share,
+                "importancia_red": centrality,
+                "tamano_comunidad": community_size,
+                "cpv": feature_row.get("cpv_count"),
+                "motivo_revision": _review_reason(red_flags, recurrence, share, centrality),
+                "ranking": _ranking_score(score, recurrence, share, centrality, has_context),
+            }
+        )
+    frame = pd.DataFrame(rows)
+    if frame.empty:
+        return frame
+    return frame.sort_values(
+        by=["ranking", "red_flags", "importancia_red", "id_contrato"],
+        ascending=[False, False, False, True],
+    ).reset_index(drop=True)
+
+
+def _display_contract_columns(contracts: pd.DataFrame) -> pd.DataFrame:
+    display = contracts[
+        [
+            "id_contrato",
+            "titulo",
+            "comprador",
+            "adjudicatario",
+            "prioridad",
+            "puntuacion",
+            "red_flags",
+            "estado_ficha",
+            "motivo_revision",
+        ]
+    ].copy()
+    display["puntuacion"] = display["puntuacion"].map(_format_score)
+    return display.rename(
+        columns={
+            "id_contrato": "ID del contrato",
+            "titulo": "Objeto",
+            "comprador": "Comprador",
+            "adjudicatario": "Adjudicatario",
+            "prioridad": "Prioridad",
+            "puntuacion": "Puntuacion",
+            "red_flags": "Red flags",
+            "estado_ficha": "Cobertura demo",
+            "motivo_revision": "Motivo principal",
+        }
+    )
 
 
 def _build_case_view(data, payload: dict[str, Any], selected_contract: str) -> dict[str, Any]:
@@ -611,9 +927,7 @@ def _build_case_view(data, payload: dict[str, Any], selected_contract: str) -> d
     case_context_contract = _case_context_contract_key(payload)
     context_matches = bool(case_context_contract and case_context_contract == selected_contract)
     matched_context = case_context if context_matches else {}
-    agent2_score = _dict_value(payload.get("agent2_score")) if context_matches else {}
-    if not agent2_score and context_matches:
-        agent2_score = _dict_value(matched_context.get("agent2_score"))
+    agent2_score = _agent2_score_for_contract(payload, selected_contract)
 
     feature_row = _row_for_contract(data.agent2_features, selected_contract)
     contract_row = _contract_node_record(data, selected_contract)
@@ -650,7 +964,9 @@ def _build_case_view(data, payload: dict[str, Any], selected_contract: str) -> d
         "awarded_value": contract_fields.get("awarded_value_eur"),
         "publication_date": contract_fields.get("publication_date"),
         "award_date": contract_fields.get("award_date"),
-        "source": _first_text(contract_fields.get("source"), feature_row.get("source")),
+        "source": _source_label(
+            _first_text(contract_fields.get("source"), feature_row.get("source"))
+        ),
         "source_record_id": _first_text(
             contract_fields.get("source_record_id"),
             feature_row.get("source_record_id"),
@@ -669,25 +985,26 @@ def _build_case_view(data, payload: dict[str, Any], selected_contract: str) -> d
         "citations": citations,
         "warnings": warnings,
         "summary": payload.get("answer") if context_matches else matched_context.get("summary"),
+        "contract_links": feature_row.get("contract_neighbor_count"),
     }
 
 
 def _contract_context_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
     rows = [
-        ("Contrato", case_view.get("contract_key")),
-        ("Titulo", case_view.get("title")),
+        ("ID del contrato", case_view.get("contract_key")),
+        ("Objeto", case_view.get("title")),
         ("Comprador", case_view.get("buyer_name")),
-        ("Proveedor", case_view.get("supplier_name")),
+        ("Adjudicatario", case_view.get("supplier_name")),
         ("Procedimiento", case_view.get("procedure")),
         ("Valor estimado", _format_money(case_view.get("estimated_value"))),
         ("Valor adjudicado", _format_money(case_view.get("awarded_value"))),
-        ("CPV", case_view.get("cpv_codes")),
-        ("Fecha publicacion", case_view.get("publication_date")),
-        ("Fecha adjudicacion", case_view.get("award_date")),
+        ("Codigos CPV", case_view.get("cpv_codes")),
+        ("Fecha de publicacion", case_view.get("publication_date")),
+        ("Fecha de adjudicacion", case_view.get("award_date")),
         ("Fuente", case_view.get("source")),
-        ("Registro fuente", case_view.get("source_record_id")),
+        ("Registro de origen", case_view.get("source_record_id")),
     ]
-    return [{"campo": label, "valor": str(value)} for label, value in rows if not _is_blank(value)]
+    return [{"Campo": label, "Valor": str(value)} for label, value in rows if not _is_blank(value)]
 
 
 def _agent2_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
@@ -697,9 +1014,9 @@ def _agent2_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
     for flag in case_view.get("red_flags", []):
         rows.append(
             {
-                "senal": FLAG_LABELS.get(str(flag), str(flag)),
-                "dato usado": _agent2_flag_value(str(flag), evidence),
-                "lectura": FLAG_EXPLANATIONS.get(str(flag), "Senal para priorizar revision."),
+                "Senal": FLAG_LABELS.get(str(flag), str(flag)),
+                "Dato usado": _agent2_flag_value(str(flag), evidence),
+                "Lectura": FLAG_EXPLANATIONS.get(str(flag), "Senal para priorizar revision."),
             }
         )
     return rows
@@ -710,41 +1027,40 @@ def _agent3_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
     metric_specs = [
         (
             "buyer_supplier_recurrence",
-            "Recurrencia comprador-proveedor",
-            "Contratos relacionados entre el mismo comprador y proveedor.",
+            "Contratos comprador-proveedor",
+            "Numero de contratos que conectan al mismo comprador y adjudicatario.",
         ),
         (
             "buyer_supplier_contract_share",
-            "Peso de la relacion comprador-proveedor",
-            "Parte de contratos del comprador conectados con ese proveedor.",
+            "Peso de la relacion",
+            "Proporcion de contratos del comprador conectados con este adjudicatario.",
         ),
         (
             "supplier_contracts_count",
-            "Contratos del proveedor en la red",
-            "Cuantos contratos conecta este proveedor dentro del lote.",
+            "Contratos del adjudicatario",
+            "Contratos del mismo adjudicatario dentro del lote analizado.",
         ),
         (
             "contract_betweenness_centrality",
-            "Centralidad del contrato",
-            "Indica si el contrato actua como puente dentro de la red.",
+            "Importancia del contrato en la red",
+            "Indica si el contrato conecta varias partes de la red.",
         ),
         (
             "community_size",
             "Tamano de comunidad",
-            "Numero de entidades agrupadas alrededor del caso.",
+            "Entidades agrupadas alrededor del caso.",
         ),
-        ("cpv_count", "CPV asociados", "Numero de codigos CPV vinculados al contrato."),
+        ("cpv_count", "Categorias CPV", "Numero de codigos CPV vinculados al contrato."),
     ]
     rows = []
     for key, label, reading in metric_specs:
         value = metrics.get(key)
         if _is_blank(value):
             continue
-        if key == "buyer_supplier_contract_share":
-            formatted = _format_percent(value)
-        else:
-            formatted = _format_metric(value)
-        rows.append({"senal": label, "valor": formatted, "lectura": reading})
+        formatted = _format_percent(value) if key == "buyer_supplier_contract_share" else (
+            _format_metric(value)
+        )
+        rows.append({"Metrica": label, "Valor": formatted, "Lectura": reading})
     return rows
 
 
@@ -758,7 +1074,60 @@ def _agent2_flag_value(flag: str, evidence: dict[str, Any]) -> str:
     return "Ver evidencia Agent2"
 
 
-def _ensure_focus_contract(data, nodes, edges, selected_contract: str):
+def _agent2_score_for_contract(payload: dict[str, Any], contract_key: str) -> dict[str, Any]:
+    if _case_context_contract_key(payload) != contract_key:
+        return {}
+    score = _dict_value(payload.get("agent2_score"))
+    if score:
+        return score
+    case_context = _dict_value(payload.get("case_context"))
+    return _dict_value(case_context.get("agent2_score"))
+
+
+def _ranking_score(
+    score: dict[str, Any],
+    recurrence: object,
+    share: object,
+    centrality: object,
+    has_context: bool,
+) -> float:
+    value = 0.0
+    if has_context:
+        value += 2.0
+    value += float(score.get("risk_score") or 0) * 3
+    value += min(float(recurrence or 0), 5) * 0.25
+    value += float(share or 0) * 0.5
+    value += float(centrality or 0)
+    return value
+
+
+def _review_reason(
+    red_flags: list[Any],
+    recurrence: object,
+    share: object,
+    centrality: object,
+) -> str:
+    if red_flags:
+        return _flag_list_label(red_flags)
+    try:
+        if float(recurrence or 0) >= 2:
+            return "Relacion recurrente entre comprador y adjudicatario"
+        if float(share or 0) >= 0.75:
+            return "Alta concentracion comprador-adjudicatario"
+        if float(centrality or 0) >= 0.25:
+            return "Contrato relevante dentro de la red"
+    except (TypeError, ValueError):
+        pass
+    return "Sin senales destacadas en esta muestra"
+
+
+def _flag_list_label(flags: list[Any]) -> str:
+    if not flags:
+        return "Sin red flags Agent2"
+    return "; ".join(FLAG_LABELS.get(str(flag), str(flag)) for flag in flags)
+
+
+def _ensure_focus_contract(data, nodes: pd.DataFrame, edges: pd.DataFrame, selected_contract: str):
     if not selected_contract:
         return nodes, edges
     focus_id = f"contract:{selected_contract}"
@@ -787,12 +1156,12 @@ def _contract_options(data) -> list[str]:
     return sorted(values)
 
 
-def _contract_option_label(data, contract_key: str) -> str:
-    record = _contract_node_record(data, contract_key)
-    title = record.get("contract_title")
-    if title and str(title) != contract_key:
-        return f"{contract_key} - {title}"
-    return contract_key
+def _contract_option_label_from_table(contracts: pd.DataFrame, contract_key: str) -> str:
+    matches = contracts[contracts["id_contrato"].astype(str) == contract_key]
+    if matches.empty:
+        return contract_key
+    row = matches.iloc[0]
+    return f"{contract_key} - {row['titulo']}"
 
 
 def _contract_node_record(data, contract_key: str) -> dict[str, Any]:
@@ -838,7 +1207,7 @@ def _node_label(data, node_id: str) -> str:
     return "" if _is_blank(label) else str(label)
 
 
-def _row_for_contract(frame, contract_key: str) -> dict[str, Any]:
+def _row_for_contract(frame: pd.DataFrame, contract_key: str) -> dict[str, Any]:
     if frame.empty or "contract_key_canon" not in frame.columns:
         return {}
     matches = frame[frame["contract_key_canon"].astype(str) == str(contract_key)]
@@ -847,13 +1216,11 @@ def _row_for_contract(frame, contract_key: str) -> dict[str, Any]:
     return _clean_record(matches.iloc[0].to_dict())
 
 
-def _concat_frames(first, second):
+def _concat_frames(first: pd.DataFrame, second: pd.DataFrame) -> pd.DataFrame:
     if second.empty:
         return first
     if first.empty:
         return second.copy()
-    import pandas as pd
-
     return pd.concat([first, second], ignore_index=True).drop_duplicates()
 
 
@@ -875,20 +1242,21 @@ def _load_case_context(path: Path) -> dict[str, Any]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        st.warning(f"No se pudo leer la ficha Agent4: {path}")
+        st.warning(f"No se pudo leer la ficha documental: {path}")
         return {}
 
 
 def _render_missing_artifacts(output_dir: Path, missing: list[Path]) -> None:
-    st.error("Faltan artefactos de Agent3 para construir la demo.")
+    st.error("Faltan artefactos para construir la demo.")
     st.write(f"Carpeta revisada: `{output_dir}`")
     st.dataframe(
-        [{"artefacto requerido": str(path)} for path in missing],
+        [{"Artefacto requerido": str(path)} for path in missing],
         width="stretch",
         hide_index=True,
     )
     st.code(
-        "python -c \"from procurewatch.cli import main; raise SystemExit(main(['run-agent3']))\"",
+        "python -c \"from procurewatch.cli import main; "
+        "raise SystemExit(main(['run-agent3']))\"",
         language="powershell",
     )
 
@@ -946,12 +1314,55 @@ def _first_text(*values: object) -> str:
     return ""
 
 
+def _sorted_text_options(values: list[Any]) -> list[str]:
+    return sorted({str(value) for value in values if not _is_blank(value)})
+
+
+def _community_options(frame: pd.DataFrame) -> list[str]:
+    if frame.empty or "comunidad" not in frame.columns:
+        return []
+    return sorted({str(value) for value in frame["comunidad"].tolist() if not _is_blank(value)})
+
+
 def _node_type_label(value: object) -> str:
     return NODE_TYPE_LABELS.get(str(value), str(value))
 
 
 def _edge_type_label(value: object) -> str:
     return EDGE_TYPE_LABELS.get(str(value), str(value))
+
+
+def _risk_level_label(value: object) -> str:
+    if _is_blank(value):
+        return "No calculada"
+    return RISK_LEVEL_LABELS.get(str(value), str(value))
+
+
+def _document_type_label(value: object) -> str:
+    if _is_blank(value):
+        return "Documento"
+    return DOCUMENT_TYPE_LABELS.get(str(value), str(value))
+
+
+def _source_label(value: object) -> str:
+    if _is_blank(value):
+        return "No informada"
+    return SOURCE_LABELS.get(str(value), str(value))
+
+
+def _artifact_label(value: object) -> str:
+    labels = {
+        "nodes": "Nodos de red",
+        "edges": "Relaciones",
+        "contract_metrics": "Metricas por contrato",
+        "entity_metrics": "Metricas por entidad",
+        "communities": "Comunidades",
+        "network_summary": "Resumen de red",
+        "agent2_features": "Features para scoring/RAG",
+        "agent2_features_schema": "Esquema de features",
+        "report": "Reporte Agent3",
+    }
+    return labels.get(str(value), str(value))
 
 
 def _format_int(value: object) -> str:
@@ -966,9 +1377,22 @@ def _format_int(value: object) -> str:
 def _format_metric(value: object) -> str:
     if _is_blank(value):
         return "n/a"
-    if isinstance(value, float):
-        return f"{value:.2f}"
-    return str(value)
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if number.is_integer():
+        return str(int(number))
+    return f"{number:.2f}"
+
+
+def _format_score(value: object) -> str:
+    if _is_blank(value):
+        return "No disponible"
+    try:
+        return f"{float(value):.2f}"
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _format_percent(value: object) -> str:
@@ -993,33 +1417,44 @@ def _apply_page_style() -> None:
     st.markdown(
         """
         <style>
+        .block-container {
+            padding-top: 1.4rem;
+            padding-bottom: 2rem;
+        }
         .pw-step {
-            border: 1px solid #e5e7eb;
+            border: 1px solid #d9e2ec;
             border-radius: 8px;
-            padding: 0.75rem;
-            min-height: 112px;
+            padding: 0.8rem;
+            min-height: 118px;
             background: #ffffff;
         }
         .pw-step-on {
             border-left: 5px solid #059669;
         }
         .pw-step-off {
-            border-left: 5px solid #9ca3af;
-            color: #4b5563;
+            border-left: 5px solid #94a3b8;
+            background: #f8fafc;
+            color: #475569;
         }
         .pw-step-title {
             font-weight: 700;
-            color: #111827;
+            color: #0f172a;
         }
         .pw-step-state {
-            font-size: 0.8rem;
-            color: #374151;
+            font-size: 0.82rem;
+            color: #334155;
             margin: 0.15rem 0 0.35rem;
         }
         .pw-step-text {
             font-size: 0.9rem;
-            color: #374151;
+            color: #334155;
             line-height: 1.35;
+        }
+        div[data-testid="stMetric"] {
+            background: #ffffff;
+            border: 1px solid #d9e2ec;
+            border-radius: 8px;
+            padding: 0.75rem;
         }
         </style>
         """,

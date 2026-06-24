@@ -65,6 +65,17 @@ Validacion de integracion final 2026-06-24:
 - Dashboard `frontend/agent3_demo.py` validado en modo headless.
   - Resultado: HTTP 200, sin artefactos faltantes, KPIs cargados.
 
+Mejora de dashboard 2026-06-24:
+
+- Dashboard reorganizado como demo explicativa para memoria y defensa.
+- Pestañas principales: resumen, contratos priorizados, caso seleccionado, relaciones, evidencias
+  y trazabilidad.
+- Tablas y graficos normalizados con nombres funcionales: contrato, comprador, adjudicatario,
+  prioridad, red flags, comunidad, relacion e importancia en red.
+- Filtros incorporados: estado del caso, comprador, adjudicatario, comunidad, entidades visibles,
+  relaciones visibles y entorno del contrato.
+- Validacion Streamlit Testing: 0 excepciones; pestañas renderizadas correctamente.
+
 Decision de continuidad:
 
 - La integracion multiagente queda validada como candidata a promocion a rama principal.
