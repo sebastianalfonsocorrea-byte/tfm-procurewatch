@@ -415,6 +415,32 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
     )
+    dashboard_validation_parser = subparsers.add_parser(
+        "validate-dashboard-demo",
+        help="Valida el dashboard Streamlit contra la demo integrada offline.",
+    )
+    dashboard_validation_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed/agent3_agent4_demo_2026_06_23"),
+    )
+    dashboard_validation_parser.add_argument("--case-context", type=Path, default=None)
+    dashboard_validation_parser.add_argument("--report", type=Path, default=None)
+    dashboard_validation_parser.add_argument("--contract-key", default="PW-2024-0001")
+    dashboard_validation_parser.add_argument(
+        "--question",
+        default="evidencia documental y riesgos explicables",
+    )
+    dashboard_validation_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    dashboard_validation_parser.add_argument(
+        "--no-regenerate",
+        action="store_true",
+        help="Valida artefactos existentes sin regenerar primero la demo integrada.",
+    )
     agent3_neo4j_parser = subparsers.add_parser(
         "agent3-load-neo4j",
         help="Carga nodos y aristas del agente 3 en Neo4j.",
@@ -905,6 +931,34 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{summary['agent4_evidences']}/{summary['agent4_citations']}"
         )
         print(f"- Reporte integrado: {report['artifacts']['integrated_report']}")
+        return 0 if report["status"] == "ready" else 1
+    if args.command == "validate-dashboard-demo":
+        from .dashboard_validation import validate_dashboard_demo
+
+        report = validate_dashboard_demo(
+            output_dir=args.output_dir,
+            case_context_path=args.case_context,
+            report_path=args.report,
+            contract_key_canon=args.contract_key,
+            question=args.question,
+            corpus_index=args.corpus_index,
+            regenerate=not args.no_regenerate,
+        )
+        print(f"Dashboard Streamlit demo [{report['status']}]")
+        print(f"- Demo dir: {report['output_dir']}")
+        print(f"- Ficha Agent4: {report['case_context_path']}")
+        print(f"- Contratos: {report['kpis'].get('contracts', 0)}")
+        print(
+            f"- Nodos/aristas: "
+            f"{report['kpis'].get('nodes', 0)}/{report['kpis'].get('edges', 0)}"
+        )
+        print(
+            f"- Evidencias/citas: "
+            f"{report['case_summary']['evidences_count']}/"
+            f"{report['case_summary']['citations_count']}"
+        )
+        print(f"- Headless exceptions: {len(report['streamlit_headless']['exceptions'])}")
+        print(f"- Reporte: {report['artifacts']['dashboard_validation_report']}")
         return 0 if report["status"] == "ready" else 1
     if args.command == "agent3-load-neo4j":
         from .agent3.neo4j_store import (

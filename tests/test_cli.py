@@ -95,6 +95,54 @@ class CliTests(unittest.TestCase):
             Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
         )
 
+    def test_validate_dashboard_demo_command_uses_defaults_and_prints_report(self) -> None:
+        report = {
+            "status": "ready",
+            "output_dir": "data/processed/agent3_agent4_demo_2026_06_23",
+            "case_context_path": (
+                "data/processed/agent3_agent4_demo_2026_06_23/"
+                "agent4_case_context_integrated_demo.json"
+            ),
+            "artifacts": {
+                "dashboard_validation_report": (
+                    "data/processed/agent3_agent4_demo_2026_06_23/"
+                    "dashboard_validation_report.json"
+                ),
+            },
+            "kpis": {
+                "contracts": 3,
+                "nodes": 11,
+                "edges": 13,
+            },
+            "case_summary": {
+                "evidences_count": 2,
+                "citations_count": 2,
+            },
+            "streamlit_headless": {
+                "exceptions": [],
+            },
+        }
+        with mock.patch(
+            "procurewatch.dashboard_validation.validate_dashboard_demo"
+        ) as validate_mock:
+            validate_mock.return_value = report
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = main(["validate-dashboard-demo"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Dashboard Streamlit demo [ready]", output.getvalue())
+        validate_mock.assert_called_once()
+        kwargs = validate_mock.call_args.kwargs
+        self.assertEqual(
+            kwargs["output_dir"],
+            Path("data/processed/agent3_agent4_demo_2026_06_23"),
+        )
+        self.assertIsNone(kwargs["case_context_path"])
+        self.assertIsNone(kwargs["report_path"])
+        self.assertTrue(kwargs["regenerate"])
+        self.assertEqual(kwargs["contract_key_canon"], "PW-2024-0001")
+
     def test_run_batch_passes_paths_and_prints_manifest(self) -> None:
         with mock.patch("procurewatch.batch.run_batch") as run_batch_mock:
             run_batch_mock.return_value = {

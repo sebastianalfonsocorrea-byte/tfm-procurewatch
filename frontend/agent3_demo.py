@@ -260,8 +260,8 @@ def _render_analysis_sidebar(
 def _render_header() -> None:
     st.title("ProcureWatch Analytics")
     st.caption(
-        "Demo integrada para priorizar contratos revisables con datos abiertos, reglas, red de "
-        "relaciones y evidencia documental. El sistema no declara fraude."
+        "Demo sintetica/offline para priorizar contratos revisables con reglas, red de relaciones "
+        "y evidencia documental. El sistema no declara fraude."
     )
 
 

@@ -25,6 +25,7 @@ from procurewatch.agent3 import (
 )
 from procurewatch.agent3.neo4j_store import prepare_edge_batches, prepare_node_batches
 from procurewatch.cli import main
+from procurewatch.dashboard_validation import validate_dashboard_demo
 from procurewatch.integrated_demo import (
     DEMO_CONTRACT_KEY,
     DEMO_SOURCE_SNAPSHOT_ID,
@@ -82,6 +83,27 @@ class Agent3Tests(unittest.TestCase):
         self.assertTrue((temp_path / "agent2_agent3_agent4_demo_report.json").exists())
         self.assertTrue(all(item["passed"] for item in report["validations"]))
         self.assertIn("Demo sintetica y offline", " ".join(report["limitations"]))
+
+    def test_validate_dashboard_demo_regenerates_and_renders_headless(self) -> None:
+        temp_path = _test_workspace("dashboard-validation")
+
+        report = validate_dashboard_demo(output_dir=temp_path)
+
+        self.assertEqual(report["status"], "ready")
+        self.assertEqual(report["contract_key_canon"], DEMO_CONTRACT_KEY)
+        self.assertEqual(report["kpis"]["contracts"], 3)
+        self.assertGreater(report["kpis"]["nodes"], 0)
+        self.assertGreater(report["kpis"]["edges"], 0)
+        self.assertEqual(report["case_summary"]["risk_score"], 0.5)
+        self.assertGreaterEqual(report["case_summary"]["evidences_count"], 1)
+        self.assertGreaterEqual(report["case_summary"]["citations_count"], 1)
+        self.assertTrue(report["streamlit_headless"]["executed"])
+        self.assertEqual(report["streamlit_headless"]["exceptions"], [])
+        self.assertGreaterEqual(report["streamlit_headless"]["tabs_count"], 6)
+        self.assertIn("streamlit run frontend/agent3_demo.py", report["commands"]["open_dashboard"])
+        self.assertIn("Resumen", report["capture_recommendations"])
+        self.assertTrue((temp_path / "dashboard_validation_report.json").exists())
+        self.assertTrue(all(item["passed"] for item in report["checks"]))
 
     def test_build_graph_tables_keeps_traceable_nodes_and_edges(self) -> None:
         graph = build_graph_tables(_contracts())
