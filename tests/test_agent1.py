@@ -170,6 +170,19 @@ class Agent1Tests(unittest.TestCase):
             )
 
             self.assertTrue((processed / "agent1_contract_key_coverage.parquet").exists())
+            self.assertTrue((processed / "agent1_matching_diagnostics.json").exists())
+            self.assertTrue((processed / "agent1_matching_candidates_preview.csv").exists())
+            diagnostics = json.loads(
+                (processed / "agent1_matching_diagnostics.json").read_text(encoding="utf-8")
+            )
+            candidates = pd.read_csv(processed / "agent1_matching_candidates_preview.csv")
+            self.assertEqual(diagnostics["exact_intersections"]["boe_place"], 0)
+            self.assertGreater(diagnostics["candidate_counts"]["boe_place"], 0)
+            self.assertGreater(diagnostics["candidate_counts"]["boe_opentender"], 0)
+            self.assertGreater(diagnostics["candidate_counts"]["place_opentender"], 0)
+            self.assertIn("match_strategy", candidates.columns)
+            self.assertIn("contract_key_left", candidates.columns)
+            self.assertGreater(len(candidates), 0)
             self.assertTrue((processed / "agent2_contracts_canonical.parquet").exists())
             self.assertTrue((processed / "agent2_contracts_canonical_schema.json").exists())
             self.assertEqual(canonical["rows"], 3)
@@ -335,6 +348,38 @@ class Agent1Tests(unittest.TestCase):
             self.assertEqual(canonical.loc[0, "source_snapshot_id"], result["source_snapshot_id"])
             self.assertEqual(canonical.loc[0, "source_notice_id"], "BOE-1")
             self.assertTrue(canonical.loc[0, "source_tender_id"].startswith("expediente:"))
+
+    def test_source_coverage_diagnostics_tolerates_missing_sources(self) -> None:
+        import pandas as pd
+
+        with TemporaryDirectory() as temp:
+            processed = Path(temp)
+            pd.DataFrame(
+                [
+                    {
+                        "contract_id": "boe-1",
+                        "file_number": "EXP-1",
+                        "institution": "Ministerio",
+                        "buyer_name": "Organismo",
+                        "publication_date": "2024-01-01",
+                        "object": "Servicio",
+                        "estimated_value_eur": 100.0,
+                        "awarded_value_eur": 90.0,
+                    }
+                ]
+            ).to_parquet(processed / "contracts_boe_cpv71.parquet", index=False)
+
+            coverage = build_source_coverage(output_dir=processed, cpv_prefix="71", year=2024)
+
+            self.assertEqual(coverage["boe_contract_keys"], 1)
+            self.assertEqual(coverage["place_contract_keys"], 0)
+            self.assertEqual(coverage["op_contract_keys"], 0)
+            diagnostics = json.loads(
+                Path(coverage["matching_diagnostics_path"]).read_text(encoding="utf-8")
+            )
+            self.assertTrue(diagnostics["warnings"])
+            self.assertEqual(coverage["candidate_counts"]["boe_place"], 0)
+            self.assertTrue(Path(coverage["matching_candidates_preview_path"]).exists())
 
     def test_agent1_quality_summary_reports_required_tfm_metrics(self) -> None:
         import pandas as pd
