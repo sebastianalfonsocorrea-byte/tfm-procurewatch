@@ -117,12 +117,26 @@ Trazabilidad.
 - `$env:PYTHONPATH='scr'; python -m procurewatch.cli validate-dashboard-demo`
   - Resultado: `ready`, KPIs cargables y render headless sin excepciones.
 
+## Validacion final de rama 2026-06-24
+
+- Informe: [Validacion final de rama 2026-06-24](VALIDACION_FINAL_RAMA_2026_06_24.md).
+- Commit de codigo validado antes del informe: `8d0abdd`.
+- Estado: `ready_with_environment_warnings`.
+- Resultados:
+  - `doctor`: OK; PostgreSQL, Neo4j, Qdrant y Ollama quedan como servicios opcionales pendientes.
+  - `pytest tests`: 111 passed, 1 skipped.
+  - `ruff check api scr tests frontend`: All checks passed; aviso local de cache no escribible.
+  - `run-integrated-demo`: ready.
+  - `validate-dashboard-demo`: ready.
+- Quedan cambios no relacionados fuera del hito en `.gitignore`, `docs/README.md`,
+  `.gitattributes`, `data/raw/place/` y `data/raw/reference_docs/`.
+
 Decision de continuidad:
 
 - La integracion multiagente queda validada como candidata a promocion a rama principal.
 - Agent3 y Agent4 quedan cerrados como MVP/PoC defendibles dentro de una demo integrada con Agent2.
-- El siguiente bloque recomendado es acordar si la rama principal sera `master` o `main`, hacer
-  push/merge final y capturar evidencias visuales del dashboard para memoria o defensa.
+- El siguiente bloque recomendado es plantear el diseno del frontend Next.js sin bloquear el cierre
+  del MVP Streamlit.
 - La hoja de ruta de cierre de `sebas` queda en
   [Hoja de ruta sebas: cierre TFM y demo evaluable](HOJA_RUTA_SEBAS_CIERRE_TFM.md).
 
@@ -151,5 +165,6 @@ Decision de continuidad:
 - [Plan Agent3 grafos](PLAN_AGENTE3_GRAFOS.md)
 - [Plan Agent4 RAG LangGraph](PLAN_AGENTE4_RAG_LANGGRAPH.md)
 - [Pendientes y no implementado 2026-06-24](PENDIENTES_NO_IMPLEMENTADO_2026_06_24.md)
+- [Validacion final de rama 2026-06-24](VALIDACION_FINAL_RAMA_2026_06_24.md)
 - [Hoja de ruta sebas cierre TFM](HOJA_RUTA_SEBAS_CIERRE_TFM.md)
 - [Plan capa datos agentes](../01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md)
