@@ -596,7 +596,7 @@ def _render_case(case_view: dict[str, Any]) -> None:
     columns[3].metric("Relaciones del contrato", _format_metric(case_view.get("contract_links")))
 
     _render_case_explainer(case_view)
-    _render_human_review_actions(case_view)
+    _render_case_review_plan(case_view)
 
     left, right = st.columns([1.1, 1])
     with left:
@@ -660,18 +660,18 @@ def _render_case_explainer(case_view: dict[str, Any]) -> None:
     )
 
 
-def _render_human_review_actions(case_view: dict[str, Any]) -> None:
-    actions = _human_review_actions(case_view)
-    st.markdown("#### Que revisaria una persona")
+def _render_case_review_plan(case_view: dict[str, Any]) -> None:
+    actions = _case_review_plan(case_view)
+    st.markdown("#### Plan de revision del caso")
     st.caption(
-        "Esta lista traduce las senales tecnicas a preguntas de revision. No son conclusiones "
-        "juridicas."
+        "Secuencia sugerida para analizar el expediente con las senales disponibles. Es una "
+        "priorizacion operativa, no una conclusion juridica."
     )
     columns = st.columns(len(actions))
     for column, action in zip(columns, actions, strict=False):
         column.markdown(
             f"""
-            <div class="pw-review-action">
+            <div class="pw-review-step">
                 <strong>{action['title']}</strong>
                 <p>{action['text']}</p>
             </div>
@@ -680,26 +680,26 @@ def _render_human_review_actions(case_view: dict[str, Any]) -> None:
         )
 
 
-def _human_review_actions(case_view: dict[str, Any]) -> list[dict[str, str]]:
+def _case_review_plan(case_view: dict[str, Any]) -> list[dict[str, str]]:
     actions = [
         {
-            "title": "1. Procedimiento",
-            "text": "Comprobar si el procedimiento y su justificacion son coherentes con el objeto.",
+            "title": "Procedimiento",
+            "text": "Contrastar el tipo de procedimiento con el objeto, importe y justificacion.",
         },
         {
-            "title": "2. Importe",
-            "text": "Comparar valor estimado y adjudicado, especialmente si hay desviacion.",
+            "title": "Importe",
+            "text": "Revisar la relacion entre valor estimado, adjudicacion y desviaciones.",
         },
         {
-            "title": "3. Relacion",
-            "text": "Revisar recurrencia comprador-adjudicatario y comunidad de red.",
+            "title": "Relacion",
+            "text": "Analizar recurrencia comprador-adjudicatario y posicion en la comunidad.",
         },
     ]
     if case_view.get("evidences"):
         actions.append(
             {
-                "title": "4. Documentos",
-                "text": "Leer evidencias y citas para verificar trazabilidad documental.",
+                "title": "Documentos",
+                "text": "Verificar evidencias recuperadas, citas y trazabilidad documental.",
             }
         )
     return actions[:4]
@@ -1929,7 +1929,7 @@ def _apply_page_style() -> None:
             margin: 0.8rem 0 1rem;
         }
         .pw-case-explainer > div,
-        .pw-review-action,
+        .pw-review-step,
         .pw-mini-card {
             background: #ffffff;
             border: 1px solid #d9e2ec;
@@ -1937,13 +1937,13 @@ def _apply_page_style() -> None:
             color: #334155;
             padding: 0.8rem;
         }
-        .pw-review-action {
+        .pw-review-step {
             min-height: 122px;
         }
-        .pw-review-action strong {
+        .pw-review-step strong {
             color: #0f172a;
         }
-        .pw-review-action p {
+        .pw-review-step p {
             margin: 0.4rem 0 0;
         }
         .pw-case-explainer strong {

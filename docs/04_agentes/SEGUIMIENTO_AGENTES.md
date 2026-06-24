@@ -144,8 +144,8 @@ Trazabilidad.
 
 - Objetivo: reforzar la demo como herramienta de explicacion para un tribunal que la ve por primera
   vez.
-- Mejora: sidebar en modo defensa, resumen textual del grafo, preguntas de revision humana,
-  relaciones con nombres legibles y descarga Markdown del caso.
+- Mejora: sidebar en modo defensa, resumen textual del grafo, plan de revision del caso,
+  relaciones con nombres legibles y descarga Markdown del expediente.
 - Criterio narrativo: menos costuras tecnicas en las vistas principales y toda la parte de rutas,
   payloads y comandos concentrada en Trazabilidad.
 - Validacion pendiente bajo demanda: no se ejecutan procesos largos en esta iteracion por decision
