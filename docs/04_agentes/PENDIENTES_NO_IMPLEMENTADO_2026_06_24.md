@@ -81,8 +81,8 @@ las hojas de ruta, seguimiento de cierre, tests y artefactos regenerables.
 | Tema | Estado | Que falta o queda limitado |
 |---|---|---|
 | Demo integrada Agent2-Agent3-Agent4 | Implementada | Es sintetica/offline y regenerable; no usa raw completos ni servicios externos obligatorios. |
-| Dashboard Streamlit | MVP local validado | `validate-dashboard-demo` valida artefactos y render headless; faltan capturas finales y validacion externa. |
-| Frontend Next.js | Futuro | Se planteara como diseno posterior, no forma parte del cierre Streamlit del Hito 7. |
+| Dashboard Streamlit | MVP local validado y pulido | `validate-dashboard-demo` valida artefactos y render headless; faltan capturas finales si se quieren anexar a memoria/defensa. |
+| Frontend alternativo Next.js | Futuro opcional | Se descarta para el cierre TFM para no duplicar dashboards; solo tendria sentido como evolucion productizable posterior. |
 | FastAPI productivo | No implementado | Backend de API queda fuera del MVP actual. |
 | Autenticacion y usuarios | No implementado | No hay gestion de usuarios, roles ni sesiones. |
 | Despliegue cloud | No implementado | No existe infraestructura cloud ni pipeline de despliegue. |
@@ -97,7 +97,7 @@ las hojas de ruta, seguimiento de cierre, tests y artefactos regenerables.
   muestra demo reducida, falta de etiquetas juridicas completas y servicios externos opcionales.
 - El caso demo principal documentado es `PW-2024-0001`.
 - La demo oficial actual es sintetica, offline y regenerable mediante `run-integrated-demo`.
-- El dashboard validado es Streamlit local; Next.js queda para diseno futuro.
+- El dashboard validado y defendible es Streamlit local; Next.js no forma parte del cierre TFM.
 
 ## Referencias internas
 

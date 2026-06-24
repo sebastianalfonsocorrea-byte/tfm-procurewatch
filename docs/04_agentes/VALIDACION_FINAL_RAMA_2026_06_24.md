@@ -5,7 +5,7 @@
 - Rama validada: `integration/multiagent`.
 - Commit de codigo validado antes de este informe: `8d0abdd`.
 - Estado final: `ready_with_environment_warnings`.
-- Decision: rama tecnicamente cerrada para pasar a memoria, defensa o planteamiento Next.js.
+- Decision: rama tecnicamente cerrada para pasar a memoria, defensa y capturas del dashboard Streamlit.
 
 El estado no es `blocked`: tests, ruff, demo integrada y dashboard pasan. Las advertencias
 detectadas son de entorno local: servicios opcionales sin configurar y cache de ruff no escribible.
@@ -72,5 +72,5 @@ Los artefactos bajo `data/processed` son regenerables y no se versionan.
 
 ## Cierre
 
-Hito 9 cerrado. La siguiente accion planificada es plantear el diseno del frontend Next.js como
-evolucion futura, manteniendo Streamlit como demo TFM defendible.
+Hito 9 cerrado. La siguiente accion planificada es usar el dashboard Streamlit como demo TFM
+defendible y preparar capturas, memoria y guion de defensa.

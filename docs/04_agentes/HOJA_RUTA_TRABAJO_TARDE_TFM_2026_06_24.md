@@ -359,52 +359,23 @@ Decision de cierre:
 
 - Cerrado si tests/ruff pasan o si queda una limitacion de entorno claramente documentada.
 
-Mensaje para continuar: "Hito 9 listo, planteamos Next.js".
+Mensaje para continuar: "Hito 9 listo, pulimos Streamlit para defensa".
 
-## Hito 10 - Plantear diseno del frontend con Next.js
+## Hito 10 - Dashboard Streamlit pulido para tribunal
 
-Objetivo: disenar, no implementar todavia, una evolucion del dashboard hacia un frontend moderno
-sin mezclarla con el cierre del MVP Streamlit.
+Objetivo: consolidar Streamlit como frontend oficial del MVP TFM, evitando abrir otro dashboard
+paralelo y haciendo que la demo se entienda sin conocer el codigo.
 
-Alcance propuesto:
+Alcance realizado:
 
-- Next.js como frontend exploratorio/productizable.
-- API futura separada: FastAPI o endpoints de lectura sobre artefactos JSON/Parquet convertidos.
-- Mantener Streamlit como demo TFM ya defendible.
-- No bloquear el TFM por migrar frontend.
-
-Pantallas iniciales:
-
-- Vista `Overview`: KPIs, fuentes, cobertura, estado de calidad y limitaciones.
-- Vista `Risk Cases`: ranking de contratos con score Agent2 y filtros por fuente, CPV, organismo,
-  procedimiento y nivel de riesgo.
-- Vista `Case Detail`: contrato, red flags, metricas Agent3, evidencias Agent4 y trazabilidad.
-- Vista `Network`: grafo comprador-proveedor-contrato con comunidades y centralidad.
-- Vista `Data Quality`: nulos, errores de parseo, snapshots, matching y coverage.
-- Vista `Methodology`: explicacion breve de que el sistema prioriza revision humana.
-
-Componentes:
-
-- `RiskScoreBadge`
-- `RedFlagList`
-- `EvidencePanel`
-- `NetworkGraph`
-- `SourceCoverageTable`
-- `CaseTimeline`
-- `QualityWarnings`
-- `TraceabilityDrawer`
-
-Contrato de datos inicial:
-
-- `GET /api/demo/summary`
-- `GET /api/contracts`
-- `GET /api/contracts/{contract_key_canon}`
-- `GET /api/contracts/{contract_key_canon}/evidence`
-- `GET /api/network`
-- `GET /api/data-quality`
+- Mantener `frontend/agent3_demo.py` como dashboard principal.
+- Mejorar cabecera, lectura del caso, ranking, grafo, evidencias, trazabilidad y metodologia.
+- Separar narrativa de producto y detalles tecnicos.
+- Mantener visible la frontera: priorizacion para revision humana, no declaracion de fraude.
+- Descartar Next.js para el cierre TFM; queda solo como posible evolucion posterior.
 
 Decision de cierre:
 
-- Crear solo documento de diseno si el MVP tecnico ya esta validado.
-- Implementar Next.js despues, como mejora de presentacion/producto, no como requisito para cerrar
-  la memoria.
+- Cerrado si Streamlit permite explicar `PW-2024-0001` con score Agent2, red flags, metricas
+  Agent3, evidencias Agent4 y trazabilidad.
+- Las capturas finales del dashboard pasan a memoria/defensa, no a un nuevo desarrollo frontend.
