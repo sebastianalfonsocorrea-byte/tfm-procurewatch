@@ -152,10 +152,13 @@ def main() -> None:
 
 
 def _render_data_sidebar() -> tuple[Path, Path | None]:
-    st.sidebar.header("Datos de la demo")
+    st.sidebar.header("Demo")
+    st.sidebar.caption(
+        "Configuracion reproducible. En defensa normalmente no hace falta cambiar estos valores."
+    )
     default_output_dir = os.getenv("PROCUREWATCH_AGENT3_DEMO_DIR", DEFAULT_DEMO_DIR)
     output_dir_text = st.sidebar.text_input(
-        "Carpeta de resultados",
+        "Resultados regenerados",
         value=default_output_dir,
         help="Carpeta con los artefactos generados por Agent3.",
     )
@@ -167,9 +170,18 @@ def _render_data_sidebar() -> tuple[Path, Path | None]:
         )
     )
     case_context_text = st.sidebar.text_input(
-        "Ficha documental",
+        "Ficha documental del caso",
         value=str(default_case_context_path),
         help="JSON generado por Agent4 para el contrato principal.",
+    )
+    st.sidebar.markdown(
+        """
+        <div class="pw-sidebar-note">
+            <strong>Modo defensa:</strong> abre primero Resumen, luego Caso seleccionado,
+            Relaciones, Evidencias y Trazabilidad.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
     return output_dir, Path(case_context_text) if case_context_text else None
 
@@ -179,7 +191,7 @@ def _render_analysis_sidebar(
     contracts: pd.DataFrame,
     case_context: dict[str, Any],
 ) -> DashboardFilters:
-    st.sidebar.header("Analisis")
+    st.sidebar.header("Filtros")
     filtered = contracts.copy()
 
     states = _sorted_text_options(filtered["estado_ficha"].tolist())
@@ -248,6 +260,10 @@ def _render_analysis_sidebar(
     graph_community = st.sidebar.selectbox("Comunidad en el grafo", graph_community_options)
     max_nodes = st.sidebar.slider("Tamano de red", min_value=6, max_value=40, value=18, step=2)
     only_case_neighborhood = st.sidebar.toggle("Solo entorno del contrato", value=True)
+    st.sidebar.markdown("#### Capturas recomendadas")
+    st.sidebar.caption(
+        "Resumen · Caso seleccionado · Relaciones · Evidencias · Trazabilidad · Metodologia"
+    )
 
     return DashboardFilters(
         selected_contract=str(selected_contract),
@@ -268,7 +284,7 @@ def _render_header() -> None:
                 <p class="pw-eyebrow">Demo integrada TFM</p>
                 <h1>ProcureWatch Analytics</h1>
                 <p class="pw-hero-text">
-                    Priorizacion explicable para priorizar contratos publicos combinando scoring,
+                    Priorizacion explicable de contratos publicos combinando scoring,
                     relaciones de red y evidencia documental trazable.
                 </p>
             </div>
@@ -580,6 +596,7 @@ def _render_case(case_view: dict[str, Any]) -> None:
     columns[3].metric("Relaciones del contrato", _format_metric(case_view.get("contract_links")))
 
     _render_case_explainer(case_view)
+    _render_human_review_actions(case_view)
 
     left, right = st.columns([1.1, 1])
     with left:
@@ -643,6 +660,51 @@ def _render_case_explainer(case_view: dict[str, Any]) -> None:
     )
 
 
+def _render_human_review_actions(case_view: dict[str, Any]) -> None:
+    actions = _human_review_actions(case_view)
+    st.markdown("#### Que revisaria una persona")
+    st.caption(
+        "Esta lista traduce las senales tecnicas a preguntas de revision. No son conclusiones "
+        "juridicas."
+    )
+    columns = st.columns(len(actions))
+    for column, action in zip(columns, actions, strict=False):
+        column.markdown(
+            f"""
+            <div class="pw-review-action">
+                <strong>{action['title']}</strong>
+                <p>{action['text']}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def _human_review_actions(case_view: dict[str, Any]) -> list[dict[str, str]]:
+    actions = [
+        {
+            "title": "1. Procedimiento",
+            "text": "Comprobar si el procedimiento y su justificacion son coherentes con el objeto.",
+        },
+        {
+            "title": "2. Importe",
+            "text": "Comparar valor estimado y adjudicado, especialmente si hay desviacion.",
+        },
+        {
+            "title": "3. Relacion",
+            "text": "Revisar recurrencia comprador-adjudicatario y comunidad de red.",
+        },
+    ]
+    if case_view.get("evidences"):
+        actions.append(
+            {
+                "title": "4. Documentos",
+                "text": "Leer evidencias y citas para verificar trazabilidad documental.",
+            }
+        )
+    return actions[:4]
+
+
 def _render_case_snapshot(case_view: dict[str, Any]) -> None:
     fields = [
         ("Contrato", case_view.get("contract_key")),
@@ -669,6 +731,8 @@ def _render_network(data, filters: DashboardFilters) -> None:
         st.warning("No hay entidades para el filtro actual.")
         return
 
+    _render_network_summary(nodes, edges, filters.selected_contract)
+
     left, right = st.columns([1.6, 1])
     with left:
         st.plotly_chart(
@@ -684,7 +748,7 @@ def _render_network(data, filters: DashboardFilters) -> None:
         st.dataframe(_network_node_table(nodes), width="stretch", hide_index=True)
 
     st.markdown("#### Relaciones visibles")
-    relation_table = _network_edge_table(edges)
+    relation_table = _network_edge_table(data, edges)
     if relation_table.empty:
         st.info("No hay relaciones visibles con los filtros actuales.")
     else:
@@ -731,6 +795,31 @@ def _network_frames(data, filters: DashboardFilters) -> tuple[pd.DataFrame, pd.D
             & edges["target_node_id"].astype(str).isin(node_ids)
         ].copy()
     return nodes, edges
+
+
+def _render_network_summary(
+    nodes: pd.DataFrame,
+    edges: pd.DataFrame,
+    selected_contract: str,
+) -> None:
+    node_types = nodes["node_type"].astype(str).value_counts().to_dict()
+    summary = [
+        f"{len(nodes)} entidades visibles",
+        f"{len(edges)} relaciones",
+        f"contrato foco {selected_contract}",
+    ]
+    type_text = ", ".join(
+        f"{_node_type_label(node_type)}: {count}" for node_type, count in node_types.items()
+    )
+    st.markdown(
+        f"""
+        <div class="pw-callout">
+            <strong>Lectura del grafo:</strong> {'; '.join(summary)}.
+            <br><span>{type_text}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _contract_neighborhood(data, contract_key: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -849,11 +938,17 @@ def _network_node_table(nodes: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def _network_edge_table(edges: pd.DataFrame) -> pd.DataFrame:
+def _network_edge_table(data, edges: pd.DataFrame) -> pd.DataFrame:
     if edges.empty:
         return pd.DataFrame()
     table = edges[["edge_type", "contract_key_canon", "source_node_id", "target_node_id"]].copy()
     table["edge_type"] = table["edge_type"].map(_edge_type_label)
+    table["source_node_id"] = table["source_node_id"].map(
+        lambda value: _node_label(data, str(value))
+    )
+    table["target_node_id"] = table["target_node_id"].map(
+        lambda value: _node_label(data, str(value))
+    )
     return table.rename(
         columns={
             "edge_type": "Relacion",
@@ -955,6 +1050,12 @@ def _render_traceability(
         "Esta vista mantiene la parte tecnica en un sitio separado para no ensuciar la narrativa "
         "principal. Aqui se ve como reproducir la demo y que artefactos alimentan cada vista."
     )
+    st.download_button(
+        "Descargar resumen Markdown del caso",
+        data=_case_markdown_summary(case_view),
+        file_name=f"procurewatch_{case_view.get('contract_key', 'caso')}_resumen.md",
+        mime="text/markdown",
+    )
 
     st.markdown("#### Comandos reproducibles")
     st.code(
@@ -989,6 +1090,56 @@ def _render_traceability(
                 st.json(case_context)
             else:
                 st.info("No hay payload Agent4 cargado.")
+
+
+def _case_markdown_summary(case_view: dict[str, Any]) -> str:
+    flags = _flag_list_label(case_view.get("red_flags", []))
+    metrics = _dict_value(case_view.get("agent3_metrics"))
+    evidences = _list_value(case_view.get("evidences"))
+    lines = [
+        "# Resumen ProcureWatch",
+        "",
+        f"- Contrato: {case_view.get('contract_key', 'n/a')}",
+        f"- Objeto: {case_view.get('title', 'n/a')}",
+        f"- Comprador: {case_view.get('buyer_name', 'n/a')}",
+        f"- Adjudicatario: {case_view.get('supplier_name', 'n/a')}",
+        f"- Prioridad Agent2: {_risk_level_label(case_view.get('risk_level'))}",
+        f"- Score Agent2: {_format_score(case_view.get('risk_score'))}",
+        f"- Red flags: {flags}",
+        "",
+        "## Lectura Agent3",
+        "",
+        "- Recurrencia comprador-proveedor: "
+        f"{_format_metric(metrics.get('buyer_supplier_recurrence'))}",
+        f"- Peso de la relacion: {_format_percent(metrics.get('buyer_supplier_contract_share'))}",
+        f"- Comunidad: {_format_metric(metrics.get('community_id'))}",
+        f"- Importancia en red: {_format_metric(metrics.get('contract_betweenness_centrality'))}",
+        "",
+        "## Evidencias Agent4",
+        "",
+    ]
+    if evidences:
+        for index, evidence in enumerate(evidences, start=1):
+            lines.extend(
+                [
+                    f"{index}. {evidence.get('text_excerpt', 'Sin extracto disponible.')}",
+                    f"   - document_id: {evidence.get('document_id', 'n/a')}",
+                    f"   - chunk_id: {evidence.get('chunk_id', 'n/a')}",
+                ]
+            )
+    else:
+        lines.append("- No hay evidencias documentales cargadas para este caso.")
+    lines.extend(
+        [
+            "",
+            "## Frontera metodologica",
+            "",
+            "ProcureWatch prioriza revision humana. No declara fraude, no sustituye una auditoria "
+            "y no representa una plataforma productiva.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def _render_methodology() -> None:
@@ -1692,6 +1843,16 @@ def _apply_page_style() -> None:
             margin: 0.6rem 0 1rem;
             padding: 0.8rem 0.95rem;
         }
+        .pw-sidebar-note {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            color: #1e3a8a;
+            font-size: 0.88rem;
+            line-height: 1.35;
+            margin: 0.6rem 0 0.8rem;
+            padding: 0.7rem;
+        }
         .pw-reading {
             border-left-color: #059669;
             background: #f0fdf4;
@@ -1768,12 +1929,22 @@ def _apply_page_style() -> None:
             margin: 0.8rem 0 1rem;
         }
         .pw-case-explainer > div,
+        .pw-review-action,
         .pw-mini-card {
             background: #ffffff;
             border: 1px solid #d9e2ec;
             border-radius: 8px;
             color: #334155;
             padding: 0.8rem;
+        }
+        .pw-review-action {
+            min-height: 122px;
+        }
+        .pw-review-action strong {
+            color: #0f172a;
+        }
+        .pw-review-action p {
+            margin: 0.4rem 0 0;
         }
         .pw-case-explainer strong {
             color: #0f172a;

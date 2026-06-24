@@ -140,6 +140,17 @@ Trazabilidad.
 - Mejora esperada: primera lectura mas clara para tribunal, flujo Agent2-Agent3-Agent4 visible,
   evidencias documentales separadas de trazabilidad tecnica y metodologia explicita.
 
+## Hito 11 - Optimizacion final Streamlit
+
+- Objetivo: reforzar la demo como herramienta de explicacion para un tribunal que la ve por primera
+  vez.
+- Mejora: sidebar en modo defensa, resumen textual del grafo, preguntas de revision humana,
+  relaciones con nombres legibles y descarga Markdown del caso.
+- Criterio narrativo: menos costuras tecnicas en las vistas principales y toda la parte de rutas,
+  payloads y comandos concentrada en Trazabilidad.
+- Validacion pendiente bajo demanda: no se ejecutan procesos largos en esta iteracion por decision
+  operativa.
+
 Decision de continuidad:
 
 - La integracion multiagente queda validada como candidata a promocion a rama principal.
