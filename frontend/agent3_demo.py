@@ -124,7 +124,7 @@ def main() -> None:
     _render_header()
     _render_decision_strip(case_view)
 
-    summary_tab, ranking_tab, case_tab, network_tab, evidence_tab, trace_tab = st.tabs(
+    summary_tab, ranking_tab, case_tab, network_tab, evidence_tab, trace_tab, method_tab = st.tabs(
         [
             "Resumen",
             "Contratos priorizados",
@@ -132,6 +132,7 @@ def main() -> None:
             "Relaciones",
             "Evidencias",
             "Trazabilidad",
+            "Metodologia",
         ]
     )
     with summary_tab:
@@ -146,6 +147,8 @@ def main() -> None:
         _render_evidences(case_view)
     with trace_tab:
         _render_traceability(data, case_context, output_dir, case_context_path, case_view)
+    with method_tab:
+        _render_methodology()
 
 
 def _render_data_sidebar() -> tuple[Path, Path | None]:
@@ -258,10 +261,35 @@ def _render_analysis_sidebar(
 
 
 def _render_header() -> None:
-    st.title("ProcureWatch Analytics")
+    st.markdown(
+        """
+        <section class="pw-hero">
+            <div>
+                <p class="pw-eyebrow">Demo integrada TFM</p>
+                <h1>ProcureWatch Analytics</h1>
+                <p class="pw-hero-text">
+                    Priorizacion explicable para priorizar contratos publicos combinando scoring,
+                    relaciones de red y evidencia documental trazable.
+                </p>
+            </div>
+            <div class="pw-hero-badge">Revision humana, no veredicto de fraude</div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="pw-callout">
+            <strong>Que estas viendo:</strong> una demo sintetica/offline que reconstruye el caso
+            <code>PW-2024-0001</code>. Agent2 calcula prioridad y red flags, Agent3 explica
+            relaciones en red y Agent4 aporta evidencias documentales con citas.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.caption(
-        "Demo sintetica/offline para priorizar contratos revisables con reglas, red de relaciones "
-        "y evidencia documental. El sistema no declara fraude."
+        "El sistema ayuda a priorizar revision humana y no declara fraude; las evidencias sirven "
+        "para explicar por que un caso merece ser revisado."
     )
 
 
@@ -271,21 +299,32 @@ def _render_decision_strip(case_view: dict[str, Any]) -> None:
     flags = len(case_view.get("red_flags", []))
     evidences = len(case_view.get("evidences", []))
 
-    columns = st.columns([1.2, 1, 1, 1])
+    columns = st.columns([1.25, 1, 1, 1])
     columns[0].metric("Contrato seleccionado", case_view.get("contract_key") or "Sin contrato")
     columns[1].metric("Prioridad", priority)
-    columns[2].metric("Puntuacion", score)
-    columns[3].metric("Evidencias", str(evidences))
+    columns[2].metric("Score Agent2", score)
+    columns[3].metric("Evidencias Agent4", str(evidences))
 
     if flags:
-        st.info(
-            f"Lectura principal: {priority.lower()} con {flags} senales explicables y "
-            f"{evidences} evidencias documentales asociadas."
+        st.markdown(
+            f"""
+            <div class="pw-reading">
+                <strong>Lectura principal:</strong> {priority.lower()} con {flags} senales
+                explicables y {evidences} evidencias documentales asociadas. Esta salida ayuda a
+                decidir que revisar primero; no prueba fraude ni sustituye auditoria.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
     else:
-        st.info(
-            "Lectura principal: el contrato tiene metricas relacionales, pero la ficha Agent2/"
-            "Agent4 cargada no contiene scoring documental para este caso."
+        st.markdown(
+            """
+            <div class="pw-reading">
+                <strong>Lectura principal:</strong> el contrato tiene metricas relacionales, pero
+                la ficha cargada no contiene scoring documental completo para este caso.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
 
@@ -296,12 +335,21 @@ def _render_summary(
     case_view: dict[str, Any],
 ) -> None:
     st.subheader("Resumen ejecutivo")
+    st.write(
+        "Esta vista resume la demo de extremo a extremo. La idea es que el tribunal pueda seguir "
+        "el camino del dato sin abrir codigo: contrato canonico, prioridad Agent2, grafo Agent3, "
+        "evidencia Agent4 y trazabilidad final."
+    )
     _render_kpis(kpis, contracts, case_view)
     _render_agent_flow(case_view)
 
     left, right = st.columns([1.2, 1])
     with left:
         st.markdown("#### Contratos con mayor interes de revision")
+        st.caption(
+            "Ordenados por una combinacion de score Agent2, senales relacionales y disponibilidad "
+            "de ficha documental."
+        )
         ranking = _display_contract_columns(contracts).head(5)
         st.dataframe(ranking, width="stretch", hide_index=True)
     with right:
@@ -331,6 +379,10 @@ def _render_kpis(
     columns = st.columns(len(labels))
     for column, (label, value) in zip(columns, labels, strict=False):
         column.metric(label, _format_int(value))
+    st.caption(
+        "Los KPIs proceden de los artefactos regenerados por `run-integrated-demo`; la muestra es "
+        "pequena y sintetica para defensa reproducible."
+    )
 
 
 def _render_agent_flow(case_view: dict[str, Any]) -> None:
@@ -338,10 +390,10 @@ def _render_agent_flow(case_view: dict[str, Any]) -> None:
     has_agent3 = bool(case_view.get("agent3_metrics"))
     has_agent4 = bool(case_view.get("evidences"))
     items = [
-        ("Agent1", "Contrato normalizado", True),
-        ("Agent2", "Prioridad y red flags", has_agent2),
-        ("Agent3", "Relaciones y comunidades", has_agent3),
-        ("Agent4", "Evidencias citadas", has_agent4),
+        ("Agent1", "Normaliza contratos y conserva trazabilidad de fuente", True),
+        ("Agent2", "Calcula prioridad y red flags explicables", has_agent2),
+        ("Agent3", "Construye red, comunidades y metricas relacionales", has_agent3),
+        ("Agent4", "Recupera evidencia documental y citas", has_agent4),
     ]
     columns = st.columns(len(items))
     for column, (title, detail, active) in zip(columns, items, strict=False):
@@ -379,6 +431,7 @@ def _render_distribution_charts(data, contracts: pd.DataFrame) -> None:
                 ),
                 width="stretch",
             )
+            st.caption("Cada barra representa un tipo de nodo construido por Agent3.")
     with right:
         edge_counts = edge_type_counts(data)
         if edge_counts.empty:
@@ -397,6 +450,7 @@ def _render_distribution_charts(data, contracts: pd.DataFrame) -> None:
                 ),
                 width="stretch",
             )
+            st.caption("Las relaciones explican como se conectan compradores, contratos y fuentes.")
 
     left, right = st.columns(2)
     with left:
@@ -424,6 +478,7 @@ def _render_distribution_charts(data, contracts: pd.DataFrame) -> None:
                 ),
                 width="stretch",
             )
+            st.caption("Las comunidades agrupan entidades conectadas dentro del grafo.")
     with right:
         st.markdown("#### Compradores y adjudicatarios")
         compact = contracts[["comprador", "adjudicatario", "id_contrato"]].rename(
@@ -436,12 +491,37 @@ def _render_distribution_charts(data, contracts: pd.DataFrame) -> None:
         st.dataframe(compact, width="stretch", hide_index=True)
 
 
+def _render_top_case_cards(contracts: pd.DataFrame, selected_contract: str) -> None:
+    top_cases = contracts.head(3).to_dict("records")
+    if not top_cases:
+        return
+    columns = st.columns(len(top_cases))
+    for column, row in zip(columns, top_cases, strict=False):
+        selected = row.get("id_contrato") == selected_contract
+        css_class = "pw-case-card pw-case-card-selected" if selected else "pw-case-card"
+        priority = row.get("prioridad", "n/a")
+        reason = row.get("motivo_revision", "n/a")
+        column.markdown(
+            f"""
+            <div class="{css_class}">
+                <div class="pw-card-kicker">{'Caso activo' if selected else 'Caso priorizado'}</div>
+                <div class="pw-card-title">{row.get('id_contrato', 'n/a')}</div>
+                <div class="pw-card-subtitle">{row.get('titulo', 'Sin titulo')}</div>
+                <div class="pw-card-line"><strong>Prioridad:</strong> {priority}</div>
+                <div class="pw-card-line"><strong>Motivo:</strong> {reason}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 def _render_contract_ranking(contracts: pd.DataFrame, selected_contract: str) -> None:
     st.subheader("Contratos priorizados")
     st.write(
-        "La tabla combina scoring disponible, senales relacionales y cobertura documental para "
-        "ordenar los contratos que merecen revision humana."
+        "La tabla combina score Agent2, senales relacionales de Agent3 y cobertura documental de "
+        "Agent4. Es una cola de revision, no una lista de fraude."
     )
+    _render_top_case_cards(contracts, selected_contract)
 
     display = _display_contract_columns(contracts)
     display.insert(
@@ -452,6 +532,10 @@ def _render_contract_ranking(contracts: pd.DataFrame, selected_contract: str) ->
     st.dataframe(display, width="stretch", hide_index=True)
 
     st.markdown("#### Lectura de senales")
+    st.caption(
+        "Estas columnas muestran por que un contrato sube en prioridad: recurrencia, peso de la "
+        "relacion e importancia en la red."
+    )
     signal_rows = contracts[
         [
             "id_contrato",
@@ -495,6 +579,8 @@ def _render_case(case_view: dict[str, Any]) -> None:
     columns[2].metric("Red flags", str(len(case_view.get("red_flags", []))))
     columns[3].metric("Relaciones del contrato", _format_metric(case_view.get("contract_links")))
 
+    _render_case_explainer(case_view)
+
     left, right = st.columns([1.1, 1])
     with left:
         st.markdown("#### Identificacion")
@@ -527,6 +613,36 @@ def _render_case(case_view: dict[str, Any]) -> None:
         st.warning("\n".join(f"- {item}" for item in warnings))
 
 
+def _render_case_explainer(case_view: dict[str, Any]) -> None:
+    flags = _flag_list_label(case_view.get("red_flags", []))
+    metrics = _dict_value(case_view.get("agent3_metrics"))
+    recurrence = _format_metric(metrics.get("buyer_supplier_recurrence"))
+    share = _format_percent(metrics.get("buyer_supplier_contract_share"))
+    evidences = len(case_view.get("evidences", []))
+    st.markdown(
+        f"""
+        <div class="pw-case-explainer">
+            <div>
+                <span class="pw-badge">Agent2</span>
+                <strong>{flags}</strong>
+                <p>Reglas deterministas convierten datos del contrato en prioridad de revision.</p>
+            </div>
+            <div>
+                <span class="pw-badge">Agent3</span>
+                <strong>{recurrence} contratos comprador-proveedor; peso {share}</strong>
+                <p>La red muestra recurrencia, comunidad y posicion del contrato.</p>
+            </div>
+            <div>
+                <span class="pw-badge">Agent4</span>
+                <strong>{evidences} evidencias citadas</strong>
+                <p>Los documentos recuperados apoyan la explicacion sin emitir veredicto.</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _render_case_snapshot(case_view: dict[str, Any]) -> None:
     fields = [
         ("Contrato", case_view.get("contract_key")),
@@ -544,6 +660,10 @@ def _render_case_snapshot(case_view: dict[str, Any]) -> None:
 
 def _render_network(data, filters: DashboardFilters) -> None:
     st.subheader("Mapa de relaciones")
+    st.write(
+        "Agent3 convierte contratos, compradores, adjudicatarios, CPV y fuentes en una red. El "
+        "contrato seleccionado se destaca para ver su entorno inmediato."
+    )
     nodes, edges = _network_frames(data, filters)
     if nodes.empty:
         st.warning("No hay entidades para el filtro actual.")
@@ -554,6 +674,10 @@ def _render_network(data, filters: DashboardFilters) -> None:
         st.plotly_chart(
             _network_figure(nodes, edges, focus_contract=filters.selected_contract),
             width="stretch",
+        )
+        st.caption(
+            "Colores por tipo de entidad. El nodo grande y bordeado corresponde al contrato "
+            "seleccionado."
         )
     with right:
         st.markdown("#### Entidades visibles")
@@ -777,16 +901,32 @@ def _render_evidences(case_view: dict[str, Any]) -> None:
         )
         return
 
+    st.write(
+        "Agent4 recupera fragmentos documentales relacionados con el contrato. Cada evidencia "
+        "mantiene identificadores para poder rastrear de que documento y chunk sale."
+    )
     for index, evidence in enumerate(evidences, start=1):
         with st.container(border=True):
-            st.markdown(f"#### Evidencia {index}")
+            st.markdown(f"#### Evidencia documental {index}")
             left, right = st.columns([1, 2])
             with left:
-                st.write(f"**Documento:** {_document_type_label(evidence.get('document_type'))}")
-                st.write(f"**Fuente:** {_source_label(evidence.get('source'))}")
-                st.write(f"**Contrato:** {evidence.get('contract_key_canon', 'n/a')}")
-                st.write(f"**Relevancia:** {_format_score(evidence.get('score'))}")
+                document_type = _document_type_label(evidence.get("document_type"))
+                source = _source_label(evidence.get("source"))
+                contract_key = evidence.get("contract_key_canon", "n/a")
+                relevance = _format_score(evidence.get("score"))
+                st.markdown(
+                    f"""
+                    <div class="pw-mini-card">
+                        <div><strong>Tipo:</strong> {document_type}</div>
+                        <div><strong>Fuente:</strong> {source}</div>
+                        <div><strong>Contrato:</strong> {contract_key}</div>
+                        <div><strong>Relevancia:</strong> {relevance}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
             with right:
+                st.markdown("**Extracto recuperado**")
                 st.write(str(evidence.get("text_excerpt") or "Sin extracto disponible."))
                 with st.expander("Identificadores trazables", expanded=False):
                     st.write(f"document_id: `{evidence.get('document_id', 'n/a')}`")
@@ -810,10 +950,22 @@ def _render_traceability(
     case_context_path: Path | None,
     case_view: dict[str, Any],
 ) -> None:
-    st.subheader("Trazabilidad tecnica")
+    st.subheader("Trazabilidad y reproduccion")
     st.write(
-        "Esta vista conserva rutas, payloads y controles para memoria tecnica. La lectura "
-        "principal esta normalizada en las pestanas anteriores."
+        "Esta vista mantiene la parte tecnica en un sitio separado para no ensuciar la narrativa "
+        "principal. Aqui se ve como reproducir la demo y que artefactos alimentan cada vista."
+    )
+
+    st.markdown("#### Comandos reproducibles")
+    st.code(
+        "\n".join(
+            [
+                "$env:PYTHONPATH='scr'; python -m procurewatch.cli run-integrated-demo",
+                "$env:PYTHONPATH='scr'; python -m procurewatch.cli validate-dashboard-demo",
+                "streamlit run frontend/agent3_demo.py",
+            ]
+        ),
+        language="powershell",
     )
 
     outputs = data.report.get("outputs", {})
@@ -837,6 +989,68 @@ def _render_traceability(
                 st.json(case_context)
             else:
                 st.info("No hay payload Agent4 cargado.")
+
+
+def _render_methodology() -> None:
+    st.subheader("Metodologia de la demo")
+    st.write(
+        "ProcureWatch organiza el analisis como una cadena de agentes. Cada bloque produce una "
+        "salida trazable que alimenta la siguiente vista del dashboard."
+    )
+    rows = [
+        {
+            "Bloque": "Agent1",
+            "Que aporta": "Contrato canonico y trazabilidad de fuente.",
+            "Donde se ve": "Identificacion del caso y trazabilidad.",
+        },
+        {
+            "Bloque": "Agent2",
+            "Que aporta": "Score, prioridad y red flags deterministas.",
+            "Donde se ve": "Resumen, ranking y caso seleccionado.",
+        },
+        {
+            "Bloque": "Agent3",
+            "Que aporta": "Grafo, comunidades y metricas relacionales.",
+            "Donde se ve": "Relaciones y senales relacionales.",
+        },
+        {
+            "Bloque": "Agent4",
+            "Que aporta": "Evidencias documentales, citas y warnings.",
+            "Donde se ve": "Evidencias y ficha del caso.",
+        },
+    ]
+    st.dataframe(rows, width="stretch", hide_index=True)
+    st.markdown(
+        """
+        <div class="pw-callout">
+            <strong>Frontera metodologica:</strong> la demo prioriza revision humana. No declara
+            fraude, no sustituye una auditoria y no representa una plataforma productiva.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    left, right = st.columns(2)
+    with left:
+        st.markdown("#### Implementado en el MVP")
+        st.markdown(
+            """
+            - Demo integrada offline regenerable.
+            - Ranking de contratos y ficha explicable.
+            - Red de relaciones comprador-proveedor-contrato.
+            - Evidencias documentales con citas trazables.
+            - Validacion headless del dashboard.
+            """
+        )
+    with right:
+        st.markdown("#### Limitaciones declaradas")
+        st.markdown(
+            """
+            - Muestra sintetica reducida para defensa reproducible.
+            - Matching BOE/PLACE/OpenTender todavia imperfecto.
+            - Servicios PostgreSQL, Neo4j, Qdrant y Ollama opcionales.
+            - Agent4 no descarga pliegos PLACSP ni ejecuta crawling vivo.
+            """
+        )
 
 
 def _build_contract_table(data, payload: dict[str, Any]) -> pd.DataFrame:
@@ -1248,6 +1462,10 @@ def _load_case_context(path: Path) -> dict[str, Any]:
 
 def _render_missing_artifacts(output_dir: Path, missing: list[Path]) -> None:
     st.error("Faltan artefactos para construir la demo.")
+    st.write(
+        "La demo se puede regenerar desde codigo. Ejecuta el comando siguiente y vuelve a abrir "
+        "el dashboard."
+    )
     st.write(f"Carpeta revisada: `{output_dir}`")
     st.dataframe(
         [{"Artefacto requerido": str(path)} for path in missing],
@@ -1255,8 +1473,7 @@ def _render_missing_artifacts(output_dir: Path, missing: list[Path]) -> None:
         hide_index=True,
     )
     st.code(
-        "python -c \"from procurewatch.cli import main; "
-        "raise SystemExit(main(['run-integrated-demo']))\"",
+        "$env:PYTHONPATH='scr'; python -m procurewatch.cli run-integrated-demo",
         language="powershell",
     )
 
@@ -1420,6 +1637,64 @@ def _apply_page_style() -> None:
         .block-container {
             padding-top: 1.4rem;
             padding-bottom: 2rem;
+            max-width: 1380px;
+        }
+        .pw-hero {
+            align-items: center;
+            background: #0f172a;
+            border-radius: 8px;
+            color: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.8rem;
+            padding: 1.2rem 1.35rem;
+        }
+        .pw-hero h1 {
+            color: #ffffff;
+            font-size: 2rem;
+            line-height: 1.1;
+            margin: 0;
+            padding: 0;
+        }
+        .pw-eyebrow {
+            color: #93c5fd;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0;
+            margin: 0 0 0.25rem;
+            text-transform: uppercase;
+        }
+        .pw-hero-text {
+            color: #dbeafe;
+            font-size: 1rem;
+            margin: 0.4rem 0 0;
+            max-width: 760px;
+        }
+        .pw-hero-badge {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            border-radius: 999px;
+            color: #14532d;
+            flex: 0 0 auto;
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: 0.45rem 0.7rem;
+        }
+        .pw-callout,
+        .pw-reading {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid #2563eb;
+            border-radius: 8px;
+            color: #1e293b;
+            line-height: 1.45;
+            margin: 0.6rem 0 1rem;
+            padding: 0.8rem 0.95rem;
+        }
+        .pw-reading {
+            border-left-color: #059669;
+            background: #f0fdf4;
         }
         .pw-step {
             border: 1px solid #d9e2ec;
@@ -1450,11 +1725,91 @@ def _apply_page_style() -> None:
             color: #334155;
             line-height: 1.35;
         }
+        .pw-case-card {
+            background: #ffffff;
+            border: 1px solid #d9e2ec;
+            border-radius: 8px;
+            min-height: 178px;
+            padding: 0.85rem;
+        }
+        .pw-case-card-selected {
+            border-color: #2563eb;
+            box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.16);
+        }
+        .pw-card-kicker {
+            color: #2563eb;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+        }
+        .pw-card-title {
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 0.2rem;
+        }
+        .pw-card-subtitle {
+            color: #475569;
+            font-size: 0.9rem;
+            line-height: 1.3;
+            margin-bottom: 0.55rem;
+        }
+        .pw-card-line {
+            color: #334155;
+            font-size: 0.88rem;
+            line-height: 1.35;
+            margin-top: 0.3rem;
+        }
+        .pw-case-explainer {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin: 0.8rem 0 1rem;
+        }
+        .pw-case-explainer > div,
+        .pw-mini-card {
+            background: #ffffff;
+            border: 1px solid #d9e2ec;
+            border-radius: 8px;
+            color: #334155;
+            padding: 0.8rem;
+        }
+        .pw-case-explainer strong {
+            color: #0f172a;
+            display: block;
+            margin: 0.35rem 0 0.25rem;
+        }
+        .pw-case-explainer p {
+            margin: 0;
+        }
+        .pw-badge {
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            border-radius: 999px;
+            color: #075985;
+            display: inline-block;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 0.12rem 0.45rem;
+        }
+        .pw-mini-card {
+            line-height: 1.7;
+        }
         div[data-testid="stMetric"] {
             background: #ffffff;
             border: 1px solid #d9e2ec;
             border-radius: 8px;
             padding: 0.75rem;
+        }
+        @media (max-width: 900px) {
+            .pw-hero {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .pw-case-explainer {
+                grid-template-columns: 1fr;
+            }
         }
         </style>
         """,

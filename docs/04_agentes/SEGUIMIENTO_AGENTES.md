@@ -131,12 +131,21 @@ Trazabilidad.
 - Quedan cambios no relacionados fuera del hito en `.gitignore`, `docs/README.md`,
   `.gitattributes`, `data/raw/place/` y `data/raw/reference_docs/`.
 
+## Hito 10 - Dashboard Streamlit pulido para tribunal
+
+- Frontend oficial del MVP: `frontend/agent3_demo.py`.
+- Estado: Streamlit queda como demo principal del TFM, validada y orientada a defensa.
+- Decision: se descarta implementar Next.js en esta fase para no duplicar dashboards ni abrir una
+  tecnologia paralela fuera del alcance documentado.
+- Mejora esperada: primera lectura mas clara para tribunal, flujo Agent2-Agent3-Agent4 visible,
+  evidencias documentales separadas de trazabilidad tecnica y metodologia explicita.
+
 Decision de continuidad:
 
 - La integracion multiagente queda validada como candidata a promocion a rama principal.
 - Agent3 y Agent4 quedan cerrados como MVP/PoC defendibles dentro de una demo integrada con Agent2.
-- El siguiente bloque recomendado es plantear el diseno del frontend Next.js sin bloquear el cierre
-  del MVP Streamlit.
+- El siguiente bloque recomendado es capturar la demo Streamlit pulida y usarla como soporte para
+  memoria, defensa o decision de promocion de rama.
 - La hoja de ruta de cierre de `sebas` queda en
   [Hoja de ruta sebas: cierre TFM y demo evaluable](HOJA_RUTA_SEBAS_CIERRE_TFM.md).
 

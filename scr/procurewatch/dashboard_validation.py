@@ -28,6 +28,7 @@ DASHBOARD_CAPTURE_RECOMMENDATIONS = [
     "Relaciones",
     "Evidencias",
     "Trazabilidad",
+    "Metodologia",
 ]
 
 
