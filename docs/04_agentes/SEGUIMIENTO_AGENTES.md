@@ -47,11 +47,30 @@ Validacion enfocada:
 - `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
   - Resultado: All checks passed.
 
+Validacion de integracion final 2026-06-24:
+
+- Rama validada: `integration/multiagent`.
+- `origin/Satu` y `origin/sebas` estan integradas en `HEAD`.
+- `python -m procurewatch doctor`
+  - Resultado: OK; servicios PostgreSQL, Neo4j, Qdrant y Ollama quedan como opcionales.
+- `python -m pytest tests`
+  - Resultado: 92 passed, 1 skipped.
+- `python -m ruff check api scr tests frontend`
+  - Resultado: All checks passed.
+  - Nota: ruff aviso que no pudo escribir cache local, sin afectar al resultado.
+- Demo Agent3 regenerada en `data/processed/agent3_agent4_demo_2026_06_23/`.
+  - Resultado: 11 nodos, 13 aristas, 3 metricas contractuales y 3 filas de features.
+- Ficha Agent4 regenerada para `PW-2024-0001`.
+  - Resultado: `risk_score=0.5`, 2 red flags, metricas Agent3, 2 evidencias y 2 citas.
+- Dashboard `frontend/agent3_demo.py` validado en modo headless.
+  - Resultado: HTTP 200, sin artefactos faltantes, KPIs cargados.
+
 Decision de continuidad:
 
+- La integracion multiagente queda validada como candidata a promocion a rama principal.
 - Agent3 y Agent4 quedan cerrados como MVP/PoC defendibles.
-- El siguiente bloque recomendado es preparar demo integrada/dashboard y ampliar corpus documental
-  real o semi-real para mejorar evaluacion RAG.
+- El siguiente bloque recomendado es acordar si la rama principal sera `master` o `main`, hacer
+  push/merge final y capturar evidencias visuales del dashboard para memoria o defensa.
 - La hoja de ruta de cierre de `sebas` queda en
   [Hoja de ruta sebas: cierre TFM y demo evaluable](HOJA_RUTA_SEBAS_CIERRE_TFM.md).
 
