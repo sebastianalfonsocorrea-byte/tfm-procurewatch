@@ -396,6 +396,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=Path("data/processed/agent2_contracts_canonical.parquet"),
     )
     agent3_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    integrated_demo_parser = subparsers.add_parser(
+        "run-integrated-demo",
+        help="Regenera la demo offline Agent2-Agent3-Agent4 sin servicios externos.",
+    )
+    integrated_demo_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed/agent3_agent4_demo_2026_06_23"),
+    )
+    integrated_demo_parser.add_argument("--contract-key", default="PW-2024-0001")
+    integrated_demo_parser.add_argument(
+        "--question",
+        default="evidencia documental y riesgos explicables",
+    )
+    integrated_demo_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
     agent3_neo4j_parser = subparsers.add_parser(
         "agent3-load-neo4j",
         help="Carga nodos y aristas del agente 3 en Neo4j.",
@@ -865,6 +884,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Features Agent2: {report['agent2_features_rows']}")
         print(f"- Reporte agente: {report['outputs']['report']}")
         return 0
+    if args.command == "run-integrated-demo":
+        from .integrated_demo import run_integrated_demo
+
+        report = run_integrated_demo(
+            output_dir=args.output_dir,
+            contract_key_canon=args.contract_key,
+            question=args.question,
+            corpus_index=args.corpus_index,
+        )
+        summary = report["summary"]
+        print(f"Demo integrada Agent2-Agent3-Agent4 [{report['status']}]")
+        print(f"- Contrato: {report['contract_key_canon']}")
+        print(f"- Canonico demo: {report['artifacts']['canonical']}")
+        print(f"- Agent3 nodos/aristas: {summary['agent3_nodes']}/{summary['agent3_edges']}")
+        print(f"- Agent2 risk_score: {summary['agent2_risk_score']}")
+        print(f"- Agent2 red flags: {len(summary['agent2_red_flags'])}")
+        print(
+            f"- Agent4 evidencias/citas: "
+            f"{summary['agent4_evidences']}/{summary['agent4_citations']}"
+        )
+        print(f"- Reporte integrado: {report['artifacts']['integrated_report']}")
+        return 0 if report["status"] == "ready" else 1
     if args.command == "agent3-load-neo4j":
         from .agent3.neo4j_store import (
             DEFAULT_NEO4J_PASSWORD,
@@ -926,3 +967,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     parser.print_help()
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

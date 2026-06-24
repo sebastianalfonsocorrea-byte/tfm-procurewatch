@@ -1256,7 +1256,7 @@ def _render_missing_artifacts(output_dir: Path, missing: list[Path]) -> None:
     )
     st.code(
         "python -c \"from procurewatch.cli import main; "
-        "raise SystemExit(main(['run-agent3']))\"",
+        "raise SystemExit(main(['run-integrated-demo']))\"",
         language="powershell",
     )
 

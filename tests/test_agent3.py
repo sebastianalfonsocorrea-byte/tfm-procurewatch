@@ -25,9 +25,64 @@ from procurewatch.agent3 import (
 )
 from procurewatch.agent3.neo4j_store import prepare_edge_batches, prepare_node_batches
 from procurewatch.cli import main
+from procurewatch.integrated_demo import (
+    DEMO_CONTRACT_KEY,
+    DEMO_SOURCE_SNAPSHOT_ID,
+    demo_contract_records,
+    run_integrated_demo,
+    write_demo_canonical,
+)
 
 
 class Agent3Tests(unittest.TestCase):
+    def test_demo_contract_records_include_main_case_and_snapshot(self) -> None:
+        records = demo_contract_records()
+        by_contract = {str(item["contract_key_canon"]): item for item in records}
+
+        self.assertEqual(len(records), 3)
+        self.assertIn(DEMO_CONTRACT_KEY, by_contract)
+        self.assertEqual(
+            by_contract[DEMO_CONTRACT_KEY]["source_snapshot_id"],
+            DEMO_SOURCE_SNAPSHOT_ID,
+        )
+        self.assertEqual(by_contract[DEMO_CONTRACT_KEY]["procedure"], "negociado sin publicidad")
+        self.assertGreater(by_contract[DEMO_CONTRACT_KEY]["awarded_value_eur"], 100000.0)
+
+    def test_write_demo_canonical_creates_parquet_with_required_fields(self) -> None:
+        import pandas as pd
+
+        temp_path = _test_workspace("integrated-demo-canonical")
+
+        canonical_path = write_demo_canonical(temp_path)
+        frame = pd.read_parquet(canonical_path)
+
+        self.assertTrue(canonical_path.exists())
+        self.assertEqual(len(frame), 3)
+        self.assertIn("source_snapshot_id", frame.columns)
+        self.assertIn(DEMO_CONTRACT_KEY, set(frame["contract_key_canon"].astype(str)))
+
+    def test_run_integrated_demo_regenerates_agent2_agent3_agent4_artifacts(self) -> None:
+        temp_path = _test_workspace("integrated-demo-flow")
+
+        report = run_integrated_demo(output_dir=temp_path)
+
+        self.assertEqual(report["status"], "ready")
+        self.assertEqual(report["contract_key_canon"], DEMO_CONTRACT_KEY)
+        self.assertEqual(report["summary"]["canonical_rows"], 3)
+        self.assertGreater(report["summary"]["agent3_nodes"], 0)
+        self.assertGreater(report["summary"]["agent3_edges"], 0)
+        self.assertGreater(report["summary"]["agent3_communities"], 0)
+        self.assertEqual(report["summary"]["agent2_risk_score"], 0.5)
+        self.assertIn("risky_procedure", report["summary"]["agent2_red_flags"])
+        self.assertGreaterEqual(report["summary"]["agent4_evidences"], 1)
+        self.assertGreaterEqual(report["summary"]["agent4_citations"], 1)
+        self.assertTrue((temp_path / "agent2_contracts_canonical_demo.parquet").exists())
+        self.assertTrue((temp_path / "agent3_graph_report.json").exists())
+        self.assertTrue((temp_path / "agent4_case_context_integrated_demo.json").exists())
+        self.assertTrue((temp_path / "agent2_agent3_agent4_demo_report.json").exists())
+        self.assertTrue(all(item["passed"] for item in report["validations"]))
+        self.assertIn("Demo sintetica y offline", " ".join(report["limitations"]))
+
     def test_build_graph_tables_keeps_traceable_nodes_and_edges(self) -> None:
         graph = build_graph_tables(_contracts())
 

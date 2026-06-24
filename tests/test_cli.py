@@ -56,6 +56,45 @@ class CliTests(unittest.TestCase):
             Path("data/processed/agent3_agent2_features.parquet"),
         )
 
+    def test_run_integrated_demo_command_uses_defaults_and_prints_report(self) -> None:
+        report = {
+            "status": "ready",
+            "contract_key_canon": "PW-2024-0001",
+            "artifacts": {
+                "canonical": "data/processed/demo/agent2_contracts_canonical_demo.parquet",
+                "integrated_report": (
+                    "data/processed/demo/agent2_agent3_agent4_demo_report.json"
+                ),
+            },
+            "summary": {
+                "agent3_nodes": 11,
+                "agent3_edges": 13,
+                "agent2_risk_score": 0.5,
+                "agent2_red_flags": ["risky_procedure", "awarded_above_estimate"],
+                "agent4_evidences": 2,
+                "agent4_citations": 2,
+            },
+        }
+        with mock.patch("procurewatch.integrated_demo.run_integrated_demo") as run_demo_mock:
+            run_demo_mock.return_value = report
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = main(["run-integrated-demo"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Demo integrada Agent2-Agent3-Agent4 [ready]", output.getvalue())
+        run_demo_mock.assert_called_once()
+        kwargs = run_demo_mock.call_args.kwargs
+        self.assertEqual(
+            kwargs["output_dir"],
+            Path("data/processed/agent3_agent4_demo_2026_06_23"),
+        )
+        self.assertEqual(kwargs["contract_key_canon"], "PW-2024-0001")
+        self.assertEqual(
+            kwargs["corpus_index"],
+            Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+        )
+
     def test_run_batch_passes_paths_and_prints_manifest(self) -> None:
         with mock.patch("procurewatch.batch.run_batch") as run_batch_mock:
             run_batch_mock.return_value = {
