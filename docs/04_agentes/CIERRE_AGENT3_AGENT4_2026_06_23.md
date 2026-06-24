@@ -96,6 +96,45 @@ Resultado:
 - Tests Agent3/Agent4: 52 passed.
 - Ruff Agent3/Agent4: All checks passed.
 
+## Actualizacion 2026-06-24
+
+Tras los hitos de cierre del 24/06/2026, el corte Agent3-Agent4 queda integrado en una demo
+Agent2-Agent3-Agent4 regenerable:
+
+```powershell
+$env:PYTHONPATH='scr'; python -m procurewatch.cli run-integrated-demo
+```
+
+Resultado verificado:
+
+- Reporte integrado: `agent2_agent3_agent4_demo_report.json`.
+- Estado del reporte: `ready`.
+- Dataset canonico demo: 3 contratos, incluido `PW-2024-0001`.
+- Agent3: 11 nodos, 13 aristas, comunidades, metricas y features para Agent2/Agent4.
+- Agent4: `risk_score=0.5`, 2 red flags, metricas Agent3, 2 evidencias, 2 citas,
+  `decision_boundary` y `agent4_scope`.
+
+El dashboard Streamlit tambien queda validado como demo local de defensa:
+
+```powershell
+$env:PYTHONPATH='scr'; python -m procurewatch.cli validate-dashboard-demo
+```
+
+Resultado verificado:
+
+- Reporte: `dashboard_validation_report.json`.
+- Estado del reporte: `ready`.
+- Render headless con `streamlit.testing.v1.AppTest` sin excepciones.
+- Texto visible alineado con priorizacion/revision humana, sin declarar fraude ni plataforma
+  productiva.
+
+Validacion completa posterior:
+
+- `$env:PYTHONPATH='scr'; python -m pytest`
+  - Resultado: 111 passed, 1 skipped.
+- `$env:PYTHONPATH='scr'; python -m ruff check frontend scr tests`
+  - Resultado: All checks passed.
+
 ## Lectura para memoria o defensa
 
 Este corte permite explicar el flujo completo:
