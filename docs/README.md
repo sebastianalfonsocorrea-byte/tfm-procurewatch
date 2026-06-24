@@ -46,6 +46,8 @@ Planes, seguimiento y hojas de ruta de Agent2, Agent3 y Agent4.
 - [Hoja de ruta Agent4 RAG](04_agentes/HOJA_RUTA_AGENT4_RAG.md)
 - [Hoja de ruta sebas cierre TFM](04_agentes/HOJA_RUTA_SEBAS_CIERRE_TFM.md)
 - [Hoja de ruta cierre TFM 2026-06-24](04_agentes/HOJA_RUTA_CIERRE_TFM_2026_06_24.md)
+- [Hoja de ruta trabajo tarde TFM 2026-06-24](04_agentes/HOJA_RUTA_TRABAJO_TARDE_TFM_2026_06_24.md)
+- [Pendientes no implementado 2026-06-24](04_agentes/PENDIENTES_NO_IMPLEMENTADO_2026_06_24.md)
 - [Bitacora Agent4 RAG](04_agentes/BITACORA_AGENT4_RAG.md)
 - [Cierre integrado Agent3-Agent4 2026-06-23](04_agentes/CIERRE_AGENT3_AGENT4_2026_06_23.md)
 
