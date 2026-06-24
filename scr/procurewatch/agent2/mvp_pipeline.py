@@ -62,6 +62,7 @@ def run_agent2_mvp(
     input_path: Path,
     output_dir: Path,
     deviation_threshold: float = DEFAULT_DEVIATION_THRESHOLD,
+    agent3_features_path: Path | None = None,
 ) -> dict[str, Any]:
     """Execute the Agent 2 MVP over the canonical dataset produced by Agent 1."""
     import pandas as pd
@@ -76,6 +77,9 @@ def run_agent2_mvp(
     missing = required.difference(contracts.columns)
     if missing:
         raise ValueError(f"Missing Agent2 input columns: {sorted(missing)}")
+    contracts["contract_key_canon"] = (
+        contracts["contract_key_canon"].astype("string").fillna("").str.strip()
+    )
 
     for column in [
         "buyer_name",
@@ -114,6 +118,32 @@ def run_agent2_mvp(
         contracts["awarded_value_eur"],
         errors="coerce",
     )
+    agent3_features, agent3_features_report = _load_agent3_features(
+        agent3_features_path=agent3_features_path,
+        contract_keys=contracts["contract_key_canon"],
+    )
+    if not agent3_features.empty:
+        contracts = contracts.merge(agent3_features, on="contract_key_canon", how="left")
+    for column in [
+        "agent3_buyer_supplier_recurrence",
+        "agent3_buyer_supplier_contract_share",
+        "agent3_version",
+    ]:
+        if column not in contracts.columns:
+            contracts[column] = pd.NA
+    contracts["agent3_features_used"] = contracts[
+        [
+            "agent3_buyer_supplier_recurrence",
+            "agent3_buyer_supplier_contract_share",
+        ]
+    ].notna().any(axis=1)
+    contracts = contracts.reset_index(drop=True)
+    agent3_features_report["matched_rows"] = int(contracts["agent3_features_used"].sum())
+    if agent3_features_report["status"] == "used" and agent3_features_report["matched_rows"] == 0:
+        agent3_features_report["status"] = "ignored"
+        agent3_features_report["warnings"].append(
+            "El fichero Agent3 existe, pero no tiene contratos coincidentes con la entrada Agent2."
+        )
 
     snapshot_id = _sha256(input_path)
     created_at = datetime.now(UTC).isoformat()
@@ -187,6 +217,7 @@ def run_agent2_mvp(
                 ),
                 "score_version": SCORE_VERSION,
                 "source_snapshot_id": snapshot_id,
+                "agent3_features_used": bool(record.get("agent3_features_used", False)),
             }
         )
         for flag_code in active_flags:
@@ -211,19 +242,19 @@ def run_agent2_mvp(
 
     scores = pd.DataFrame(base_scores)
 
-    pair_context = _build_pair_context(contracts)
+    pair_context = _build_contract_pair_context(contracts)
     for flag_code, threshold_check in [
-        (RF03_CODE, pair_context["pair_count"] >= RECURRENCE_THRESHOLD),
+        (RF03_CODE, pair_context["pair_count"].fillna(0) >= RECURRENCE_THRESHOLD),
         (
             RF04_CODE,
-            (pair_context["pair_count"] >= RECURRENCE_THRESHOLD)
-            & (pair_context["pair_share"] >= CONCENTRATION_THRESHOLD),
+            (pair_context["pair_count"].fillna(0) >= RECURRENCE_THRESHOLD)
+            & (pair_context["pair_share"].fillna(0.0) >= CONCENTRATION_THRESHOLD),
         ),
     ]:
         affected = pair_context[threshold_check]
         if affected.empty:
             continue
-        scores, new_flag_records = _apply_batch_flag(
+        scores, new_flag_records = _apply_contract_context_flag(
             scores=scores,
             contracts=contracts,
             affected=affected,
@@ -292,6 +323,11 @@ def run_agent2_mvp(
             },
         },
         "score_version": SCORE_VERSION,
+        "agent3_features_path": agent3_features_report["path"],
+        "agent3_features_status": agent3_features_report["status"],
+        "agent3_features_rows": agent3_features_report["rows"],
+        "agent3_features_matched_rows": agent3_features_report["matched_rows"],
+        "agent3_features_warnings": agent3_features_report["warnings"],
         "flag_breakdown": flags.groupby("flag_code").size().to_dict() if not flags.empty else {},
         "risk_level_breakdown": scores.groupby("risk_level").size().to_dict(),
         "outputs": {
@@ -305,6 +341,104 @@ def run_agent2_mvp(
     )
     report["report_path"] = str(report_path)
     return report
+
+
+def _load_agent3_features(
+    *,
+    agent3_features_path: Path | None,
+    contract_keys: Any,
+) -> tuple[Any, dict[str, Any]]:
+    import pandas as pd
+
+    empty = pd.DataFrame(
+        columns=[
+            "contract_key_canon",
+            "agent3_buyer_supplier_recurrence",
+            "agent3_buyer_supplier_contract_share",
+            "agent3_version",
+        ]
+    )
+    report: dict[str, Any] = {
+        "path": str(agent3_features_path) if agent3_features_path is not None else None,
+        "status": "ignored",
+        "rows": 0,
+        "matched_rows": 0,
+        "warnings": [],
+    }
+    if agent3_features_path is None:
+        return empty, report
+
+    path = Path(agent3_features_path)
+    if not path.exists():
+        report["status"] = "missing"
+        report["warnings"].append("No se encontro el fichero opcional de features Agent3.")
+        return empty, report
+
+    try:
+        features = pd.read_parquet(path)
+    except Exception as exc:
+        report["warnings"].append(f"No se pudieron leer las features Agent3: {exc}")
+        return empty, report
+
+    report["rows"] = int(len(features))
+    if "contract_key_canon" not in features.columns:
+        report["warnings"].append("Las features Agent3 no contienen contract_key_canon.")
+        return empty, report
+
+    selected_columns = ["contract_key_canon"]
+    optional_columns = [
+        "buyer_supplier_recurrence",
+        "buyer_supplier_contract_share",
+        "agent3_version",
+    ]
+    selected_columns.extend(column for column in optional_columns if column in features.columns)
+    selected = features[selected_columns].copy()
+    selected["contract_key_canon"] = (
+        selected["contract_key_canon"].astype("string").fillna("").str.strip()
+    )
+    selected = selected[selected["contract_key_canon"].ne("")]
+    selected = selected.drop_duplicates("contract_key_canon", keep="first")
+
+    rename_map = {
+        "buyer_supplier_recurrence": "agent3_buyer_supplier_recurrence",
+        "buyer_supplier_contract_share": "agent3_buyer_supplier_contract_share",
+    }
+    selected = selected.rename(columns=rename_map)
+    for column in [
+        "agent3_buyer_supplier_recurrence",
+        "agent3_buyer_supplier_contract_share",
+        "agent3_version",
+    ]:
+        if column not in selected.columns:
+            selected[column] = pd.NA
+    selected["agent3_buyer_supplier_recurrence"] = pd.to_numeric(
+        selected["agent3_buyer_supplier_recurrence"],
+        errors="coerce",
+    )
+    selected["agent3_buyer_supplier_contract_share"] = pd.to_numeric(
+        selected["agent3_buyer_supplier_contract_share"],
+        errors="coerce",
+    )
+
+    relevant_metrics = selected[
+        [
+            "agent3_buyer_supplier_recurrence",
+            "agent3_buyer_supplier_contract_share",
+        ]
+    ].notna().any(axis=1)
+    selected = selected[relevant_metrics]
+    if selected.empty:
+        report["warnings"].append("Las features Agent3 no contienen metricas RF-03/RF-04 utiles.")
+        return empty, report
+
+    input_keys = set(contract_keys.astype("string").fillna("").tolist())
+    report["matched_rows"] = int(selected["contract_key_canon"].isin(input_keys).sum())
+    report["status"] = "used" if report["matched_rows"] > 0 else "ignored"
+    if report["matched_rows"] == 0:
+        report["warnings"].append(
+            "Las features Agent3 se leyeron correctamente, pero no coinciden con la entrada."
+        )
+    return selected, report
 
 
 def _build_pair_context(contracts: Any) -> Any:
@@ -342,7 +476,48 @@ def _build_pair_context(contracts: Any) -> Any:
     return context
 
 
-def _apply_batch_flag(
+def _build_contract_pair_context(contracts: Any) -> Any:
+    import pandas as pd
+
+    context = contracts[
+        [
+            "contract_key_canon",
+            "buyer_name",
+            "supplier_name",
+            "agent3_buyer_supplier_recurrence",
+            "agent3_buyer_supplier_contract_share",
+            "agent3_features_used",
+        ]
+    ].copy()
+    context["_buyer_key"] = context["buyer_name"].astype("string").fillna("").map(_normalize_key)
+    context["_supplier_key"] = (
+        context["supplier_name"].astype("string").fillna("").map(_normalize_key)
+    )
+    pair_context = _build_pair_context(contracts).drop(columns=["_pair_key"], errors="ignore")
+    context = context.merge(pair_context, on=["_buyer_key", "_supplier_key"], how="left")
+
+    internal_pair_count = pd.to_numeric(context["pair_count"], errors="coerce")
+    internal_pair_share = pd.to_numeric(context["pair_share"], errors="coerce")
+    agent3_pair_count = pd.to_numeric(
+        context["agent3_buyer_supplier_recurrence"],
+        errors="coerce",
+    )
+    agent3_pair_share = pd.to_numeric(
+        context["agent3_buyer_supplier_contract_share"],
+        errors="coerce",
+    )
+    has_agent3_count = context["agent3_features_used"] & agent3_pair_count.notna()
+    has_agent3_share = context["agent3_features_used"] & agent3_pair_share.notna()
+    context["pair_count"] = internal_pair_count
+    context["pair_share"] = internal_pair_share
+    context.loc[has_agent3_count, "pair_count"] = agent3_pair_count[has_agent3_count]
+    context.loc[has_agent3_share, "pair_share"] = agent3_pair_share[has_agent3_share]
+    context["pair_metric_source"] = "agent2_internal"
+    context.loc[has_agent3_count | has_agent3_share, "pair_metric_source"] = "agent3_features"
+    return context
+
+
+def _apply_contract_context_flag(
     *,
     scores: Any,
     contracts: Any,
@@ -354,60 +529,68 @@ def _apply_batch_flag(
     updated = scores.copy()
     new_records: list[dict[str, Any]] = []
     for _, row in affected.iterrows():
-        buyer_key = str(row["_buyer_key"])
-        supplier_key = str(row["_supplier_key"])
-        mask = contracts["buyer_name"].astype("string").fillna("").map(_normalize_key).eq(
-            buyer_key
-        ) & contracts["supplier_name"].astype("string").fillna("").map(_normalize_key).eq(
-            supplier_key
-        )
-        row_indices = list(contracts.index[mask])
-        if not row_indices:
+        contract_key = str(row["contract_key_canon"])
+        row_indices = list(contracts.index[contracts["contract_key_canon"].eq(contract_key)])
+        score_indices = list(updated.index[updated["contract_key_canon"].eq(contract_key)])
+        if not row_indices or not score_indices:
             continue
-        for index in row_indices:
-            current_flags = (
-                json.loads(updated.at[index, "top_flags"]) if updated.at[index, "top_flags"] else []
+        contract_index = row_indices[0]
+        score_index = score_indices[0]
+        current_flags = (
+            json.loads(updated.at[score_index, "top_flags"])
+            if updated.at[score_index, "top_flags"]
+            else []
+        )
+        if flag_code in current_flags:
+            continue
+        current_flags.append(flag_code)
+        updated.at[score_index, "flags_count"] = int(updated.at[score_index, "flags_count"]) + 1
+        updated.at[score_index, "risk_score"] = min(
+            float(updated.at[score_index, "risk_score"]) + RULE_METADATA[flag_code]["weight"],
+            100.0,
+        )
+        updated.at[score_index, "risk_level"] = _risk_level_from_score(
+            float(updated.at[score_index, "risk_score"])
+        )
+        updated.at[score_index, "top_flags"] = json.dumps(current_flags, ensure_ascii=False)
+        evidence_fields = [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source",
+        ]
+        if row.get("pair_metric_source") == "agent3_features":
+            evidence_fields.extend(
+                [
+                    "agent3.buyer_supplier_recurrence",
+                    "agent3.buyer_supplier_contract_share",
+                ]
             )
-            if flag_code in current_flags:
-                continue
-            current_flags.append(flag_code)
-            updated.at[index, "flags_count"] = int(updated.at[index, "flags_count"]) + 1
-            updated.at[index, "risk_score"] = min(
-                float(updated.at[index, "risk_score"]) + RULE_METADATA[flag_code]["weight"],
-                100.0,
-            )
-            updated.at[index, "risk_level"] = _risk_level_from_score(
-                float(updated.at[index, "risk_score"])
-            )
-            updated.at[index, "top_flags"] = json.dumps(current_flags, ensure_ascii=False)
-            new_records.append(
-                _build_flag_record(
-                    contract_key=str(contracts.at[index, "contract_key_canon"]),
+        new_records.append(
+            _build_flag_record(
+                contract_key=contract_key,
+                flag_code=flag_code,
+                severity=_severity_for(flag_code),
+                confidence=1.0,
+                evidence_fields=evidence_fields,
+                evidence_text=_evidence_text_for_batch(
                     flag_code=flag_code,
-                    severity=_severity_for(flag_code),
-                    confidence=1.0,
-                    evidence_fields=[
-                        "buyer_name",
-                        "supplier_name",
-                        "pair_count",
-                        "pair_share",
-                        "buyer_total_awarded",
-                        "pair_awarded",
-                    ],
-                    evidence_text=_evidence_text_for_batch(
-                        flag_code=flag_code,
-                        buyer_name=str(contracts.at[index, "buyer_name"]),
-                        supplier_name=str(contracts.at[index, "supplier_name"]),
-                        pair_count=int(row["pair_count"]),
-                        pair_share=float(row["pair_share"]),
-                        buyer_total_awarded=row["buyer_total_awarded"],
-                        pair_awarded=row["pair_awarded"],
-                    ),
-                    rule_version=RULE_VERSIONS[flag_code],
-                    created_at=created_at,
-                    source_snapshot_id=snapshot_id,
-                )
+                    buyer_name=str(contracts.at[contract_index, "buyer_name"]),
+                    supplier_name=str(contracts.at[contract_index, "supplier_name"]),
+                    pair_count=_int_or_none(row.get("pair_count")) or 0,
+                    pair_share=_coerce_float(row.get("pair_share")) or 0.0,
+                    buyer_total_awarded=row.get("buyer_total_awarded"),
+                    pair_awarded=row.get("pair_awarded"),
+                    metric_source=str(row.get("pair_metric_source") or "agent2_internal"),
+                ),
+                rule_version=RULE_VERSIONS[flag_code],
+                created_at=created_at,
+                source_snapshot_id=snapshot_id,
             )
+        )
     return updated, new_records
 
 
@@ -574,17 +757,32 @@ def _evidence_text_for_batch(
     pair_share: float,
     buyer_total_awarded: Any,
     pair_awarded: Any,
+    metric_source: str = "agent2_internal",
 ) -> str:
+    source_text = (
+        "segun las features de Agent3"
+        if metric_source == "agent3_features"
+        else "en el canonico"
+    )
     if flag_code == RF03_CODE:
         return (
             f"La pareja comprador-proveedor '{buyer_name}' / '{supplier_name}' se repite "
-            f"{pair_count} veces en el canonico."
+            f"{pair_count} veces {source_text}."
         )
+    pair_awarded_text = _format_eur(pair_awarded)
+    buyer_total_text = _format_eur(buyer_total_awarded)
     return (
         f"La pareja comprador-proveedor '{buyer_name}' / '{supplier_name}' concentra "
-        f"{pair_awarded:.2f} EUR sobre {buyer_total_awarded:.2f} EUR del comprador "
-        f"({pair_share:.2%})."
+        f"{pair_awarded_text} sobre {buyer_total_text} del comprador "
+        f"({pair_share:.2%}), {source_text}."
     )
+
+
+def _format_eur(value: Any) -> str:
+    converted = _coerce_float(value)
+    if converted is None:
+        return "importe no disponible"
+    return f"{converted:.2f} EUR"
 
 
 def _stable_flag_id(contract_key: str, flag_code: str, rule_version: str) -> str:

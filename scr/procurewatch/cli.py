@@ -354,6 +354,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     agent2_mvp_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
     agent2_mvp_parser.add_argument("--deviation-threshold", type=float, default=0.10)
+    agent2_mvp_parser.add_argument(
+        "--agent3-features-path",
+        type=Path,
+        default=Path("data/processed/agent3_agent2_features.parquet"),
+    )
     agent3_parser = subparsers.add_parser(
         "run-agent3",
         help="Genera nodos, aristas y metricas locales del agente 3 desde el canonico.",
@@ -765,6 +770,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             input_path=args.input,
             output_dir=args.output_dir,
             deviation_threshold=args.deviation_threshold,
+            agent3_features_path=args.agent3_features_path,
         )
         print("Agente 2 MVP ejecutado")
         print(f"- Contratos evaluados: {report['rows']}")

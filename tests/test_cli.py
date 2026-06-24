@@ -51,6 +51,10 @@ class CliTests(unittest.TestCase):
             Path("data/processed/agent2_contracts_canonical.parquet"),
         )
         self.assertEqual(kwargs["output_dir"], Path("data/processed"))
+        self.assertEqual(
+            kwargs["agent3_features_path"],
+            Path("data/processed/agent3_agent2_features.parquet"),
+        )
 
 
 if __name__ == "__main__":

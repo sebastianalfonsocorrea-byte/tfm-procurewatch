@@ -150,6 +150,8 @@ class Agent2Tests(unittest.TestCase):
         )
 
         self.assertTrue((scores["evaluation_status"] == "evaluado").all())
+        self.assertFalse(scores["agent3_features_used"].any())
+        self.assertEqual(report["agent3_features_status"], "ignored")
         self.assertIn("source_snapshot_id", report)
         self.assertTrue((output_dir / "agent2_run_report.json").exists())
 
@@ -187,6 +189,73 @@ class Agent2Tests(unittest.TestCase):
         self.assertEqual(scores.loc[0, "risk_score"], 30.0)
         self.assertEqual(scores.loc[0, "risk_level"], "medio")
         self.assertCountEqual(json.loads(scores.loc[0, "top_flags"]), ["RF-01", "RF-06"])
+
+    def test_run_agent2_mvp_uses_agent3_features_for_rf03_rf04(self) -> None:
+        import pandas as pd
+
+        workspace = _test_workspace("mvp-agent3-features")
+        input_path = workspace / "canonical.parquet"
+        features_path = workspace / "agent3_agent2_features.parquet"
+        output_dir = workspace / "processed"
+        pd.DataFrame(_mvp_agent3_feature_contracts()).to_parquet(input_path, index=False)
+        pd.DataFrame(
+            [
+                {
+                    "contract_key_canon": "contract-agent3-target",
+                    "buyer_supplier_recurrence": 3,
+                    "buyer_supplier_contract_share": 0.75,
+                    "agent3_version": "test-agent3",
+                }
+            ]
+        ).to_parquet(features_path, index=False)
+
+        report = run_agent2_mvp(
+            input_path=input_path,
+            output_dir=output_dir,
+            agent3_features_path=features_path,
+        )
+
+        flags = pd.read_parquet(report["outputs"]["risk_flags"])
+        scores = pd.read_parquet(report["outputs"]["risk_scores"]).set_index("contract_key_canon")
+        target_score = scores.loc["contract-agent3-target"]
+        target_flags = flags[flags["contract_key_canon"].eq("contract-agent3-target")]
+
+        self.assertEqual(report["agent3_features_status"], "used")
+        self.assertEqual(report["agent3_features_rows"], 1)
+        self.assertEqual(report["agent3_features_matched_rows"], 1)
+        self.assertEqual(report["flag_breakdown"], {"RF-03": 1, "RF-04": 1})
+        self.assertTrue(bool(target_score["agent3_features_used"]))
+        self.assertEqual(target_score["risk_score"], 40.0)
+        self.assertEqual(target_score["risk_level"], "medio")
+        self.assertCountEqual(json.loads(target_score["top_flags"]), ["RF-03", "RF-04"])
+        self.assertCountEqual(target_flags["flag_code"].tolist(), ["RF-03", "RF-04"])
+        self.assertTrue(target_flags["evidence_text"].str.contains("Agent3").all())
+        self.assertTrue(target_flags["evidence_fields"].str.contains("agent3").all())
+
+    def test_run_agent2_mvp_tolerates_missing_agent3_features_path(self) -> None:
+        import pandas as pd
+
+        workspace = _test_workspace("mvp-agent3-missing")
+        input_path = workspace / "canonical.parquet"
+        output_dir = workspace / "processed"
+        pd.DataFrame(_mvp_agent3_feature_contracts()).to_parquet(input_path, index=False)
+
+        report = run_agent2_mvp(
+            input_path=input_path,
+            output_dir=output_dir,
+            agent3_features_path=workspace / "missing_agent3_features.parquet",
+        )
+
+        scores = pd.read_parquet(report["outputs"]["risk_scores"])
+        flags = pd.read_parquet(report["outputs"]["risk_flags"])
+
+        self.assertEqual(report["agent3_features_status"], "missing")
+        self.assertEqual(report["agent3_features_rows"], 0)
+        self.assertEqual(report["agent3_features_matched_rows"], 0)
+        self.assertTrue(report["agent3_features_warnings"])
+        self.assertEqual(report["activated_flags"], 0)
+        self.assertTrue(flags.empty)
+        self.assertFalse(scores["agent3_features_used"].any())
 
 
 def _contracts() -> list[dict[str, object]]:
@@ -275,6 +344,33 @@ def _mvp_contracts() -> list[dict[str, object]]:
             "procedure": "Menor",
             "publication_date": "2024-04-10",
             "award_date": "2024-04-09",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 95.0,
+        },
+    ]
+
+
+def _mvp_agent3_feature_contracts() -> list[dict[str, object]]:
+    return [
+        {
+            "contract_key_canon": "contract-agent3-target",
+            "buyer_name": "Organismo Agent3",
+            "supplier_name": "Proveedor Concentrado",
+            "source_tender_id": "t-agent3",
+            "procedure": "Abierto",
+            "publication_date": "2024-05-01",
+            "award_date": "2024-05-10",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 95.0,
+        },
+        {
+            "contract_key_canon": "contract-agent3-filler",
+            "buyer_name": "Organismo Agent3",
+            "supplier_name": "Proveedor Alternativo",
+            "source_tender_id": "t-agent3",
+            "procedure": "Abierto",
+            "publication_date": "2024-05-02",
+            "award_date": "2024-05-12",
             "estimated_value_eur": 100.0,
             "awarded_value_eur": 95.0,
         },
