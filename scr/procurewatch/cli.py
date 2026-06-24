@@ -408,6 +408,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("data/raw/opentender/data-es-ocds-json.zip"),
     )
+    batch_parser.add_argument("--processed-dir", type=Path, default=Path("data/processed"))
+    batch_parser.add_argument(
+        "--manifest-path",
+        type=Path,
+        default=Path("config/place_sources.json"),
+    )
+    batch_parser.add_argument(
+        "--batch-state-path",
+        type=Path,
+        default=Path("data/processed/run_batch_state.json"),
+    )
+    batch_parser.add_argument(
+        "--batch-manifest-dir",
+        type=Path,
+        default=Path("data/manifest/batches"),
+    )
+    batch_parser.add_argument("--datos-gob-dir", type=Path, default=Path("data/raw/datos_gob"))
+    batch_parser.add_argument("--raw-dir", type=Path, default=Path("data/raw"))
+    batch_parser.add_argument("--cleanup-downloads", action="store_true")
 
     args = parser.parse_args(argv)
     if args.command == "doctor":
@@ -829,15 +848,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             include_datos_gob=not args.no_datos_gob,
             boe_input=args.boe_input,
             open_tender_input=args.opentender_input,
+            processed_dir=args.processed_dir,
+            manifest_path=args.manifest_path,
+            batch_state_path=args.batch_state_path,
+            batch_manifest_dir=args.batch_manifest_dir,
+            datos_gob_dir=args.datos_gob_dir,
+            raw_dir=args.raw_dir,
+            cleanup_downloads=args.cleanup_downloads,
         )
 
         print(f"run-batch [{result['status']}]")
         print(f"batch_id: {result['batch_id']}")
         print(f"agent1_executed: {result['agent1_executed']}")
         print(f"changed_sources: {result['changed_sources']}")
+        print(f"missing_required_inputs: {result['missing_required_inputs']}")
+        print(f"manifest: {result['batch_manifest_path']}")
         if result.get("agent1_run_report_path"):
             print(f"agent1_report: {result['agent1_run_report_path']}")
-        return 0
+        return 0 if result["status"] in {"executed", "skipped"} else 1
 
     parser.print_help()
     return 0

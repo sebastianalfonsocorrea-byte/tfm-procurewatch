@@ -56,6 +56,52 @@ class CliTests(unittest.TestCase):
             Path("data/processed/agent3_agent2_features.parquet"),
         )
 
+    def test_run_batch_passes_paths_and_prints_manifest(self) -> None:
+        with mock.patch("procurewatch.batch.run_batch") as run_batch_mock:
+            run_batch_mock.return_value = {
+                "status": "executed",
+                "batch_id": "weekly_test",
+                "agent1_executed": True,
+                "changed_sources": ["boe_raw"],
+                "missing_required_inputs": [],
+                "batch_manifest_path": "data/manifest/batches/weekly/weekly_test/manifest.json",
+            }
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = main(
+                    [
+                        "run-batch",
+                        "--run-mode",
+                        "weekly",
+                        "--processed-dir",
+                        "tmp/processed",
+                        "--manifest-path",
+                        "tmp/place_sources.json",
+                        "--batch-state-path",
+                        "tmp/state.json",
+                        "--batch-manifest-dir",
+                        "tmp/manifests",
+                        "--datos-gob-dir",
+                        "tmp/datos_gob",
+                        "--raw-dir",
+                        "tmp/raw",
+                        "--cleanup-downloads",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("run-batch [executed]", output.getvalue())
+        self.assertIn("manifest:", output.getvalue())
+        run_batch_mock.assert_called_once()
+        kwargs = run_batch_mock.call_args.kwargs
+        self.assertEqual(kwargs["processed_dir"], Path("tmp/processed"))
+        self.assertEqual(kwargs["manifest_path"], Path("tmp/place_sources.json"))
+        self.assertEqual(kwargs["batch_state_path"], Path("tmp/state.json"))
+        self.assertEqual(kwargs["batch_manifest_dir"], Path("tmp/manifests"))
+        self.assertEqual(kwargs["datos_gob_dir"], Path("tmp/datos_gob"))
+        self.assertEqual(kwargs["raw_dir"], Path("tmp/raw"))
+        self.assertTrue(kwargs["cleanup_downloads"])
+
 
 if __name__ == "__main__":
     unittest.main()

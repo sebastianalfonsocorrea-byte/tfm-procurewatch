@@ -43,10 +43,6 @@ def run_batch(
 
     if run_mode not in {"weekly", "monthly"}:
         raise ValueError(f"run_mode invalido: {run_mode}")
-    if not boe_input.exists():
-        raise FileNotFoundError(f"No existe BOE raw: {boe_input}")
-    if not open_tender_input.exists():
-        raise FileNotFoundError(f"No existe OpenTender raw: {open_tender_input}")
 
     started_at = datetime.now(UTC)
     batch_id = f"{run_mode}_{started_at.strftime('%Y%m%dT%H%M%SZ')}"
@@ -55,29 +51,121 @@ def run_batch(
     )
     place_download = bool(place_download if place_download is not None else run_mode == "monthly")
 
-    # Snapshots de entradas principales
+    warnings: list[str] = []
+    health_checks: list[dict[str, Any]] = []
     core_snapshots: list[dict[str, Any]] = [
         _snapshot_file("boe_raw", boe_input),
         _snapshot_file("opentender_raw", open_tender_input),
     ]
-
-    # Snapshots de PLACE desde el manifiesto de fuentes.
-    place_targets = place_module.build_targets(
-        place_module.load_manifest(manifest_path),
-        year=year,
-        dataset_ids=set(requested_place_datasets),
-        include_docs=False,
-        include_data=True,
-        raw_dir=raw_dir,
+    health_checks.extend(
+        [
+            _health_check_from_snapshot(
+                core_snapshots[0],
+                label="BOE raw",
+                required=True,
+                blocking=True,
+            ),
+            _health_check_from_snapshot(
+                core_snapshots[1],
+                label="OpenTender raw",
+                required=True,
+                blocking=True,
+            ),
+        ]
     )
-    for target in place_targets:
-        if target.kind == "dataset":
-            core_snapshots.append(_snapshot_file(f"place::{target.id}", target.output_path))
 
-    # Snapshots de apoyo con datos.gob.es para corroboración/fuente complementaria.
-    datos_gob_snapshots = _snapshot_directory(
-        prefix="datos_gob",
-        base_dir=datos_gob_dir,
+    place_targets: list[Any] = []
+    if not manifest_path.exists():
+        warnings.append(f"No existe manifiesto PLACE: {manifest_path}")
+        health_checks.append(
+            {
+                "source_id": "place_manifest",
+                "label": "PLACE manifest",
+                "path": str(manifest_path),
+                "required": False,
+                "blocking": False,
+                "exists": False,
+                "status": "warning",
+                "message": "No se pueden evaluar targets PLACE sin manifiesto.",
+            }
+        )
+    else:
+        try:
+            place_targets = place_module.build_targets(
+                place_module.load_manifest(manifest_path),
+                year=year,
+                dataset_ids=set(requested_place_datasets),
+                include_docs=False,
+                include_data=True,
+                raw_dir=raw_dir,
+            )
+            health_checks.append(
+                {
+                    "source_id": "place_manifest",
+                    "label": "PLACE manifest",
+                    "path": str(manifest_path),
+                    "required": False,
+                    "blocking": False,
+                    "exists": True,
+                    "status": "ok",
+                    "message": "Manifiesto PLACE legible.",
+                }
+            )
+        except (KeyError, json.JSONDecodeError, OSError, ValueError) as exc:
+            warnings.append(f"No se pudo leer manifiesto PLACE {manifest_path}: {exc}")
+            health_checks.append(
+                {
+                    "source_id": "place_manifest",
+                    "label": "PLACE manifest",
+                    "path": str(manifest_path),
+                    "required": False,
+                    "blocking": False,
+                    "exists": False,
+                    "status": "warning",
+                    "message": str(exc),
+                }
+            )
+
+    for target in place_targets:
+        if target.kind != "dataset":
+            continue
+        snapshot = _snapshot_file(f"place::{target.id}", target.output_path)
+        core_snapshots.append(snapshot)
+        blocking = not place_download
+        health_check = _health_check_from_snapshot(
+            snapshot,
+            label=f"PLACE dataset {target.id}",
+            required=blocking,
+            blocking=blocking,
+        )
+        if not snapshot["exists"] and place_download:
+            health_check["status"] = "planned_download"
+            health_check["message"] = (
+                "No existe localmente; se permite descarga PLACE durante run_agent1."
+            )
+        elif not snapshot["exists"]:
+            warnings.append(f"Falta PLACE local {target.id} y --place-download no esta activado.")
+        health_checks.append(health_check)
+
+    datos_gob_snapshots = _snapshot_directory(prefix="datos_gob", base_dir=datos_gob_dir)
+    health_checks.append(
+        {
+            "source_id": "datos_gob",
+            "label": "datos.gob.es opcional",
+            "path": str(datos_gob_dir),
+            "required": False,
+            "blocking": False,
+            "exists": datos_gob_dir.exists(),
+            "status": "ok" if datos_gob_dir.exists() or not include_datos_gob else "warning",
+            "message": (
+                f"{len(datos_gob_snapshots)} archivos detectados."
+                if datos_gob_dir.exists()
+                else "Directorio opcional no disponible."
+            ),
+        }
+    )
+    missing_required_inputs = _deduplicate_missing_inputs(
+        _missing_required_from_health_checks(health_checks)
     )
 
     previous_state = _load_batch_state(batch_state_path)
@@ -100,9 +188,11 @@ def run_batch(
                 changed_sources.append(snapshot["source_id"])
 
     source_has_changes = bool(changed_sources)
-
-    # Cobertura semanal: evita re-ejecuciones completas si todo igual.
-    run_agent1_now = force or run_mode == "monthly" or source_has_changes
+    has_blocking_inputs = bool(missing_required_inputs)
+    run_agent1_now = (
+        not has_blocking_inputs
+        and (force or run_mode == "monthly" or source_has_changes)
+    )
 
     run_agent1_report: dict[str, Any] | None = None
     if run_agent1_now:
@@ -124,9 +214,15 @@ def run_batch(
             place_download=place_download,
             place_datasets=requested_place_datasets,
         )
-    else:
-        run_agent1_report = None
 
+    status = (
+        "blocked_missing_inputs"
+        if has_blocking_inputs
+        else "executed"
+        if run_agent1_now
+        else "skipped"
+    )
+    batch_manifest_path = batch_manifest_dir / run_mode / batch_id / "manifest.json"
     batch_manifest = {
         "batch_id": batch_id,
         "run_mode": run_mode,
@@ -142,26 +238,34 @@ def run_batch(
             "include_datos_gob": include_datos_gob,
         },
         "source_snapshots": core_snapshots + (datos_gob_snapshots if include_datos_gob else []),
+        "health_checks": health_checks,
+        "missing_required_inputs": missing_required_inputs,
+        "warnings": warnings,
         "changed_sources": sorted(set(changed_sources)),
         "source_has_changes": source_has_changes,
         "agent1_executed": run_agent1_now,
-        "status": "executed" if run_agent1_now else "skipped",
+        "status": status,
         "agent1_report": run_agent1_report,
+        "batch_state_path": str(batch_state_path),
+        "batch_manifest_path": str(batch_manifest_path),
+        "derived_rebuild_plan": _build_derived_rebuild_plan(
+            run_mode=run_mode,
+            processed_dir=processed_dir,
+            agent1_executed=run_agent1_now,
+            blocked=has_blocking_inputs,
+        ),
     }
     if run_agent1_report is not None:
         batch_manifest["agent1_run_report_path"] = run_agent1_report.get("agent1_run_report_path")
 
-    completed_at = datetime.now(UTC)
-    batch_manifest["completed_at_utc"] = completed_at.isoformat()
+    batch_manifest["completed_at_utc"] = datetime.now(UTC).isoformat()
 
-    previous_state_path = batch_state_path
-    previous_state_path.parent.mkdir(parents=True, exist_ok=True)
-    previous_state_path.write_text(
+    batch_state_path.parent.mkdir(parents=True, exist_ok=True)
+    batch_state_path.write_text(
         json.dumps(batch_manifest, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
-    batch_manifest_path = batch_manifest_dir / run_mode / batch_id / "manifest.json"
     batch_manifest_path.parent.mkdir(parents=True, exist_ok=True)
     batch_manifest_path.write_text(
         json.dumps(batch_manifest, indent=2, ensure_ascii=False),
@@ -169,6 +273,72 @@ def run_batch(
     )
 
     return batch_manifest
+
+
+def _health_check_from_snapshot(
+    snapshot: dict[str, Any],
+    *,
+    label: str,
+    required: bool,
+    blocking: bool,
+) -> dict[str, Any]:
+    exists = bool(snapshot["exists"])
+    return {
+        "source_id": snapshot["source_id"],
+        "label": label,
+        "path": snapshot["path"],
+        "required": required,
+        "blocking": blocking,
+        "exists": exists,
+        "status": "ok" if exists else "missing",
+        "message": "Disponible." if exists else "No existe en ruta local.",
+    }
+
+
+def _missing_required_from_health_checks(
+    health_checks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "source_id": str(check["source_id"]),
+            "label": str(check["label"]),
+            "path": str(check["path"]),
+            "message": str(check["message"]),
+        }
+        for check in health_checks
+        if check.get("required") and check.get("blocking") and not check.get("exists")
+    ]
+
+
+def _deduplicate_missing_inputs(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduplicated: dict[str, dict[str, Any]] = {}
+    for item in items:
+        deduplicated[item["source_id"]] = item
+    return list(deduplicated.values())
+
+
+def _build_derived_rebuild_plan(
+    *,
+    run_mode: str,
+    processed_dir: Path,
+    agent1_executed: bool,
+    blocked: bool,
+) -> dict[str, Any]:
+    canonical_path = processed_dir / "agent2_contracts_canonical.parquet"
+    if blocked:
+        downstream_status = "blocked_by_missing_inputs"
+    elif run_mode == "monthly":
+        downstream_status = "planned_if_canonical_exists"
+    else:
+        downstream_status = "not_planned_for_weekly_batch"
+    return {
+        "agent1": "executed" if agent1_executed else "blocked" if blocked else "skipped",
+        "agent2_mvp": downstream_status,
+        "agent3": downstream_status,
+        "agent4": "manual_or_demo_only",
+        "canonical_path": str(canonical_path),
+        "canonical_exists": canonical_path.exists(),
+    }
 
 
 def _snapshot_file(
@@ -259,6 +429,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--boe-input", type=Path, default=DEFAULT_BOE_INPUT)
     parser.add_argument("--opentender-input", type=Path, default=DEFAULT_OPEN_TENDER_INPUT)
     parser.add_argument("--opentender-download-url", type=str, default=None)
+    parser.add_argument("--processed-dir", type=Path, default=DEFAULT_PROCESSED_DIR)
+    parser.add_argument("--manifest-path", type=Path, default=DEFAULT_PLACE_MANIFEST)
+    parser.add_argument("--batch-state-path", type=Path, default=DEFAULT_BATCH_STATE_PATH)
+    parser.add_argument("--batch-manifest-dir", type=Path, default=DEFAULT_BATCH_MANIFEST_DIR)
+    parser.add_argument("--datos-gob-dir", type=Path, default=DEFAULT_DATOS_GOB_DIR)
     parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
     parser.add_argument("--cleanup-downloads", action="store_true")
     args = parser.parse_args(argv)
@@ -274,6 +449,11 @@ def main(argv: list[str] | None = None) -> int:
         boe_input=args.boe_input,
         open_tender_input=args.opentender_input,
         open_tender_download_url=args.opentender_download_url,
+        processed_dir=args.processed_dir,
+        manifest_path=args.manifest_path,
+        batch_state_path=args.batch_state_path,
+        batch_manifest_dir=args.batch_manifest_dir,
+        datos_gob_dir=args.datos_gob_dir,
         raw_dir=args.raw_dir,
         cleanup_downloads=args.cleanup_downloads,
     )
@@ -284,6 +464,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"run_mode: {result['run_mode']}")
     print(f"agent1_executed: {result['agent1_executed']}")
     print(f"changed_sources: {result['changed_sources']}")
+    print(f"missing_required_inputs: {result['missing_required_inputs']}")
+    print(f"manifest: {result['batch_manifest_path']}")
     if result.get("agent1_run_report_path"):
         print(f"agent1_report: {result['agent1_run_report_path']}")
     return 0 if status in {"executed", "skipped"} else 1
