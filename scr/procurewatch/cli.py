@@ -334,6 +334,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=Path("data/processed/contracts_analytical.parquet"),
     )
     agent1_report_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
+    agent1_source_diagnostics_parser = subparsers.add_parser(
+        "report-agent1-source-diagnostics",
+        help="Regenera cobertura, matching exploratorio y readiness institucional de Agent1.",
+    )
+    agent1_source_diagnostics_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed"),
+    )
+    agent1_source_diagnostics_parser.add_argument("--cpv-prefix", default="71")
+    agent1_source_diagnostics_parser.add_argument("--year", type=int, default=2024)
     mvp_parser = subparsers.add_parser(
         "run-mvp",
         help="Ejecuta el flujo MVP Agent1 con salida analitica y PostgreSQL opcional.",
@@ -440,6 +451,38 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--no-regenerate",
         action="store_true",
         help="Valida artefactos existentes sin regenerar primero la demo integrada.",
+    )
+    benchmark_parser = subparsers.add_parser(
+        "run-benchmark",
+        help="Ejecuta benchmark objetivo de Agent1-Agent4 e integracion.",
+    )
+    benchmark_parser.add_argument(
+        "--processed-dir",
+        type=Path,
+        default=Path("data/processed_sample"),
+    )
+    benchmark_parser.add_argument(
+        "--demo-dir",
+        type=Path,
+        default=Path("data/processed/agent3_agent4_demo_2026_06_23"),
+    )
+    benchmark_parser.add_argument(
+        "--agent4-evaluation",
+        type=Path,
+        default=Path("data/processed/agent4_evaluation_report.json"),
+    )
+    benchmark_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed/benchmark"),
+    )
+    benchmark_parser.add_argument("--cpv-prefix", default="71")
+    benchmark_parser.add_argument("--year", type=int, default=2024)
+    benchmark_parser.add_argument("--include-dashboard", action="store_true")
+    benchmark_parser.add_argument(
+        "--regenerate",
+        action="store_true",
+        help="Regenera diagnostico Agent1, evaluacion Agent4 y demo integrada antes de medir.",
     )
     agent3_neo4j_parser = subparsers.add_parser(
         "agent3-load-neo4j",
@@ -684,8 +727,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Precision@k media: {summary['average_precision_at_k']}")
         print(f"- Recall documentos esperado: {summary['average_expected_document_recall']}")
         print(f"- Cobertura citas media: {summary['average_citation_coverage']}")
+        print(f"- Validacion practica: {summary.get('practical_validation_pass_ratio')}")
         print(f"- Warnings: {summary['warnings_count']}")
         print(f"- Output: {args.output}")
+        outputs = report.get("outputs", {}) if isinstance(report, dict) else {}
+        if outputs.get("markdown"):
+            print(f"- Markdown: {outputs['markdown']}")
         return 0
     if args.command == "make-agent1-sample":
         from .samples import make_agent1_sample
@@ -868,6 +915,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Estado global: {report['overall_status']}")
         print(f"- Output JSON: {report['outputs']['json']}")
         return 0
+    if args.command == "report-agent1-source-diagnostics":
+        from .agent1 import build_source_coverage
+
+        coverage = build_source_coverage(
+            output_dir=args.output_dir,
+            cpv_prefix=args.cpv_prefix,
+            year=args.year,
+        )
+        print("Diagnostico de fuentes Agent1 generado")
+        print(f"- Universo: {coverage['universe_contract_keys']}")
+        print(
+            "- Intersecciones exactas: "
+            f"BOE/PLACE={coverage['intersection_boe_place']}, "
+            f"BOE/OpenTender={coverage['intersection_boe_opentender']}, "
+            f"PLACE/OpenTender={coverage['intersection_place_opentender']}"
+        )
+        print(f"- Matching JSON: {coverage['matching_diagnostics_path']}")
+        print(f"- Analisis Markdown: {coverage['source_coverage_analysis_markdown_path']}")
+        return 0
     if args.command == "run-agent2":
         from .agent2 import run_agent2
 
@@ -960,6 +1026,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Headless exceptions: {len(report['streamlit_headless']['exceptions'])}")
         print(f"- Reporte: {report['artifacts']['dashboard_validation_report']}")
         return 0 if report["status"] == "ready" else 1
+    if args.command == "run-benchmark":
+        from .benchmark import run_benchmark
+
+        report = run_benchmark(
+            processed_dir=args.processed_dir,
+            demo_dir=args.demo_dir,
+            output_dir=args.output_dir,
+            agent4_evaluation_path=args.agent4_evaluation,
+            include_dashboard=args.include_dashboard,
+            regenerate=args.regenerate,
+            cpv_prefix=args.cpv_prefix,
+            year=args.year,
+        )
+        print(f"Benchmark ProcureWatch [{report['status']}]")
+        print(f"- Metricas: {report['summary']['metrics_count']}")
+        print(f"- Estados: {report['summary']['status_counts']}")
+        print(f"- Output JSON: {report['outputs']['json']}")
+        print(f"- Output Markdown: {report['outputs']['markdown']}")
+        return 0 if report["status"] in {"pass", "warning"} else 1
     if args.command == "agent3-load-neo4j":
         from .agent3.neo4j_store import (
             DEFAULT_NEO4J_PASSWORD,

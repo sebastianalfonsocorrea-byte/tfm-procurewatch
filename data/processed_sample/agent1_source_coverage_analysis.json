@@ -1,0 +1,186 @@
+{
+  "dataset": "agent1_source_coverage_analysis",
+  "schema_version": "0.1.0",
+  "generated_at_utc": "2026-07-14T11:51:20.747858+00:00",
+  "source_key_counts": {
+    "boe": 976,
+    "place": 1587,
+    "opentender": 874,
+    "universe": 3437
+  },
+  "exact_intersections": {
+    "boe_place": 0,
+    "boe_opentender": 0,
+    "place_opentender": 0
+  },
+  "candidate_counts": {
+    "boe_place": 0,
+    "boe_opentender": 0,
+    "place_opentender": 2
+  },
+  "candidate_class_counts": {
+    "boe_place": {},
+    "boe_opentender": {},
+    "place_opentender": {
+      "weak_candidate": 2
+    }
+  },
+  "component_coverage": {
+    "boe": {
+      "rows": 1000,
+      "contract_key_canon": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "buyer": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "date": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "title": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "amount": {
+        "present": 992,
+        "coverage_ratio": 0.992
+      }
+    },
+    "place": {
+      "rows": 1588,
+      "contract_key_canon": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      },
+      "buyer": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      },
+      "date": {
+        "present": 0,
+        "coverage_ratio": 0.0
+      },
+      "title": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      },
+      "amount": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      }
+    },
+    "opentender": {
+      "rows": 874,
+      "contract_key_canon": {
+        "present": 874,
+        "coverage_ratio": 1.0
+      },
+      "buyer": {
+        "present": 874,
+        "coverage_ratio": 1.0
+      },
+      "date": {
+        "present": 838,
+        "coverage_ratio": 0.95881
+      },
+      "title": {
+        "present": 874,
+        "coverage_ratio": 1.0
+      },
+      "amount": {
+        "present": 866,
+        "coverage_ratio": 0.990847
+      }
+    }
+  },
+  "interpretation": {
+    "coverage_reading": "La cobertura actual es aditiva por fuente: el universo canonico conserva registros de BOE, PLACE y OpenTender, pero no acredita solapamiento exacto entre ellas.",
+    "matching_reading": "Los candidatos aproximados son utiles como cola de revision, pero no deben usarse para fusionar contratos sin validacion adicional.",
+    "robustness_impact": [
+      "El scoring por fuente individual sigue siendo reproducible y trazable.",
+      "La ausencia de intersecciones limita la triangulacion entre plataformas.",
+      "Los historiales de comprador-proveedor pueden quedar fragmentados por fuente.",
+      "Los indicadores que dependen de consolidacion transversal deben tratarse como exploratorios."
+    ],
+    "methodological_contribution": "El resultado muestra que integrar datos abiertos de contratacion no depende solo de llevarlos a un esquema comun: requiere una politica explicita de identificadores, normalizacion y validacion de matches.",
+    "safe_use_boundary": "El pipeline puede alimentar analisis por fuente, scoring exploratorio y dashboard trazable; no debe presentarse como contraste institucional consolidado entre fuentes."
+  },
+  "tfm_context": {
+    "scope_table": [
+      {
+        "dimension": "Implementado",
+        "status": "cerrado para el TFM",
+        "reading": "Ingesta, normalizacion canonica, trazabilidad de fuente y diagnostico de cobertura sobre 3437 claves."
+      },
+      {
+        "dimension": "Evaluado",
+        "status": "medido con evidencias",
+        "reading": "Cobertura por fuente, duplicados, intersecciones exactas y candidatos aproximados de matching."
+      },
+      {
+        "dimension": "Resultado critico",
+        "status": "warning metodologico",
+        "reading": "Las intersecciones exactas son 0; la cobertura es aditiva, no transversal."
+      },
+      {
+        "dimension": "Extension futura",
+        "status": "fuera del cierre actual",
+        "reading": "Calibrar una politica de matching con muestra manual y decisiones auditables antes de fusionar fuentes."
+      }
+    ],
+    "analytical_discussion": [
+      "Para un TFM, el valor del resultado no esta solo en obtener mas cobertura, sino en demostrar que cobertura por fuente y cobertura transversal son propiedades distintas.",
+      "Con intersecciones exactas nulas, el sistema sigue siendo robusto para analisis reproducible por fuente, pero pierde capacidad de triangulacion entre portales.",
+      "Forzar fusiones aproximadas mejoraria artificialmente algunos indicadores, pero reduciria trazabilidad y aumentaria riesgo de falsos matches."
+    ],
+    "institutional_implications": [
+      "No se debe usar como registro consolidado unico sin validacion adicional.",
+      "Los historiales comprador-proveedor pueden quedar fragmentados por fuente.",
+      "Las metricas transversales deben marcarse como exploratorias.",
+      "Una version institucional necesita reglas de matching revisables y auditables."
+    ]
+  },
+  "institutional_readiness": [
+    {
+      "component": "ingesta_y_trazabilidad_por_fuente",
+      "status": "green",
+      "evidence": "Hay claves canonicas generadas para BOE, PLACE y OpenTender."
+    },
+    {
+      "component": "cobertura_canonica_agent2",
+      "status": "green",
+      "evidence": "Universo canonico: 3437 claves."
+    },
+    {
+      "component": "matching_transversal_validado",
+      "status": "red",
+      "evidence": "Las intersecciones exactas entre fuentes son 0."
+    },
+    {
+      "component": "cola_de_revision_de_matches",
+      "status": "yellow",
+      "evidence": "Existen candidatos aproximados para revision no destructiva."
+    },
+    {
+      "component": "uso_institucional",
+      "status": "yellow",
+      "evidence": "Apto como prototipo de priorizacion y auditoria metodologica; no como registro institucional consolidado hasta validar matching transversal."
+    }
+  ],
+  "recommended_next_steps": [
+    "No usar intersecciones entre fuentes como evidencia de contraste hasta resolver el matching.",
+    "Mantener separados los resultados por fuente hasta validar pares candidatos.",
+    "Priorizar normalizacion de expediente, comprador, fecha, titulo, importe y CPV.",
+    "Crear una muestra revisada manualmente de pares candidato/no-match para calibrar umbrales.",
+    "Registrar la decision de matching como dato auditable antes de fusionar contratos.",
+    "Tratar cualquier metrica transversal como exploratoria mientras present_in_all sea 0."
+  ],
+  "warnings": [],
+  "outputs": {
+    "json": "data\\processed_sample\\agent1_source_coverage_analysis.json",
+    "markdown": "data\\processed_sample\\agent1_source_coverage_analysis.md"
+  }
+}

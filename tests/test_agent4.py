@@ -332,12 +332,17 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(metrics["citation_coverage_ratio"], 0.5)
         self.assertEqual(metrics["expected_term_coverage_ratio"], 0.5)
         self.assertEqual(metrics["matching_document_ids"], ["doc-a"])
+        self.assertEqual(metrics["citation_traceability_ratio"], 0.0)
+        self.assertEqual(metrics["contract_key_consistency_ratio"], 0.0)
+        self.assertFalse(metrics["decision_boundary_present"])
+        self.assertFalse(metrics["practical_validation_passed"])
 
     def test_run_agent4_evaluation_offline_writes_report(self) -> None:
         output_path = _test_workspace("evaluation") / "agent4_evaluation_report.json"
 
         report = run_agent4_evaluation(output_path=output_path, retrieval_limit=5)
         payload = json.loads(output_path.read_text(encoding="utf-8"))
+        markdown_path = output_path.with_suffix(".md")
 
         self.assertEqual(report["dataset"], "agent4_evaluation_report")
         self.assertEqual(report["mode"], "offline")
@@ -346,11 +351,22 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(report["summary"]["expectation_accuracy"], 1.0)
         self.assertEqual(report["summary"]["average_precision_at_k"], 1.0)
         self.assertEqual(report["summary"]["average_expected_document_recall"], 1.0)
+        self.assertEqual(report["summary"]["average_citation_traceability"], 1.0)
+        self.assertEqual(report["summary"]["average_contract_key_consistency"], 1.0)
+        self.assertEqual(report["summary"]["decision_boundary_coverage"], 1.0)
+        self.assertEqual(report["summary"]["no_unsupported_fraud_claim_ratio"], 1.0)
+        self.assertEqual(report["summary"]["practical_validation_pass_ratio"], 1.0)
         self.assertEqual(payload["summary"], report["summary"])
         self.assertEqual(payload["ragas"]["status"], "not_run")
+        self.assertIn("tfm_practical_evaluation", payload)
+        self.assertIn("dimensions", payload["tfm_practical_evaluation"])
         self.assertIn("agent4_scope", payload)
         self.assertIn("document_source_policy", payload)
         self.assertIn("not_implemented_in_mvp", payload)
+        self.assertTrue(markdown_path.exists())
+        markdown = markdown_path.read_text(encoding="utf-8")
+        self.assertIn("Evaluacion practica para el TFM", markdown)
+        self.assertIn("LLM local", markdown)
 
     def test_deterministic_embedding_client_returns_stable_dimensions(self) -> None:
         client = DeterministicEmbeddingClient(dimension=8)

@@ -22,6 +22,7 @@ from .pipeline import (
     build_source_coverage,
     main,
 )
+from .source_diagnostics import build_agent1_source_coverage_analysis
 
 
 def run_agent1(*args, **kwargs):
@@ -41,6 +42,7 @@ __all__ = [
     "build_agent1_coverage_report",
     "build_agent1_quality_summary",
     "build_agent2_canonical_dataset",
+    "build_agent1_source_coverage_analysis",
     "build_source_coverage",
     "build_supplier_analytical_table",
     "enrich_contracts_with_buyer_catalog",

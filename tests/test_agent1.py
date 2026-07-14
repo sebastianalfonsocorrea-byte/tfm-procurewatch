@@ -172,17 +172,38 @@ class Agent1Tests(unittest.TestCase):
             self.assertTrue((processed / "agent1_contract_key_coverage.parquet").exists())
             self.assertTrue((processed / "agent1_matching_diagnostics.json").exists())
             self.assertTrue((processed / "agent1_matching_candidates_preview.csv").exists())
+            self.assertTrue((processed / "agent1_source_coverage_analysis.json").exists())
+            self.assertTrue((processed / "agent1_source_coverage_analysis.md").exists())
             diagnostics = json.loads(
                 (processed / "agent1_matching_diagnostics.json").read_text(encoding="utf-8")
+            )
+            analysis = json.loads(
+                (processed / "agent1_source_coverage_analysis.json").read_text(
+                    encoding="utf-8"
+                )
             )
             candidates = pd.read_csv(processed / "agent1_matching_candidates_preview.csv")
             self.assertEqual(diagnostics["exact_intersections"]["boe_place"], 0)
             self.assertGreater(diagnostics["candidate_counts"]["boe_place"], 0)
             self.assertGreater(diagnostics["candidate_counts"]["boe_opentender"], 0)
             self.assertGreater(diagnostics["candidate_counts"]["place_opentender"], 0)
+            self.assertIn("candidate_class_counts", diagnostics)
             self.assertIn("match_strategy", candidates.columns)
+            self.assertIn("candidate_class", candidates.columns)
             self.assertIn("contract_key_left", candidates.columns)
             self.assertGreater(len(candidates), 0)
+            self.assertEqual(
+                coverage["source_coverage_analysis_path"],
+                str(processed / "agent1_source_coverage_analysis.json"),
+            )
+            self.assertIn("institutional_readiness", analysis)
+            self.assertIn("tfm_context", analysis)
+            self.assertIn("scope_table", analysis["tfm_context"])
+            analysis_markdown = (
+                processed / "agent1_source_coverage_analysis.md"
+            ).read_text(encoding="utf-8")
+            self.assertIn("Lectura en contexto de TFM", analysis_markdown)
+            self.assertIn("Discusion analitica", analysis_markdown)
             self.assertTrue((processed / "agent2_contracts_canonical.parquet").exists())
             self.assertTrue((processed / "agent2_contracts_canonical_schema.json").exists())
             self.assertEqual(canonical["rows"], 3)
@@ -380,6 +401,7 @@ class Agent1Tests(unittest.TestCase):
             self.assertTrue(diagnostics["warnings"])
             self.assertEqual(coverage["candidate_counts"]["boe_place"], 0)
             self.assertTrue(Path(coverage["matching_candidates_preview_path"]).exists())
+            self.assertTrue(Path(coverage["source_coverage_analysis_markdown_path"]).exists())
 
     def test_agent1_quality_summary_reports_required_tfm_metrics(self) -> None:
         import pandas as pd

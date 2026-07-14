@@ -56,6 +56,40 @@ class CliTests(unittest.TestCase):
             Path("data/processed/agent3_agent2_features.parquet"),
         )
 
+    def test_report_agent1_source_diagnostics_command_uses_processed_outputs(self) -> None:
+        coverage = {
+            "universe_contract_keys": 3,
+            "intersection_boe_place": 0,
+            "intersection_boe_opentender": 0,
+            "intersection_place_opentender": 0,
+            "matching_diagnostics_path": "tmp/agent1_matching_diagnostics.json",
+            "source_coverage_analysis_markdown_path": (
+                "tmp/agent1_source_coverage_analysis.md"
+            ),
+        }
+        with mock.patch("procurewatch.agent1.build_source_coverage") as coverage_mock:
+            coverage_mock.return_value = coverage
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = main(
+                    [
+                        "report-agent1-source-diagnostics",
+                        "--output-dir",
+                        "tmp/processed",
+                        "--cpv-prefix",
+                        "71",
+                        "--year",
+                        "2024",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Diagnostico de fuentes Agent1 generado", output.getvalue())
+        coverage_mock.assert_called_once()
+        self.assertEqual(coverage_mock.call_args.kwargs["output_dir"], Path("tmp/processed"))
+        self.assertEqual(coverage_mock.call_args.kwargs["cpv_prefix"], "71")
+        self.assertEqual(coverage_mock.call_args.kwargs["year"], 2024)
+
     def test_run_integrated_demo_command_uses_defaults_and_prints_report(self) -> None:
         report = {
             "status": "ready",
@@ -142,6 +176,42 @@ class CliTests(unittest.TestCase):
         self.assertIsNone(kwargs["report_path"])
         self.assertTrue(kwargs["regenerate"])
         self.assertEqual(kwargs["contract_key_canon"], "PW-2024-0001")
+
+    def test_run_benchmark_command_uses_defaults_and_prints_outputs(self) -> None:
+        report = {
+            "status": "warning",
+            "summary": {
+                "metrics_count": 10,
+                "status_counts": {
+                    "pass": 8,
+                    "warning": 2,
+                    "fail": 0,
+                    "not_applicable": 1,
+                },
+            },
+            "outputs": {
+                "json": "data/processed/benchmark/benchmark_report.json",
+                "markdown": "data/processed/benchmark/benchmark_report.md",
+            },
+        }
+        with mock.patch("procurewatch.benchmark.run_benchmark") as benchmark_mock:
+            benchmark_mock.return_value = report
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = main(["run-benchmark", "--regenerate", "--include-dashboard"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Benchmark ProcureWatch [warning]", output.getvalue())
+        benchmark_mock.assert_called_once()
+        kwargs = benchmark_mock.call_args.kwargs
+        self.assertEqual(kwargs["processed_dir"], Path("data/processed_sample"))
+        self.assertEqual(
+            kwargs["demo_dir"],
+            Path("data/processed/agent3_agent4_demo_2026_06_23"),
+        )
+        self.assertEqual(kwargs["output_dir"], Path("data/processed/benchmark"))
+        self.assertTrue(kwargs["regenerate"])
+        self.assertTrue(kwargs["include_dashboard"])
 
     def test_run_batch_passes_paths_and_prints_manifest(self) -> None:
         with mock.patch("procurewatch.batch.run_batch") as run_batch_mock:

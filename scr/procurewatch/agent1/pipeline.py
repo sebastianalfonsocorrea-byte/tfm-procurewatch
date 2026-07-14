@@ -403,11 +403,12 @@ def build_source_coverage(
         encoding="utf-8",
     )
 
-    return {
+    coverage_summary = {
         "contract_key_coverage_path": str(key_path),
         "matching_diagnostics_path": str(matching_diagnostics_path),
         "matching_candidates_preview_path": str(matching_candidates_preview_path),
         "candidate_counts": matching_diagnostics["candidate_counts"],
+        "candidate_class_counts": matching_diagnostics["candidate_class_counts"],
         "boe_contract_keys": len(boe_keys),
         "place_contract_keys": len(place_keys),
         "op_contract_keys": len(op_keys),
@@ -444,6 +445,18 @@ def build_source_coverage(
             ).sum()
         ),
     }
+    from .source_diagnostics import build_agent1_source_coverage_analysis
+
+    source_analysis = build_agent1_source_coverage_analysis(
+        coverage=coverage_summary,
+        matching_diagnostics=matching_diagnostics,
+        output_dir=output_dir,
+    )
+    coverage_summary["source_coverage_analysis_path"] = source_analysis["outputs"]["json"]
+    coverage_summary["source_coverage_analysis_markdown_path"] = source_analysis["outputs"][
+        "markdown"
+    ]
+    return coverage_summary
 
 
 def build_agent2_canonical_dataset(
@@ -992,6 +1005,7 @@ def _agent2_schema() -> dict[str, Any]:
 
 
 MATCHING_CANDIDATE_COLUMNS = [
+    "candidate_class",
     "match_strategy",
     "source_left",
     "source_right",
@@ -1026,6 +1040,12 @@ MATCHING_STRATEGY_RANKS = {
     "buyer_date_title_amount": 0,
     "buyer_title_amount": 1,
     "buyer_date_title": 2,
+}
+
+MATCHING_CANDIDATE_CLASSES = {
+    "buyer_date_title_amount": "strong_candidate",
+    "buyer_title_amount": "weak_candidate",
+    "buyer_date_title": "weak_candidate",
 }
 
 
@@ -1127,6 +1147,15 @@ def _build_matching_diagnostics(
         else pd.DataFrame(columns=MATCHING_CANDIDATE_COLUMNS)
     )
     candidate_counts = {key: int(len(frame)) for key, frame in pair_frames.items()}
+    candidate_class_counts = {}
+    for key, frame in pair_frames.items():
+        if frame.empty or "candidate_class" not in frame.columns:
+            candidate_class_counts[key] = {}
+            continue
+        candidate_class_counts[key] = {
+            str(candidate_class): int(count)
+            for candidate_class, count in frame["candidate_class"].value_counts().items()
+        }
     diagnostics = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "purpose": (
@@ -1141,6 +1170,23 @@ def _build_matching_diagnostics(
             for source, frame in source_frames.items()
         },
         "candidate_counts": candidate_counts,
+        "candidate_class_counts": candidate_class_counts,
+        "candidate_policy": {
+            "exact_match": (
+                "Solo las intersecciones por contract_key_canon se consideran matches exactos."
+            ),
+            "strong_candidate": (
+                "Coincidencia aproximada por comprador, fecha, titulo e importe; requiere "
+                "revision antes de fusionar."
+            ),
+            "weak_candidate": (
+                "Coincidencia parcial sin todos los componentes; sirve para exploracion, "
+                "no para integracion automatica."
+            ),
+            "no_match": (
+                "Ausencia de interseccion exacta o candidato aproximado con las reglas actuales."
+            ),
+        },
         "candidate_examples": {
             key: _records_for_json(frame.head(50))
             for key, frame in pair_frames.items()
@@ -1180,6 +1226,7 @@ def _build_pair_matching_candidates(
 
     candidates = pd.DataFrame(
         {
+            "candidate_class": merged["match_strategy"].map(MATCHING_CANDIDATE_CLASSES),
             "match_strategy": merged["match_strategy"],
             "source_left": source_left,
             "source_right": source_right,
@@ -1198,6 +1245,7 @@ def _build_pair_matching_candidates(
             "diagnostic_key": merged["diagnostic_key"],
         }
     )
+    candidates["candidate_class"] = candidates["candidate_class"].fillna("weak_candidate")
     candidates["_strategy_rank"] = candidates["match_strategy"].map(MATCHING_STRATEGY_RANKS)
     candidates = candidates.sort_values(
         ["_strategy_rank", "source_record_id_left", "source_record_id_right"],
