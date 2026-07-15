@@ -197,9 +197,9 @@ Estado final observado:
 - Reconstruccion completa disponible con `--force-rebuild`.
 - `agent1_data_quality_summary.json`: estado `ok`.
 - `agent2_contracts_canonical.parquet`: 51.720 filas.
-- Validacion de la rama integrada en entorno minimo: `122 passed`, `1 skipped`; Ruff sin errores.
+- Validacion de la rama integrada en entorno minimo: `126 passed`, `1 skipped`; Ruff sin errores.
   La prueba omitida corresponde a la integracion PostgreSQL cuando no esta instalado SQLAlchemy.
-- Validacion con SQLAlchemy disponible: `123 passed`, sin pruebas omitidas.
+- Validacion con SQLAlchemy disponible: `127 passed`, sin pruebas omitidas.
 
 Artefactos de continuidad:
 
@@ -244,6 +244,27 @@ Resultados versionados:
 Ambos valores superan el objetivo metodologico `Q > 0.30`. El benchmark lo comprueba mediante
 `agent3.modularity`. La modularidad cuantifica estructura comunitaria, pero no demuestra fraude ni
 calidad juridica de las comunidades detectadas.
+
+## Dashboard y evolucion temporal
+
+El dashboard Streamlit integra ocho pestanas para revisar prioridad, caso, relaciones, evidencias y
+trazabilidad. La pestana `Evolucion temporal` usa los artefactos versionados de la evaluacion base de
+Agent2, de forma separada de la demo sintetica `PW-2024-0001`:
+
+```powershell
+streamlit run frontend/agent3_demo.py
+procurewatch validate-dashboard-demo
+```
+
+La serie cruza 3.437 scores con el canonico evaluado. Hay 976 contratos con fecha de publicacion
+valida, 2.461 sin fecha valida y 41 meses entre 2014-01 y 2017-05. Las barras representan contratos
+publicados y la linea el riesgo medio mensual en escala 0-100; no se imputan fechas ausentes. La
+validacion headless supera 11 comprobaciones, expone 18 metricas de Streamlit y no registra
+excepciones.
+
+Las rutas pueden sustituirse mediante `PROCUREWATCH_AGENT2_TEMPORAL_CANONICAL` y
+`PROCUREWATCH_AGENT2_TEMPORAL_SCORES`. Esta vista evalua la muestra reproducible de Agent2, no el
+canonico completo de 51.720 contratos.
 
 ## Modos del benchmark
 

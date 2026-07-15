@@ -12,6 +12,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from plotly.subplots import make_subplots
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCR_DIR = PROJECT_ROOT / "scr"
@@ -28,8 +29,16 @@ from procurewatch.agent3.demo import (  # noqa: E402
     top_communities,
     top_entities,
 )
+from procurewatch.dashboard_temporal import (  # noqa: E402
+    TemporalEvaluation,
+    load_temporal_evaluation,
+)
 
 DEFAULT_DEMO_DIR = "data/processed/agent3_agent4_demo_2026_06_23"
+DEFAULT_TEMPORAL_CANONICAL = "data/processed_sample/agent2_contracts_canonical.parquet"
+DEFAULT_TEMPORAL_SCORES = (
+    "data/processed_sample/agent2_evaluation/base/agent2_risk_scores.parquet"
+)
 
 NODE_TYPE_LABELS = {
     "Buyer": "Comprador publico",
@@ -118,15 +127,26 @@ def main() -> None:
     data = load_agent3_demo_data(output_dir)
     kpis = build_demo_kpis(data)
     contracts = _build_contract_table(data, case_context)
+    temporal, temporal_error, temporal_paths = _load_temporal_data()
     filters = _render_analysis_sidebar(data, contracts, case_context)
     case_view = _build_case_view(data, case_context, filters.selected_contract)
 
     _render_header()
     _render_decision_strip(case_view)
 
-    summary_tab, ranking_tab, case_tab, network_tab, evidence_tab, trace_tab, method_tab = st.tabs(
+    (
+        summary_tab,
+        temporal_tab,
+        ranking_tab,
+        case_tab,
+        network_tab,
+        evidence_tab,
+        trace_tab,
+        method_tab,
+    ) = st.tabs(
         [
             "Resumen",
+            "Evolucion temporal",
             "Contratos priorizados",
             "Caso seleccionado",
             "Relaciones",
@@ -137,6 +157,8 @@ def main() -> None:
     )
     with summary_tab:
         _render_summary(data, kpis, contracts, case_view)
+    with temporal_tab:
+        _render_temporal_evolution(temporal, temporal_error, temporal_paths)
     with ranking_tab:
         _render_contract_ranking(filters.filtered_contracts, filters.selected_contract)
     with case_tab:
@@ -177,8 +199,8 @@ def _render_data_sidebar() -> tuple[Path, Path | None]:
     st.sidebar.markdown(
         """
         <div class="pw-sidebar-note">
-            <strong>Modo defensa:</strong> abre primero Resumen, luego Caso seleccionado,
-            Relaciones, Evidencias y Trazabilidad.
+            <strong>Modo defensa:</strong> abre primero Resumen y Evolucion temporal; despues
+            revisa Caso seleccionado, Relaciones y Evidencias.
         </div>
         """,
         unsafe_allow_html=True,
@@ -262,7 +284,7 @@ def _render_analysis_sidebar(
     only_case_neighborhood = st.sidebar.toggle("Solo entorno del contrato", value=True)
     st.sidebar.markdown("#### Capturas recomendadas")
     st.sidebar.caption(
-        "Resumen · Caso seleccionado · Relaciones · Evidencias · Trazabilidad · Metodologia"
+        "Resumen · Evolucion temporal · Caso seleccionado · Relaciones · Evidencias"
     )
 
     return DashboardFilters(
@@ -296,9 +318,9 @@ def _render_header() -> None:
     st.markdown(
         """
         <div class="pw-callout">
-            <strong>Que estas viendo:</strong> una demo sintetica/offline que reconstruye el caso
-            <code>PW-2024-0001</code>. Agent2 calcula prioridad y red flags, Agent3 explica
-            relaciones en red y Agent4 aporta evidencias documentales con citas.
+            <strong>Que estas viendo:</strong> la demo sintetica/offline reconstruye el caso
+            <code>PW-2024-0001</code>. La pestana Evolucion temporal usa, de forma separada, la
+            evaluacion real de Agent2 sobre 3.437 contratos para mostrar volumen y riesgo por mes.
         </div>
         """,
         unsafe_allow_html=True,
@@ -374,6 +396,92 @@ def _render_summary(
 
     st.subheader("Distribucion del lote de demo")
     _render_distribution_charts(data, contracts)
+
+
+def _load_temporal_data(
+) -> tuple[TemporalEvaluation | None, str | None, tuple[Path, Path]]:
+    canonical_path = Path(
+        os.getenv("PROCUREWATCH_AGENT2_TEMPORAL_CANONICAL", DEFAULT_TEMPORAL_CANONICAL)
+    )
+    scores_path = Path(os.getenv("PROCUREWATCH_AGENT2_TEMPORAL_SCORES", DEFAULT_TEMPORAL_SCORES))
+    try:
+        temporal = load_temporal_evaluation(canonical_path, scores_path)
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return None, str(exc), (canonical_path, scores_path)
+    return temporal, None, (canonical_path, scores_path)
+
+
+def _render_temporal_evolution(
+    temporal: TemporalEvaluation | None,
+    error: str | None,
+    paths: tuple[Path, Path],
+) -> None:
+    st.subheader("Evolucion temporal de contratos y riesgo")
+    st.write(
+        "Esta vista cruza el canonico evaluado con los scores base de Agent2. Las barras muestran "
+        "contratos con fecha de publicacion valida y la linea representa el riesgo medio mensual "
+        "en escala 0-100. No se imputan fechas ausentes."
+    )
+    if temporal is None:
+        st.warning(
+            "La serie temporal no esta disponible. Comprueba los artefactos de Agent2. "
+            f"Detalle: {error or 'error no especificado'}"
+        )
+        st.caption(f"Canonico: `{paths[0]}` · Scores: `{paths[1]}`")
+        return
+    if temporal.monthly.empty:
+        st.info("No hay contratos con fecha de publicacion y score validos para representar.")
+        return
+
+    columns = st.columns(4)
+    columns[0].metric("Contratos evaluados", _format_int(temporal.evaluated_contracts))
+    columns[1].metric("Con fecha valida", _format_int(temporal.dated_contracts))
+    columns[2].metric("Meses cubiertos", _format_int(temporal.month_count))
+    columns[3].metric("Fechas no validas", _format_int(temporal.invalid_date_contracts))
+
+    figure = make_subplots(specs=[[{"secondary_y": True}]])
+    figure.add_trace(
+        go.Bar(
+            x=temporal.monthly["month"],
+            y=temporal.monthly["contracts"],
+            name="Contratos publicados",
+            marker_color="#2563eb",
+            hovertemplate="%{x|%b %Y}<br>Contratos: %{y}<extra></extra>",
+        ),
+        secondary_y=False,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=temporal.monthly["month"],
+            y=temporal.monthly["mean_risk_score"],
+            name="Riesgo medio Agent2",
+            mode="lines+markers",
+            line={"color": "#d97706", "width": 3},
+            marker={"size": 6},
+            hovertemplate="%{x|%b %Y}<br>Riesgo medio: %{y:.2f}<extra></extra>",
+        ),
+        secondary_y=True,
+    )
+    figure.update_layout(
+        height=480,
+        margin={"l": 20, "r": 20, "t": 35, "b": 20},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
+        hovermode="x unified",
+        bargap=0.18,
+    )
+    figure.update_xaxes(title_text="Mes de publicacion", tickformat="%b\n%Y")
+    figure.update_yaxes(title_text="Contratos", rangemode="tozero", secondary_y=False)
+    figure.update_yaxes(
+        title_text="Riesgo medio Agent2 (0-100)",
+        range=[0, 100],
+        secondary_y=True,
+    )
+    st.plotly_chart(figure, width="stretch")
+    st.caption(
+        "Serie calculada sobre los artefactos versionados de la evaluacion base de Agent2. "
+        f"Se excluyen {temporal.invalid_date_contracts} contratos sin fecha de publicacion valida"
+        f" y {temporal.invalid_score_contracts} sin score numerico."
+    )
 
 
 def _render_kpis(
@@ -1186,6 +1294,7 @@ def _render_methodology() -> None:
         st.markdown(
             """
             - Demo integrada offline regenerable.
+            - Evolucion temporal sobre la evaluacion real de Agent2.
             - Ranking de contratos y ficha explicable.
             - Red de relaciones comprador-proveedor-contrato.
             - Evidencias documentales con citas trazables.
@@ -1197,6 +1306,7 @@ def _render_methodology() -> None:
         st.markdown(
             """
             - Muestra sintetica reducida para defensa reproducible.
+            - La serie temporal excluye fechas ausentes sin imputarlas.
             - Matching BOE/PLACE/OpenTender todavia imperfecto.
             - Servicios PostgreSQL, Neo4j, Qdrant y Ollama opcionales.
             - Agent4 no descarga pliegos PLACSP ni ejecuta crawling vivo.

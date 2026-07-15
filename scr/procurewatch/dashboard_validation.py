@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .agent3 import build_demo_kpis, load_agent3_demo_data, missing_demo_artifacts
+from .dashboard_temporal import TemporalEvaluation, load_temporal_evaluation
 from .integrated_demo import (
     DEMO_CASE_CONTEXT_FILENAME,
     DEMO_CONTRACT_KEY,
@@ -21,14 +22,16 @@ from .integrated_demo import (
 DASHBOARD_APP_PATH = Path("frontend/agent3_demo.py")
 DASHBOARD_VALIDATION_REPORT_FILENAME = "dashboard_validation_report.json"
 DASHBOARD_VALIDATION_SCHEMA_VERSION = "dashboard_validation_report_v1"
+DEFAULT_TEMPORAL_CANONICAL = Path("data/processed_sample/agent2_contracts_canonical.parquet")
+DEFAULT_TEMPORAL_SCORES = Path(
+    "data/processed_sample/agent2_evaluation/base/agent2_risk_scores.parquet"
+)
 DASHBOARD_CAPTURE_RECOMMENDATIONS = [
     "Resumen",
-    "Contratos priorizados",
+    "Evolucion temporal",
     "Caso seleccionado",
     "Relaciones",
     "Evidencias",
-    "Trazabilidad",
-    "Metodologia",
 ]
 
 
@@ -41,6 +44,8 @@ def validate_dashboard_demo(
     question: str = DEMO_QUESTION,
     corpus_index: Path = DEMO_CORPUS_INDEX,
     app_path: Path = DASHBOARD_APP_PATH,
+    temporal_canonical_path: Path = DEFAULT_TEMPORAL_CANONICAL,
+    temporal_scores_path: Path = DEFAULT_TEMPORAL_SCORES,
     regenerate: bool = True,
     run_streamlit: bool = True,
 ) -> dict[str, Any]:
@@ -60,11 +65,17 @@ def validate_dashboard_demo(
     data, kpis, data_error = _load_agent3_dashboard_data(output_dir)
     case_context, case_error = _load_case_context(resolved_case_context_path)
     source_text = app_path.read_text(encoding="utf-8") if app_path.exists() else ""
+    temporal, temporal_error = _load_temporal_dashboard_data(
+        temporal_canonical_path,
+        temporal_scores_path,
+    )
     streamlit_result = (
         _run_streamlit_headless(
             app_path=app_path,
             output_dir=output_dir,
             case_context_path=resolved_case_context_path,
+            temporal_canonical_path=temporal_canonical_path,
+            temporal_scores_path=temporal_scores_path,
         )
         if run_streamlit
         else {"executed": False, "exceptions": [], "metrics_count": None, "tabs_count": None}
@@ -80,6 +91,8 @@ def validate_dashboard_demo(
         case_error=case_error,
         source_text=source_text,
         streamlit_result=streamlit_result,
+        temporal=temporal,
+        temporal_error=temporal_error,
         contract_key_canon=contract_key_canon,
     )
     report = {
@@ -97,6 +110,7 @@ def validate_dashboard_demo(
         },
         "kpis": kpis,
         "case_summary": _case_summary(case_context),
+        "temporal_summary": _temporal_summary(temporal, temporal_error),
         "checks": checks,
         "streamlit_headless": streamlit_result,
         "commands": _defense_commands(output_dir, resolved_case_context_path),
@@ -124,6 +138,16 @@ def _load_agent3_dashboard_data(
     return data, build_demo_kpis(data), None
 
 
+def _load_temporal_dashboard_data(
+    canonical_path: Path,
+    scores_path: Path,
+) -> tuple[TemporalEvaluation | None, str | None]:
+    try:
+        return load_temporal_evaluation(canonical_path, scores_path), None
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        return None, str(exc)
+
+
 def _load_case_context(path: Path) -> tuple[dict[str, Any], str | None]:
     if not path.exists():
         return {}, f"No existe la ficha Agent4: {path}"
@@ -144,6 +168,8 @@ def _build_checks(
     case_error: str | None,
     source_text: str,
     streamlit_result: dict[str, Any],
+    temporal: TemporalEvaluation | None,
+    temporal_error: str | None,
     contract_key_canon: str,
 ) -> list[dict[str, object]]:
     case = _case_context(case_context)
@@ -187,6 +213,19 @@ def _build_checks(
             f"evidencias={len(case.get('evidences', []))} citas={len(case.get('citations', []))}",
         ),
         _check(
+            "temporal_series_loadable",
+            temporal is not None
+            and temporal.dated_contracts > 0
+            and temporal.month_count > 0
+            and not temporal.monthly.empty,
+            temporal_error
+            or (
+                f"evaluados={temporal.evaluated_contracts if temporal else 0} "
+                f"con_fecha={temporal.dated_contracts if temporal else 0} "
+                f"meses={temporal.month_count if temporal else 0}"
+            ),
+        ),
+        _check(
             "visible_text_keeps_review_boundary",
             "no declara fraude" in visible_text
             and "priorizar" in visible_text
@@ -211,6 +250,8 @@ def _run_streamlit_headless(
     app_path: Path,
     output_dir: Path,
     case_context_path: Path,
+    temporal_canonical_path: Path,
+    temporal_scores_path: Path,
 ) -> dict[str, Any]:
     temp_dir = output_dir / ".streamlit_test_tmp"
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -223,6 +264,8 @@ def _run_streamlit_headless(
             "TMPDIR": str(temp_dir),
             "PROCUREWATCH_AGENT3_DEMO_DIR": str(output_dir),
             "PROCUREWATCH_AGENT4_CASE_CONTEXT": str(case_context_path),
+            "PROCUREWATCH_AGENT2_TEMPORAL_CANONICAL": str(temporal_canonical_path),
+            "PROCUREWATCH_AGENT2_TEMPORAL_SCORES": str(temporal_scores_path),
             "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
         }
     )
@@ -311,6 +354,22 @@ def _case_summary(payload: dict[str, Any]) -> dict[str, object]:
         "agent3_metrics_count": len(case.get("agent3_metrics_used", {})),
         "evidences_count": len(case.get("evidences", [])),
         "citations_count": len(case.get("citations", [])),
+    }
+
+
+def _temporal_summary(
+    temporal: TemporalEvaluation | None,
+    error: str | None,
+) -> dict[str, object]:
+    if temporal is None:
+        return {"available": False, "error": error}
+    return {
+        "available": True,
+        "evaluated_contracts": temporal.evaluated_contracts,
+        "dated_contracts": temporal.dated_contracts,
+        "invalid_date_contracts": temporal.invalid_date_contracts,
+        "invalid_score_contracts": temporal.invalid_score_contracts,
+        "month_count": temporal.month_count,
     }
 
 

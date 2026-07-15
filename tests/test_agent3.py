@@ -101,9 +101,12 @@ class Agent3Tests(unittest.TestCase):
         self.assertGreaterEqual(report["case_summary"]["citations_count"], 1)
         self.assertTrue(report["streamlit_headless"]["executed"])
         self.assertEqual(report["streamlit_headless"]["exceptions"], [])
-        self.assertGreaterEqual(report["streamlit_headless"]["tabs_count"], 6)
+        self.assertGreaterEqual(report["streamlit_headless"]["tabs_count"], 8)
         self.assertIn("streamlit run frontend/agent3_demo.py", report["commands"]["open_dashboard"])
         self.assertIn("Resumen", report["capture_recommendations"])
+        self.assertIn("Evolucion temporal", report["capture_recommendations"])
+        self.assertEqual(report["temporal_summary"]["evaluated_contracts"], 3437)
+        self.assertEqual(report["temporal_summary"]["dated_contracts"], 976)
         self.assertTrue((temp_path / "dashboard_validation_report.json").exists())
         self.assertTrue(all(item["passed"] for item in report["checks"]))
 
