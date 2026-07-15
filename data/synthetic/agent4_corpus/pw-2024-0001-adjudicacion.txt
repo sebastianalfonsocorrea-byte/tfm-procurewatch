@@ -1,0 +1,5 @@
+Contrato PW-2024-0001.
+
+Documento sintetico de adjudicacion para servicios de analitica de contratacion publica.
+El comprador adjudica el servicio al proveedor Datos Abiertos SL por criterios tecnicos y economicos.
+Esta muestra se usa solo para probar carga documental, trazabilidad y manifiesto de Agent4.

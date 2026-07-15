@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import re
+
 from .schemas import DocumentChunk, RetrievalResult
+
+_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
 
 def keyword_retrieve(
@@ -9,7 +13,10 @@ def keyword_retrieve(
     *,
     limit: int = 5,
 ) -> list[RetrievalResult]:
-    terms = {term.lower() for term in query.split() if term.strip()}
+    if limit <= 0 or not chunks:
+        return []
+
+    terms = {term.lower() for term in _TOKEN_RE.findall(query)}
     if not terms:
         return []
 
@@ -20,4 +27,7 @@ def keyword_retrieve(
         if matches:
             scored.append(RetrievalResult(chunk=chunk, score=matches / len(terms)))
 
-    return sorted(scored, key=lambda item: item.score or 0.0, reverse=True)[:limit]
+    return sorted(
+        scored,
+        key=lambda item: (-(item.score or 0.0), item.chunk.chunk_id),
+    )[:limit]

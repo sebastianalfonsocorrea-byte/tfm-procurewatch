@@ -1,4 +1,4 @@
-﻿# ProcureWatch Agents Playbook
+# ProcureWatch Agents Playbook
 
 Este documento sirve como punto de arranque para cualquier nueva conversacion tecnica.
 
@@ -30,36 +30,38 @@ Este documento sirve como punto de arranque para cualquier nueva conversacion te
    - Entorno local y dependencias por fase.
 3. [ARCHITECTURE](ARCHITECTURE.md)
    - Capas del sistema y decisiones de separacion.
-4. [PLANIFICACION_TFM](docs/PLANIFICACION_TFM.md)
+4. [DOCS_README](docs/README.md)
+   - Indice navegable de documentacion.
+5. [PLANIFICACION_TFM](docs/00_vision/PLANIFICACION_TFM.md)
    - Stack definitivo, alcance academico y cronograma.
-5. [PLAN_AGENTE1_PIPELINE](docs/PLAN_AGENTE1_PIPELINE.md)
+6. [PLAN_AGENTE1_PIPELINE](docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md)
    - Flujo real de ingesta/normalizacion/coverage actual.
-6. [PLAN_INGESTA_BATCH_AGENT1](docs/PLAN_INGESTA_BATCH_AGENT1.md)
+7. [PLAN_INGESTA_BATCH_AGENT1](docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md)
    - Batch recurrente y cronograma operativo.
-7. [ARQUITECTURA_BATCH_Y_GRAFOS](docs/ARQUITECTURA_BATCH_Y_GRAFOS.md)
+8. [ARQUITECTURA_BATCH_Y_GRAFOS](docs/01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md)
    - Propuesta de actualizaciones futuras + Neo4j.
-8. [FUENTES_DATOS_Y_ROADMAP](docs/FUENTES_DATOS_Y_ROADMAP.md)
+9. [FUENTES_DATOS_Y_ROADMAP](docs/02_fuentes/FUENTES_DATOS_Y_ROADMAP.md)
    - Seleccion de fuentes y criterio de prioridad.
-9. [ESTRATEGIA_PLACE_HACIENDA](docs/ESTRATEGIA_PLACE_HACIENDA.md)
+10. [ESTRATEGIA_PLACE_HACIENDA](docs/02_fuentes/ESTRATEGIA_PLACE_HACIENDA.md)
    - Encaje de PLACE en la metodologia y orden tecnico.
-10. [SEGUIMIENTO_AGENTES](docs/SEGUIMIENTO_AGENTES.md)
+11. [SEGUIMIENTO_AGENTES](docs/04_agentes/SEGUIMIENTO_AGENTES.md)
    - Estado transversal de Agent1-Agent4.
-11. [SEGUIMIENTO_AGENT1](docs/SEGUIMIENTO_AGENT1.md)
+12. [SEGUIMIENTO_AGENT1](docs/03_agent1_ingesta/SEGUIMIENTO_AGENT1.md)
    - Log de riesgos y decisiones del bloque activo.
-12. [STACK_TECNICO_PROYECTO](docs/STACK_TECNICO_PROYECTO.md)
+13. [STACK_TECNICO_PROYECTO](docs/00_vision/STACK_TECNICO_PROYECTO.md)
     - Stack actual y objetivo del proyecto.
-13. [PLAN_CAPA_DATOS_AGENTES](docs/PLAN_CAPA_DATOS_AGENTES.md)
+14. [PLAN_CAPA_DATOS_AGENTES](docs/01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md)
     - Preparacion de PostgreSQL, Neo4j, Qdrant e IDs comunes.
-14. [PLAN_AGENTE2_SCORING](docs/PLAN_AGENTE2_SCORING.md)
+15. [PLAN_AGENTE2_SCORING](docs/04_agentes/PLAN_AGENTE2_SCORING.md)
     - Red flags, scoring y salidas explicables.
-15. [PLAN_AGENTE3_GRAFOS](docs/PLAN_AGENTE3_GRAFOS.md)
+16. [PLAN_AGENTE3_GRAFOS](docs/04_agentes/PLAN_AGENTE3_GRAFOS.md)
     - Grafos, Neo4j, NetworkX y relaciones.
-16. [PLAN_AGENTE4_RAG_LANGGRAPH](docs/PLAN_AGENTE4_RAG_LANGGRAPH.md)
+17. [PLAN_AGENTE4_RAG_LANGGRAPH](docs/04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md)
     - Estructura LangGraph/LangChain, Qdrant y RAG documental.
 
 ### Lectura de producto
 
-- [GUIA_ENTREVISTA_TFM](docs/GUIA_ENTREVISTA_TFM.md)
+- [GUIA_ENTREVISTA_TFM](docs/00_vision/GUIA_ENTREVISTA_TFM.md)
   para frasear el proyecto en defensa o entrevista.
 
 ## Stack y filosofias de uso
@@ -114,22 +116,22 @@ guarda codigo de fuentes externas; `scr/procurewatch/agentN/` guarda logica de a
 
 ## Preguntas de continuidad para la proxima conversacion
 
-- "Que fecha y fuente cambio hoy?" -> revisar `SEGUIMIENTO_AGENT1.md`.
+- "Que fecha y fuente cambio hoy?" -> revisar `docs/03_agent1_ingesta/SEGUIMIENTO_AGENT1.md`.
 - "Que ejecucion fue la ultima valida?" -> revisar `data/processed/agent1_run_report.json`.
-- "Que hay que hacer despues de datos nuevos?" -> revisar `PLAN_AGENTE1_PIPELINE.md`.
+- "Que hay que hacer despues de datos nuevos?" -> revisar `docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md`.
 
 ## Objetivo propuesto: batch semanal/mensual de fuentes
 
 - Objetivo actualizado: batch total de fuentes base + enriquecer con fuentes de datos.gob.es de forma sistemática.
 - **Batch semanal**: controles de salud + inspeccion de cambios por manifiesto para BOE/PLACE/OpenTender/datos.gob.es.
 - **Batch mensual**: refresco de capas base y reconstruccion derivada hacia el grafo de relaciones.
-- Ver y completar en: [docs/PLAN_INGESTA_BATCH_AGENT1.md](docs/PLAN_INGESTA_BATCH_AGENT1.md).
-- Estado objetivo de grafo en arquitectura: [docs/ARQUITECTURA_BATCH_Y_GRAFOS.md](docs/ARQUITECTURA_BATCH_Y_GRAFOS.md).
+- Ver y completar en: [docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md](docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md).
+- Estado objetivo de grafo en arquitectura: [docs/01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md](docs/01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md).
 
 ## Aclaracion sobre datos.gob.es
 
 - Ya está clasificado el conjunto recomendable en:
-  `docs/FUENTES_DATOS_Y_ROADMAP.md`.
+  `docs/02_fuentes/FUENTES_DATOS_Y_ROADMAP.md`.
 - Queda fuera del flujo mínimo actual de `run-agent1`, pero entra en la capa de actualizacion integral y contraste.
 - En siguientes iteraciones se usará para enriquecer tablas de referencia y crear joins de entidad para grafos y red flags.
 

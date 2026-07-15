@@ -1,0 +1,433 @@
+{
+  "dataset": "procurewatch_benchmark_report",
+  "schema_version": "0.5.0",
+  "generated_at_utc": "2026-07-15T10:48:56.084583+00:00",
+  "status": "warning",
+  "inputs": {
+    "processed_dir": "data\\processed_sample",
+    "demo_dir": "data\\processed\\agent3_agent4_demo_2026_06_23",
+    "agent4_evaluation_path": "data\\processed\\agent4_evaluation_report.json",
+    "include_dashboard": false,
+    "regenerate": false,
+    "cpv_prefix": "71",
+    "year": 2024
+  },
+  "summary": {
+    "agents": {
+      "agent1": "warning",
+      "agent2": "pass",
+      "agent3": "pass",
+      "agent4": "pass",
+      "integrated": "pass"
+    },
+    "metrics_count": 34,
+    "status_counts": {
+      "pass": 31,
+      "warning": 1,
+      "fail": 0,
+      "not_applicable": 2
+    }
+  },
+  "tfm_context": {
+    "purpose": "Usar el benchmark como evidencia reproducible del TFM: implementacion, evaluacion objetiva, limitaciones y extension futura.",
+    "global_reading": "ProcureWatch queda evaluado como prototipo academico funcional. El estado warning preserva una limitacion metodologica relevante, no un fallo tecnico del pipeline.",
+    "institutional_reading": "El sistema es defendible para priorizacion, trazabilidad y discusion metodologica; una version institucional exigiria ampliar datos, validar matching interfuente y contrastar resultados con referencia externa.",
+    "component_maturity": [
+      {
+        "component": "Agent1 - ingesta y normalizacion",
+        "implemented": "si",
+        "evaluated": "si",
+        "evidence": "calidad de campos, duplicados y cobertura interfuente",
+        "current_boundary": "cobertura canonica por fuente sin matching exacto transversal",
+        "future_extension": "validacion manual y politica auditable de matching",
+        "tfm_reading": "hallazgo metodologico sobre interoperabilidad real de fuentes abiertas"
+      },
+      {
+        "component": "Agent2 - scoring de riesgo",
+        "implemented": "si",
+        "evaluated": "parcial en demo integrada",
+        "evidence": "score y red flags trazables",
+        "current_boundary": "sin benchmark estadistico amplio",
+        "future_extension": "validar con dataset mayor y casos etiquetados",
+        "tfm_reading": "modelo explicable de priorizacion, no dictamen juridico"
+      },
+      {
+        "component": "Agent3 - grafo y relaciones",
+        "implemented": "si",
+        "evaluated": "si",
+        "evidence": "nodos, aristas, comunidades, modularidad y cobertura de features",
+        "current_boundary": "validado en muestra reproducible y demo local, no en el canonico completo",
+        "future_extension": "ejecucion sobre volumen completo y analisis longitudinal",
+        "tfm_reading": "capa relacional para interpretar patrones, no prueba concluyente"
+      },
+      {
+        "component": "Agent4 - capa documental",
+        "implemented": "si",
+        "evaluated": "si",
+        "evidence": "retrieval, citas, trazabilidad y prudencia del lenguaje",
+        "current_boundary": "corpus local/sintetico y evaluacion RAGAS no representativa",
+        "future_extension": "corpus real ampliado y evaluacion comparativa de LLM local",
+        "tfm_reading": "fichas explicativas trazables bajo supervision humana"
+      },
+      {
+        "component": "Integracion y dashboard",
+        "implemented": "demo",
+        "evaluated": "demo integrada; dashboard opcional",
+        "evidence": "flujo Agent2-Agent3-Agent4 y validaciones integradas",
+        "current_boundary": "no equivale a despliegue productivo institucional",
+        "future_extension": "servicios persistentes, seguridad y operacion continua",
+        "tfm_reading": "prueba de viabilidad de arquitectura multiagente"
+      }
+    ],
+    "academic_conclusions": [
+      "La contribucion principal del TFM no es afirmar deteccion automatica de fraude, sino construir un pipeline trazable para priorizar revision.",
+      "La ausencia de intersecciones utiles entre fuentes convierte la calidad del matching en un resultado empirico del trabajo.",
+      "Las fichas documentales son evaluables por fidelidad, cobertura y citas, pero no sustituyen la interpretacion juridica ni la auditoria humana."
+    ]
+  },
+  "agents": {
+    "agent1": {
+      "status": "warning",
+      "metrics": [
+        {
+          "metric_id": "agent1.quality_report_exists",
+          "label": "Existe reporte de calidad Agent1",
+          "value": true,
+          "threshold": "true",
+          "status": "pass",
+          "evidence": "data\\processed_sample\\agent1_data_quality_summary.json"
+        },
+        {
+          "metric_id": "agent1.coverage.contract_key_canon",
+          "label": "Cobertura de contract_key_canon",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "field_quality.contract_key_canon.coverage_ratio"
+        },
+        {
+          "metric_id": "agent1.coverage.source",
+          "label": "Cobertura de source",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "field_quality.source.coverage_ratio"
+        },
+        {
+          "metric_id": "agent1.coverage.buyer_name",
+          "label": "Cobertura de buyer_name",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "field_quality.buyer_name.coverage_ratio"
+        },
+        {
+          "metric_id": "agent1.coverage.cpv_codes_raw",
+          "label": "Cobertura de cpv_codes_raw",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "field_quality.cpv_codes_raw.coverage_ratio"
+        },
+        {
+          "metric_id": "agent1.duplicates.source_contract_key",
+          "label": "Duplicados por fuente y clave canonica",
+          "value": 0,
+          "threshold": "= 0",
+          "status": "pass",
+          "evidence": "duplicate_source_contract_keys"
+        },
+        {
+          "metric_id": "agent1.source_analysis_exists",
+          "label": "Existe diagnostico de cobertura entre fuentes",
+          "value": true,
+          "threshold": "true",
+          "status": "pass",
+          "evidence": "data\\processed_sample\\agent1_source_coverage_analysis.json"
+        },
+        {
+          "metric_id": "agent1.matching.exact_intersections",
+          "label": "Intersecciones exactas entre fuentes",
+          "value": 0,
+          "threshold": "> 0 deseable",
+          "status": "warning",
+          "evidence": "exact_intersections"
+        },
+        {
+          "metric_id": "agent1.matching.candidates",
+          "label": "Candidatos aproximados de matching",
+          "value": 2,
+          "threshold": "informativo",
+          "status": "pass",
+          "evidence": "candidate_counts"
+        }
+      ],
+      "limitations": [
+        "No hay intersecciones exactas entre BOE, PLACE y OpenTender; el matching transversal no queda validado."
+      ],
+      "metrics_count": 9,
+      "agent": "agent1"
+    },
+    "agent2": {
+      "status": "pass",
+      "metrics": [
+        {
+          "metric_id": "agent2.demo_score_present",
+          "label": "Score Agent2 presente en demo integrada",
+          "value": 0.5,
+          "threshold": "no nulo",
+          "status": "pass",
+          "evidence": "integrated.summary.agent2_risk_score"
+        },
+        {
+          "metric_id": "agent2.demo_flags_present",
+          "label": "Red flags Agent2 presentes en demo integrada",
+          "value": 2,
+          "threshold": "> 0",
+          "status": "pass",
+          "evidence": "integrated.summary.agent2_red_flags"
+        },
+        {
+          "metric_id": "agent2.threshold_sensitivity.documented",
+          "label": "Sensibilidad de umbrales Agent2 documentada",
+          "value": 3,
+          "threshold": "3 escenarios y comparacion con base",
+          "status": "pass",
+          "evidence": "data\\processed_sample\\agent2_evaluation\\agent2_evaluation_report.json"
+        }
+      ],
+      "limitations": [
+        "Agent2 se mide desde la demo integrada porque no hay scoring completo en processed_dir."
+      ],
+      "metrics_count": 3,
+      "agent": "agent2"
+    },
+    "agent3": {
+      "status": "pass",
+      "metrics": [
+        {
+          "metric_id": "agent3.nodes",
+          "label": "Nodos del grafo",
+          "value": 11,
+          "threshold": ">= 1",
+          "status": "pass",
+          "evidence": "nodes_rows"
+        },
+        {
+          "metric_id": "agent3.edges",
+          "label": "Aristas del grafo",
+          "value": 13,
+          "threshold": ">= 1",
+          "status": "pass",
+          "evidence": "edges_rows"
+        },
+        {
+          "metric_id": "agent3.communities",
+          "label": "Comunidades detectadas",
+          "value": 2,
+          "threshold": ">= 1",
+          "status": "pass",
+          "evidence": "community_count"
+        },
+        {
+          "metric_id": "agent3.modularity",
+          "label": "Modularidad de la particion Louvain",
+          "value": 0.3165680473,
+          "threshold": "> 0.30",
+          "status": "pass",
+          "evidence": "Q sobre el grafo simple no ponderado de Agent3"
+        },
+        {
+          "metric_id": "agent3.features.contract_coverage",
+          "label": "Cobertura de features por contrato",
+          "value": 1.0,
+          "threshold": "100%",
+          "status": "pass",
+          "evidence": "agent2_features_rows / input_rows"
+        },
+        {
+          "metric_id": "agent3.contracts_without_supplier",
+          "label": "Contratos sin proveedor en grafo",
+          "value": 0,
+          "threshold": "informativo",
+          "status": "pass",
+          "evidence": "contracts_without_supplier"
+        },
+        {
+          "metric_id": "agent3.contracts_without_cpv",
+          "label": "Contratos sin CPV en grafo",
+          "value": 0,
+          "threshold": "informativo",
+          "status": "pass",
+          "evidence": "contracts_without_cpv"
+        }
+      ],
+      "limitations": [],
+      "metrics_count": 7,
+      "agent": "agent3"
+    },
+    "agent4": {
+      "status": "pass",
+      "metrics": [
+        {
+          "metric_id": "agent4.expectation_accuracy",
+          "label": "Accuracy de expectativas",
+          "value": 1.0,
+          "threshold": ">= 0.90",
+          "status": "pass",
+          "evidence": "summary.expectation_accuracy"
+        },
+        {
+          "metric_id": "agent4.precision_at_k",
+          "label": "Precision@k media",
+          "value": 1.0,
+          "threshold": ">= 0.90",
+          "status": "pass",
+          "evidence": "summary.average_precision_at_k"
+        },
+        {
+          "metric_id": "agent4.expected_document_recall",
+          "label": "Recall medio de documentos esperados",
+          "value": 1.0,
+          "threshold": ">= 0.90",
+          "status": "pass",
+          "evidence": "summary.average_expected_document_recall"
+        },
+        {
+          "metric_id": "agent4.citation_traceability",
+          "label": "Trazabilidad media de citas",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "summary.average_citation_traceability"
+        },
+        {
+          "metric_id": "agent4.contract_key_consistency",
+          "label": "Consistencia media de contrato en citas",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "summary.average_contract_key_consistency"
+        },
+        {
+          "metric_id": "agent4.no_unsupported_fraud_claim",
+          "label": "Ausencia de declaraciones de fraude no soportadas",
+          "value": 1.0,
+          "threshold": ">= 1.00",
+          "status": "pass",
+          "evidence": "summary.no_unsupported_fraud_claim_ratio"
+        },
+        {
+          "metric_id": "agent4.practical_validation",
+          "label": "Validacion practica de fichas trazables",
+          "value": 1.0,
+          "threshold": ">= 0.95",
+          "status": "pass",
+          "evidence": "summary.practical_validation_pass_ratio"
+        },
+        {
+          "metric_id": "agent4.ragas",
+          "label": "Evaluacion RAGAS",
+          "value": "not_run",
+          "threshold": "run deseable",
+          "status": "not_applicable",
+          "evidence": "ragas.status"
+        }
+      ],
+      "limitations": [
+        "Corpus sintetico demasiado pequeno para metricas RAGAS representativas."
+      ],
+      "metrics_count": 8,
+      "agent": "agent4"
+    },
+    "integrated": {
+      "status": "pass",
+      "metrics": [
+        {
+          "metric_id": "integrated.status_ready",
+          "label": "Demo integrada en estado ready",
+          "value": "ready",
+          "threshold": "ready",
+          "status": "pass",
+          "evidence": "integrated.status"
+        },
+        {
+          "metric_id": "integrated.validations_passed",
+          "label": "Validaciones integradas superadas",
+          "value": 1.0,
+          "threshold": "100%",
+          "status": "pass",
+          "evidence": "integrated.validations"
+        },
+        {
+          "metric_id": "integrated.agent2_score_present",
+          "label": "Score Agent2 integrado",
+          "value": 0.5,
+          "threshold": "no nulo",
+          "status": "pass",
+          "evidence": "summary.agent2_risk_score"
+        },
+        {
+          "metric_id": "integrated.agent3_features_present",
+          "label": "Features Agent3 integradas",
+          "value": 3,
+          "threshold": "> 0",
+          "status": "pass",
+          "evidence": "summary.agent3_features"
+        },
+        {
+          "metric_id": "integrated.agent4_evidence_citations",
+          "label": "Evidencias y citas Agent4 integradas",
+          "value": "2/2",
+          "threshold": "> 0/> 0",
+          "status": "pass",
+          "evidence": "summary.agent4_evidences / summary.agent4_citations"
+        },
+        {
+          "metric_id": "integration.case_studies.traceable",
+          "label": "Diez fichas de caso trazables",
+          "value": {
+            "cases": 10,
+            "selection": {
+              "high_score": 5,
+              "medium_risk": 3,
+              "control": 2
+            },
+            "rule_evidence_coverage": 1.0,
+            "relationships_coverage": 1.0
+          },
+          "threshold": "10 casos; composicion 5/3/2; trazabilidad completa",
+          "status": "pass",
+          "evidence": "data\\processed_sample\\case_studies\\case_studies_report.json"
+        },
+        {
+          "metric_id": "integrated.dashboard",
+          "label": "Validacion dashboard",
+          "value": "not_requested",
+          "threshold": "opcional",
+          "status": "not_applicable",
+          "evidence": "--include-dashboard no activado"
+        }
+      ],
+      "limitations": [
+        "Demo sintetica y offline: no usa raw completos ni descarga datos en vivo.",
+        "No requiere Docker, PostgreSQL, Neo4j, Qdrant ni Ollama.",
+        "Agent4 usa corpus documental local/sintetico y no declara fraude."
+      ],
+      "metrics_count": 7,
+      "agent": "integrated"
+    }
+  },
+  "limitations": [
+    "agent1: No hay intersecciones exactas entre BOE, PLACE y OpenTender; el matching transversal no queda validado.",
+    "agent2: Agent2 se mide desde la demo integrada porque no hay scoring completo en processed_dir.",
+    "agent4: Corpus sintetico demasiado pequeno para metricas RAGAS representativas.",
+    "integrated: Demo sintetica y offline: no usa raw completos ni descarga datos en vivo.",
+    "integrated: No requiere Docker, PostgreSQL, Neo4j, Qdrant ni Ollama.",
+    "integrated: Agent4 usa corpus documental local/sintetico y no declara fraude."
+  ],
+  "outputs": {
+    "json": "data\\processed\\benchmark\\benchmark_report.json",
+    "markdown": "data\\processed\\benchmark\\benchmark_report.md"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "dataset": "procurewatch_case_study",
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "case_id": "CS-06",
+  "selection": {
+    "group": "medium_risk",
+    "group_rank": 1,
+    "rationale": "Nivel medio; mayor score disponible y diversidad de fuente."
+  },
+  "contract": {
+    "contract_key_canon": "18748/2023L03350007",
+    "source": "place",
+    "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/14081930",
+    "source_dataset": "agent1_sample",
+    "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+    "buyer_name": "Presidencia del Cabildo Insular de Lanzarote",
+    "buyer_id": "L03350007",
+    "supplier_name": "PREVENTOS MEDIA SL",
+    "supplier_id": "B76019348",
+    "contract_title": "Servicios variados necesarios para la realización de los conciertos de Navidad organizados por el Centro Insular de Enseñanzas Musicales (CIEM) a celebrar los días 18, 19 y 20 de diciembre en el Teatro El Salinero.",
+    "procedure": "7",
+    "publication_date": "",
+    "award_date": "2023-11-27",
+    "estimated_value_eur": 5208.0,
+    "awarded_value_eur": 557256.0,
+    "cpv_codes_raw": "92000000, 51313000, 71318100",
+    "cpv_code_list": "['92000000' '51313000' '71318100']"
+  },
+  "risk": {
+    "risk_score": 45.0,
+    "risk_level": "medio",
+    "flags_count": 2,
+    "active_rules": [
+      "RF-05",
+      "RF-03"
+    ],
+    "evaluation_status": "partially_evaluable",
+    "evaluable_rules_count": 5,
+    "not_evaluable_rules": [
+      "RF-06"
+    ],
+    "score_version": "2.0.0",
+    "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+  },
+  "rule_evidence": [
+    {
+      "flag_code": "RF-03",
+      "severity": "media",
+      "confidence": 1.0,
+      "evidence_fields": [
+        "buyer_name",
+        "supplier_name",
+        "pair_count",
+        "pair_share",
+        "buyer_total_awarded",
+        "pair_awarded",
+        "pair_metric_source"
+      ],
+      "evidence_text": "La pareja comprador-proveedor 'Presidencia del Cabildo Insular de Lanzarote' / 'PREVENTOS MEDIA SL' se repite 6 veces en el canonico.",
+      "rule_version": "1.0.0"
+    },
+    {
+      "flag_code": "RF-05",
+      "severity": "media",
+      "confidence": 1.0,
+      "evidence_fields": [
+        "estimated_value_eur",
+        "awarded_value_eur",
+        "deviation_ratio"
+      ],
+      "evidence_text": "Importe adjudicado 557256.00 EUR frente a estimado 5208.00 EUR; desviación 10600.00%, superior al umbral 10.00%.",
+      "rule_version": "1.0.0"
+    }
+  ],
+  "relationships": {
+    "buyer_supplier_recurrence": 4,
+    "buyer_supplier_contract_share": 1.0,
+    "buyer_degree": 1.0,
+    "supplier_degree": 1.0,
+    "supplier_contracts_count": 4.0,
+    "contract_neighbor_count": 6,
+    "contract_degree_centrality": 0.0008183306,
+    "contract_betweenness_centrality": 0.0006351296,
+    "component_id": 0,
+    "component_size": 7333,
+    "community_id": 6,
+    "community_size": 241,
+    "cpv_count": 3,
+    "has_supplier": true,
+    "agent3_version": "0.1.0"
+  },
+  "documentary_evidence": {
+    "evidences": [],
+    "citations": [],
+    "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 18748/2023L03350007. No se declara fraude.",
+    "generation": {
+      "mode": "deterministic_fallback",
+      "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+      "llm_model": null,
+      "fallback_reason": "no_evidence"
+    }
+  },
+  "warnings": [
+    "RF-06 no fue evaluable por falta de los campos requeridos.",
+    "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+    "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+    "No se han encontrado documentos para el contrato solicitado.",
+    "No se han generado chunks documentales.",
+    "No hay evidencia documental recuperada para responder con trazabilidad."
+  ],
+  "assessment": {
+    "prioritization_criterion_met": true,
+    "active_rules_with_evidence": 2,
+    "active_rules_count": 2,
+    "rule_evidence_complete": true,
+    "relationships_available": true,
+    "documentary_evidence_available": false,
+    "explanation_complete": true,
+    "unsupported_fraud_claim": false
+  },
+  "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+  "outputs": {
+    "json": "data\\processed_sample\\case_studies\\cases\\CS-06.json",
+    "markdown": "data\\processed_sample\\case_studies\\cases\\CS-06.md"
+  }
+}

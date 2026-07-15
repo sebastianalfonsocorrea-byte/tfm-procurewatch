@@ -21,16 +21,16 @@ class Settings:
     qdrant_url: str | None = None
     ollama_base_url: str | None = None
     ollama_model: str = "qwen3:8b"
+    ollama_embedding_model: str = "bge-m3"
 
     @classmethod
     def from_env(cls) -> Settings:
         data_dir = Path(os.getenv("PROCUREWATCH_DATA_DIR", "data"))
+        ollama_model = os.getenv("PROCUREWATCH_OLLAMA_MODEL", "qwen3:8b")
         return cls(
             environment=os.getenv("PROCUREWATCH_ENV", "local"),
             data_dir=data_dir,
-            raw_data_dir=Path(
-                os.getenv("PROCUREWATCH_RAW_DATA_DIR", str(data_dir / "raw"))
-            ),
+            raw_data_dir=Path(os.getenv("PROCUREWATCH_RAW_DATA_DIR", str(data_dir / "raw"))),
             processed_data_dir=Path(
                 os.getenv("PROCUREWATCH_PROCESSED_DATA_DIR", str(data_dir / "processed"))
             ),
@@ -44,7 +44,11 @@ class Settings:
             neo4j_password=os.getenv("PROCUREWATCH_NEO4J_PASSWORD"),
             qdrant_url=os.getenv("PROCUREWATCH_QDRANT_URL"),
             ollama_base_url=os.getenv("PROCUREWATCH_OLLAMA_BASE_URL"),
-            ollama_model=os.getenv("PROCUREWATCH_OLLAMA_MODEL", "qwen3:8b"),
+            ollama_model=ollama_model,
+            ollama_embedding_model=os.getenv(
+                "PROCUREWATCH_OLLAMA_EMBEDDING_MODEL",
+                "bge-m3",
+            ),
         )
 
     def required_local_directories(self) -> tuple[Path, ...]:

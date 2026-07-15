@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -15,7 +17,11 @@ def run_agent1(
     *,
     boe_input: Path,
     open_tender_input: Path,
+    open_tender_download_url: str | None = None,
     place_inputs: list[Path],
+    buyer_catalog_path: Path | None = None,
+    raw_dir: Path = Path("data/raw"),
+    cleanup_downloads: bool = False,
     output_dir: Path = Path("data/processed"),
     cpv_prefix: str = "71",
     year: int = 2024,
@@ -25,6 +31,8 @@ def run_agent1(
     limit_place: int | None = None,
     limit_ot: int | None = None,
     force_rebuild: bool = False,
+    postgres_dsn: str | None = None,
+    write_postgres: bool = False,
 ) -> dict[str, Any]:
     if place_download:
         from ..data_sources.place import build_targets, download_targets, load_manifest
@@ -34,8 +42,8 @@ def run_agent1(
 
     if not boe_input.exists():
         raise FileNotFoundError(f"No existe BOE input: {boe_input}")
-    if not open_tender_input.exists():
-        raise FileNotFoundError(f"No existe OpenTender input: {open_tender_input}")
+    if buyer_catalog_path is not None and not buyer_catalog_path.exists():
+        raise FileNotFoundError(f"No existe buyer catalog input: {buyer_catalog_path}")
     if not place_inputs and not place_download:
         raise ValueError(
             "Debes indicar al menos un fichero PLACE de entrada o usar --place-download."
@@ -45,6 +53,24 @@ def run_agent1(
     reports: dict[str, Any] = {}
     selected_place_inputs = list(place_inputs)
     downloaded_targets: list[Path] = []
+    downloaded_opentender_inputs: list[Path] = []
+    effective_open_tender_input = open_tender_input
+
+    if open_tender_download_url:
+        from ..data_sources.opentender import download_opentender_zip
+
+        effective_open_tender_input = raw_dir / "opentender" / "data-es-ocds-json.zip"
+        opentender_download_report = download_opentender_zip(
+            url=open_tender_download_url,
+            output_path=effective_open_tender_input,
+            overwrite=True,
+        )
+        reports["opentender_download"] = opentender_download_report
+        effective_open_tender_input = Path(opentender_download_report["output_path"])
+        if opentender_download_report.get("downloaded"):
+            downloaded_opentender_inputs = [effective_open_tender_input]
+    if not effective_open_tender_input.exists():
+        raise FileNotFoundError(f"No existe OpenTender input: {effective_open_tender_input}")
 
     if place_download:
         manifest = load_manifest(DEFAULT_MANIFEST)
@@ -54,12 +80,13 @@ def run_agent1(
             dataset_ids=set(place_datasets) if place_datasets else None,
             include_docs=False,
             include_data=True,
-            raw_dir=Path("data/raw"),
+            raw_dir=raw_dir,
         )
-        download_targets(targets, overwrite=True)
+        download_report = download_targets(targets, overwrite=True)
         downloaded_targets = [target.output_path for target in targets if target.kind == "dataset"]
         if not place_inputs:
             selected_place_inputs = downloaded_targets
+        reports["place_download"] = download_report
 
     for path in selected_place_inputs:
         if not path.exists():
@@ -70,19 +97,24 @@ def run_agent1(
             boe_input, compute_sha=force_rebuild or limit_boe is not None
         ),
         "opentender": _input_artifact_metadata(
-            open_tender_input,
+            effective_open_tender_input,
             compute_sha=force_rebuild or limit_ot is not None,
         ),
         "place_files": [
             _input_artifact_metadata(path, compute_sha=force_rebuild or limit_place is not None)
             for path in selected_place_inputs
         ],
+        "buyer_catalog": _input_artifact_metadata(buyer_catalog_path, compute_sha=force_rebuild)
+        if buyer_catalog_path is not None
+        else None,
     }
     reports["inputs"] = {
         "boe_input": str(boe_input),
-        "open_tender_input": str(open_tender_input),
+        "open_tender_input": str(effective_open_tender_input),
+        "open_tender_download_url": open_tender_download_url,
         "place_inputs": [str(path) for path in selected_place_inputs],
         "downloaded_targets": [str(path) for path in downloaded_targets],
+        "downloaded_opentender_inputs": [str(path) for path in downloaded_opentender_inputs],
         "year": year,
         "cpv_prefix": cpv_prefix,
         "limits": {"boe": limit_boe, "place": limit_place, "opentender": limit_ot},
@@ -150,15 +182,22 @@ def run_agent1(
         _hydrate_artifact_from_report(input_artifacts["opentender"], reports["opentender"])
     else:
         input_artifacts["opentender"] = _input_artifact_metadata(
-            open_tender_input, compute_sha=True
+            effective_open_tender_input, compute_sha=True
         )
         reports["opentender"] = normalize_opentender_file(
-            input_path=open_tender_input,
+            input_path=effective_open_tender_input,
             output_dir=output_dir,
             year=year,
             cpv_prefix=cpv_prefix,
             limit=limit_ot,
         )
+
+    source_snapshot_id = _build_source_snapshot_id(
+        input_artifacts,
+        year=year,
+        cpv_prefix=cpv_prefix,
+    )
+    reports["inputs"]["source_snapshot_id"] = source_snapshot_id
 
     coverage = build_source_coverage(
         output_dir=output_dir,
@@ -169,6 +208,16 @@ def run_agent1(
         output_dir=output_dir,
         cpv_prefix=cpv_prefix,
         year=year,
+        source_snapshot_id=source_snapshot_id,
+    )
+    from .analytical_dataset import build_analytical_datasets
+
+    analytical = build_analytical_datasets(
+        canonical_path=Path(canonical["path"]),
+        output_dir=output_dir,
+        buyer_catalog_path=buyer_catalog_path,
+        postgres_dsn=postgres_dsn,
+        write_postgres=write_postgres,
     )
     quality_summary = build_agent1_quality_summary(
         output_dir=output_dir,
@@ -184,12 +233,25 @@ def run_agent1(
     reports["agent1_run_report_path"] = str(output_dir / "agent1_run_report.json")
     reports["coverage"] = coverage
     reports["canonical_agent2"] = canonical
+    reports["analytical_datasets"] = analytical
     reports["quality_summary"] = quality_summary
+    if analytical.get("postgres_write") is not None:
+        reports["postgres_write"] = analytical["postgres_write"]
 
     (output_dir / "agent1_run_report.json").write_text(
         json.dumps(reports, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+
+    if cleanup_downloads and (downloaded_targets or downloaded_opentender_inputs):
+        for path in downloaded_targets:
+            if path.exists():
+                path.unlink()
+        _cleanup_empty_parents(downloaded_targets, stop_dir=raw_dir)
+        for path in downloaded_opentender_inputs:
+            if path.exists():
+                path.unlink()
+        _cleanup_empty_parents(downloaded_opentender_inputs, stop_dir=raw_dir)
     return reports
 
 
@@ -201,12 +263,27 @@ def build_source_coverage(
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_path = output_dir / "contracts_boe_cpv71.parquet"
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
     place_path = output_dir / "contracts_place_cpv71.parquet"
     op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
     boe_df = _read_parquet_columns(
-        boe_path, ["file_number", "institution", "buyer_name", "publication_date", "contract_id"]
+        boe_path,
+        [
+            "file_number",
+            "institution",
+            "buyer_name",
+            "publication_date",
+            "contract_id",
+            "object",
+            "estimated_value_eur",
+            "awarded_value_eur",
+        ],
     )
     place_df = _read_parquet_columns(
         place_path,
@@ -217,11 +294,23 @@ def build_source_coverage(
             "buyer_dir3",
             "published_date",
             "source_entry_id",
+            "contract_title",
+            "estimated_overall_amount",
+            "total_amount",
         ],
     )
     op_df = _read_parquet_columns(
         op_path,
-        ["source_record_id", "source_file", "buyer_name", "publication_date", "source_entry_id"],
+        [
+            "source_record_id",
+            "source_file",
+            "buyer_name",
+            "publication_date",
+            "source_entry_id",
+            "contract_title",
+            "estimated_amount_raw",
+            "awarded_amount_raw",
+        ],
     )
 
     boe_key_series = _build_contract_keys(
@@ -252,12 +341,74 @@ def build_source_coverage(
 
     key_rows = _build_universe_rows_from_sets(boe_keys, place_keys, op_keys)
     key_path = output_dir / "agent1_contract_key_coverage.parquet"
-    key_df = pd.DataFrame(key_rows)
+    key_df = pd.DataFrame(
+        key_rows,
+        columns=[
+            "contract_key",
+            "contract_key_canon",
+            "present_in_boe",
+            "present_in_place",
+            "present_in_opentender",
+        ],
+    )
+    for column in ["present_in_boe", "present_in_place", "present_in_opentender"]:
+        key_df[column] = key_df[column].astype("bool")
     key_df.to_parquet(key_path, index=False)
     key_df.head(500).to_csv(output_dir / "agent1_contract_key_coverage_preview.csv", index=False)
 
-    return {
+    source_frames = {
+        "boe": _build_matching_frame(
+            source="boe",
+            dataframe=boe_df,
+            contract_keys=boe_key_series,
+        ),
+        "place": _build_matching_frame(
+            source="place",
+            dataframe=place_df,
+            contract_keys=place_key_series,
+        ),
+        "opentender": _build_matching_frame(
+            source="opentender",
+            dataframe=op_df,
+            contract_keys=op_key_series,
+        ),
+    }
+    exact_intersections = {
+        "boe_place": len(boe_keys & place_keys),
+        "boe_opentender": len(boe_keys & op_keys),
+        "place_opentender": len(place_keys & op_keys),
+    }
+    matching_diagnostics, matching_candidates = _build_matching_diagnostics(
+        source_frames=source_frames,
+        exact_intersections=exact_intersections,
+        source_paths={
+            "boe": boe_path,
+            "place": place_path,
+            "opentender": op_path,
+        },
+    )
+    matching_diagnostics_path = output_dir / "agent1_matching_diagnostics.json"
+    matching_candidates_preview_path = output_dir / "agent1_matching_candidates_preview.csv"
+    matching_candidates.head(500).to_csv(
+        matching_candidates_preview_path,
+        index=False,
+        encoding="utf-8",
+    )
+    matching_diagnostics["outputs"] = {
+        "diagnostics_json": str(matching_diagnostics_path),
+        "candidates_preview_csv": str(matching_candidates_preview_path),
+    }
+    matching_diagnostics_path.write_text(
+        json.dumps(matching_diagnostics, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    coverage_summary = {
         "contract_key_coverage_path": str(key_path),
+        "matching_diagnostics_path": str(matching_diagnostics_path),
+        "matching_candidates_preview_path": str(matching_candidates_preview_path),
+        "candidate_counts": matching_diagnostics["candidate_counts"],
+        "candidate_class_counts": matching_diagnostics["candidate_class_counts"],
         "boe_contract_keys": len(boe_keys),
         "place_contract_keys": len(place_keys),
         "op_contract_keys": len(op_keys),
@@ -294,6 +445,18 @@ def build_source_coverage(
             ).sum()
         ),
     }
+    from .source_diagnostics import build_agent1_source_coverage_analysis
+
+    source_analysis = build_agent1_source_coverage_analysis(
+        coverage=coverage_summary,
+        matching_diagnostics=matching_diagnostics,
+        output_dir=output_dir,
+    )
+    coverage_summary["source_coverage_analysis_path"] = source_analysis["outputs"]["json"]
+    coverage_summary["source_coverage_analysis_markdown_path"] = source_analysis["outputs"][
+        "markdown"
+    ]
+    return coverage_summary
 
 
 def build_agent2_canonical_dataset(
@@ -301,15 +464,22 @@ def build_agent2_canonical_dataset(
     output_dir: Path,
     cpv_prefix: str,
     year: int | None = None,
+    source_snapshot_id: str | None = None,
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_path = output_dir / "contracts_boe_cpv71.parquet"
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
     place_path = output_dir / "contracts_place_cpv71.parquet"
     op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
     boe_columns = [
         "contract_id",
+        "notice_id",
         "file_number",
         "institution",
         "buyer_name",
@@ -364,11 +534,18 @@ def build_agent2_canonical_dataset(
         _canonical_from_place(_read_parquet_columns(place_path, place_columns)),
         _canonical_from_opentender(_read_parquet_columns(op_path, opentender_columns)),
     ]
+    snapshot_id = source_snapshot_id or _build_processed_snapshot_id(
+        output_dir=output_dir,
+        cpv_prefix=cpv_prefix,
+        year=year,
+        paths=[boe_path, place_path, op_path],
+    )
     dataframe = (
         pd.concat([frame for frame in frames if not frame.empty], ignore_index=True)
         if any(not frame.empty for frame in frames)
         else pd.DataFrame(columns=CANONICAL_AGENT2_COLUMNS)
     )
+    dataframe["source_snapshot_id"] = snapshot_id
 
     if not dataframe.empty:
         dataframe = dataframe[CANONICAL_AGENT2_COLUMNS].copy()
@@ -379,6 +556,8 @@ def build_agent2_canonical_dataset(
             "contract_key_canon",
             "source",
             "source_record_id",
+            "source_notice_id",
+            "source_tender_id",
             "source_dataset",
             "buyer_name",
             "buyer_id",
@@ -390,6 +569,7 @@ def build_agent2_canonical_dataset(
             "award_date",
             "cpv_codes_raw",
             "source_file",
+            "source_snapshot_id",
         ]
         for column in string_columns:
             dataframe[column] = dataframe[column].astype("string").fillna("")
@@ -415,6 +595,7 @@ def build_agent2_canonical_dataset(
         "schema_path": str(schema_path),
         "rows": int(len(dataframe)),
         "columns": CANONICAL_AGENT2_COLUMNS,
+        "source_snapshot_id": snapshot_id,
         "sources": dataframe["source"].value_counts(dropna=False).to_dict()
         if not dataframe.empty
         else {},
@@ -427,6 +608,7 @@ def build_agent1_quality_summary(
     coverage: dict[str, Any],
     canonical: dict[str, Any],
 ) -> dict[str, Any]:
+    import pandas as pd
 
     canonical_path = Path(canonical["path"])
     critical_fields = [
@@ -436,9 +618,10 @@ def build_agent1_quality_summary(
         "publication_date",
         "cpv_codes_raw",
     ]
+    quality_columns = [*critical_fields, "supplier_id", "award_date"]
     dataframe = _read_parquet_columns(
         canonical_path,
-        critical_fields,
+        quality_columns,
     )
     field_quality = {}
     for field in critical_fields:
@@ -456,13 +639,116 @@ def build_agent1_quality_summary(
             else None,
         }
 
+    total_rows = int(len(dataframe))
+    complete_critical_rows = 0
+    if total_rows:
+        critical_present = dataframe[critical_fields].notna()
+        for field in critical_fields:
+            critical_present[field] &= dataframe[field].astype("string").str.strip() != ""
+        complete_critical_rows = int(critical_present.all(axis=1).sum())
+
+    critical_cells = total_rows * len(critical_fields)
+    present_critical_cells = sum(
+        total_rows - int(field_quality[field]["missing"] or 0) for field in critical_fields
+    )
+    completeness = {
+        "critical_fields": critical_fields,
+        "present_cells": present_critical_cells,
+        "total_cells": critical_cells,
+        "coverage_ratio": round(present_critical_cells / critical_cells, 6)
+        if critical_cells
+        else None,
+        "complete_rows": complete_critical_rows,
+        "complete_rows_ratio": round(complete_critical_rows / total_rows, 6)
+        if total_rows
+        else None,
+        "target_ratio": 0.90,
+    }
+    completeness["target_met"] = bool(
+        completeness["coverage_ratio"] is not None
+        and completeness["coverage_ratio"] > completeness["target_ratio"]
+    )
+
+    supplier_ids = (
+        dataframe["supplier_id"].astype("string").fillna("").str.strip()
+        if "supplier_id" in dataframe.columns
+        else None
+    )
+    supplier_ids_present = int((supplier_ids != "").sum()) if supplier_ids is not None else 0
+    valid_supplier_ids = (
+        sum(_is_valid_spanish_tax_id(value) for value in supplier_ids.tolist())
+        if supplier_ids is not None
+        else 0
+    )
+    nif_quality = {
+        "valid": valid_supplier_ids,
+        "invalid": supplier_ids_present - valid_supplier_ids,
+        "missing": total_rows - supplier_ids_present,
+        "coverage_ratio": round(supplier_ids_present / total_rows, 6) if total_rows else None,
+        "valid_ratio_total": round(valid_supplier_ids / total_rows, 6) if total_rows else None,
+        "valid_ratio_present": round(valid_supplier_ids / supplier_ids_present, 6)
+        if supplier_ids_present
+        else None,
+        "target_ratio_total": 0.85,
+    }
+    nif_quality["target_met"] = bool(
+        nif_quality["valid_ratio_total"] is not None
+        and nif_quality["valid_ratio_total"] > nif_quality["target_ratio_total"]
+    )
+
+    publication_dates = (
+        dataframe["publication_date"].astype("string").fillna("").str.strip()
+        if "publication_date" in dataframe.columns
+        else None
+    )
+    award_dates = (
+        dataframe["award_date"].astype("string").fillna("").str.strip()
+        if "award_date" in dataframe.columns
+        else None
+    )
+    comparable_dates = 0
+    coherent_dates = 0
+    invalid_date_values = 0
+    if publication_dates is not None and award_dates is not None and total_rows:
+        date_candidates = (publication_dates != "") & (award_dates != "")
+        parsed_publication = pd.to_datetime(
+            publication_dates.where(date_candidates), errors="coerce", utc=True
+        )
+        parsed_award = pd.to_datetime(award_dates.where(date_candidates), errors="coerce", utc=True)
+        parsed_pairs = date_candidates & parsed_publication.notna() & parsed_award.notna()
+        comparable_dates = int(parsed_pairs.sum())
+        coherent_dates = int((parsed_pairs & (parsed_publication <= parsed_award)).sum())
+        invalid_date_values = int((date_candidates & ~parsed_pairs).sum())
+
+    temporal_quality = {
+        "comparable_rows": comparable_dates,
+        "coherent_rows": coherent_dates,
+        "incoherent_rows": comparable_dates - coherent_dates,
+        "invalid_or_unparseable_rows": invalid_date_values,
+        "not_evaluable_rows": total_rows - comparable_dates - invalid_date_values,
+        "coverage_ratio": round(comparable_dates / total_rows, 6) if total_rows else None,
+        "coherence_ratio": round(coherent_dates / comparable_dates, 6)
+        if comparable_dates
+        else None,
+        "target_ratio": 0.98,
+    }
+    temporal_quality["target_met"] = bool(
+        temporal_quality["coherence_ratio"] is not None
+        and temporal_quality["coherence_ratio"] > temporal_quality["target_ratio"]
+    )
+
     duplicate_keys = (
         int(dataframe.duplicated(subset=["source", "contract_key_canon"]).sum())
         if not dataframe.empty and {"source", "contract_key_canon"}.issubset(dataframe.columns)
         else 0
     )
     status = "ok"
-    if not dataframe.empty and duplicate_keys:
+    if not dataframe.empty and (
+        duplicate_keys
+        or not completeness["target_met"]
+        or not nif_quality["target_met"]
+        or not temporal_quality["target_met"]
+    ):
         status = "warning"
     if int(canonical.get("rows", 0)) == 0:
         status = "error"
@@ -473,6 +759,11 @@ def build_agent1_quality_summary(
         "canonical_rows": int(canonical.get("rows", 0)),
         "coverage": coverage,
         "field_quality": field_quality,
+        "quality_metrics": {
+            "ocds_critical_completeness": completeness,
+            "supplier_tax_id": nif_quality,
+            "temporal_coherence": temporal_quality,
+        },
         "duplicate_source_contract_keys": duplicate_keys,
         "acceptance_criteria": {
             "agent1_run_report": True,
@@ -489,10 +780,39 @@ def build_agent1_quality_summary(
     return summary
 
 
+def _is_valid_spanish_tax_id(value: Any) -> bool:
+    normalized = re.sub(r"[^A-Z0-9]", "", str(value).upper())
+    if re.fullmatch(r"\d{8}[A-Z]", normalized):
+        letters = "TRWAGMYFPDXBNJZSQVHLCKE"
+        return normalized[-1] == letters[int(normalized[:8]) % 23]
+    if re.fullmatch(r"[XYZ]\d{7}[A-Z]", normalized):
+        letters = "TRWAGMYFPDXBNJZSQVHLCKE"
+        number = f"{'XYZ'.index(normalized[0])}{normalized[1:8]}"
+        return normalized[-1] == letters[int(number) % 23]
+    if not re.fullmatch(r"[ABCDEFGHJKLMNPQRSUVW]\d{7}[0-9A-J]", normalized):
+        return False
+
+    initial = normalized[0]
+    digits = normalized[1:8]
+    even_sum = sum(int(digits[index]) for index in (1, 3, 5))
+    odd_sum = sum(sum(divmod(int(digits[index]) * 2, 10)) for index in (0, 2, 4, 6))
+    control = (10 - (even_sum + odd_sum) % 10) % 10
+    expected_digit = str(control)
+    expected_letter = "JABCDEFGHI"[control]
+    actual = normalized[-1]
+    if initial in "ABEH":
+        return actual == expected_digit
+    if initial in "KPQS":
+        return actual == expected_letter
+    return actual in {expected_digit, expected_letter}
+
+
 CANONICAL_AGENT2_COLUMNS = [
     "contract_key_canon",
     "source",
     "source_record_id",
+    "source_notice_id",
+    "source_tender_id",
     "source_dataset",
     "buyer_name",
     "buyer_id",
@@ -507,6 +827,7 @@ CANONICAL_AGENT2_COLUMNS = [
     "cpv_codes_raw",
     "cpv_code_list",
     "source_file",
+    "source_snapshot_id",
 ]
 
 
@@ -515,15 +836,16 @@ def _canonical_from_boe(dataframe: Any) -> pd.DataFrame:
 
     if dataframe.empty:
         return pd.DataFrame(columns=CANONICAL_AGENT2_COLUMNS)
+    from .boe_units import add_boe_unit_ids
+
+    dataframe = add_boe_unit_ids(dataframe)
     return pd.DataFrame(
         {
-            "contract_key_canon": _build_contract_keys(
-                dataframe,
-                source="boe",
-                id_columns=("file_number", "institution", "buyer_name", "publication_date"),
-            ),
+            "contract_key_canon": _series_or_empty(dataframe, "id_linea_adjudicacion"),
             "source": "boe",
-            "source_record_id": _series_or_empty(dataframe, "contract_id"),
+            "source_record_id": _series_or_empty(dataframe, "id_linea_adjudicacion"),
+            "source_notice_id": _series_or_empty(dataframe, "id_aviso"),
+            "source_tender_id": _series_or_empty(dataframe, "id_expediente"),
             "source_dataset": "boe_2014_2024",
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "institution"),
@@ -562,6 +884,8 @@ def _canonical_from_place(dataframe: Any) -> pd.DataFrame:
             ),
             "source": "place",
             "source_record_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_notice_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_tender_id": _series_or_empty(dataframe, "contract_folder_id"),
             "source_dataset": _series_or_empty(dataframe, "source_dataset"),
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "buyer_dir3"),
@@ -594,6 +918,8 @@ def _canonical_from_opentender(dataframe: Any) -> pd.DataFrame:
             ),
             "source": "opentender",
             "source_record_id": _series_or_empty(dataframe, "source_record_id"),
+            "source_notice_id": _series_or_empty(dataframe, "source_entry_id"),
+            "source_tender_id": _series_or_empty(dataframe, "source_record_id"),
             "source_dataset": _series_or_empty(dataframe, "source_file"),
             "buyer_name": _series_or_empty(dataframe, "buyer_name"),
             "buyer_id": _series_or_empty(dataframe, "buyer_id"),
@@ -635,6 +961,8 @@ def _agent2_schema() -> dict[str, Any]:
             ],
             "nullable": [
                 "source_record_id",
+                "source_notice_id",
+                "source_tender_id",
                 "source_dataset",
                 "buyer_id",
                 "supplier_name",
@@ -646,12 +974,15 @@ def _agent2_schema() -> dict[str, Any]:
                 "awarded_value_eur",
                 "cpv_code_list",
                 "source_file",
+                "source_snapshot_id",
             ],
         },
         "columns": {
             "contract_key_canon": "Clave normalizada para cobertura y deduplicacion entre fuentes.",
             "source": "Fuente normalizada: boe, place u opentender.",
             "source_record_id": "Identificador original del registro en la fuente.",
+            "source_notice_id": "Identificador del aviso o publicación de origen.",
+            "source_tender_id": "Identificador de licitación o expediente dentro de la fuente.",
             "source_dataset": "Dataset o subfuente de procedencia.",
             "buyer_name": "Organismo contratante normalizado por la fuente.",
             "buyer_id": "Identificador de organismo si existe: DIR3, NIF, institucion u otro.",
@@ -666,8 +997,390 @@ def _agent2_schema() -> dict[str, Any]:
             "cpv_codes_raw": "CPV en formato textual trazable.",
             "cpv_code_list": "Lista de codigos CPV si la fuente la proporciona.",
             "source_file": "Archivo fisico de origen.",
+            "source_snapshot_id": (
+                "Identificador determinista del snapshot de fuentes usado por Agent1."
+            ),
         },
     }
+
+
+MATCHING_CANDIDATE_COLUMNS = [
+    "candidate_class",
+    "match_strategy",
+    "source_left",
+    "source_right",
+    "contract_key_left",
+    "contract_key_right",
+    "source_record_id_left",
+    "source_record_id_right",
+    "buyer_left",
+    "buyer_right",
+    "date_left",
+    "date_right",
+    "title_left",
+    "title_right",
+    "amount_left",
+    "amount_right",
+    "diagnostic_key",
+]
+
+MATCHING_KEY_COLUMNS = [
+    "match_strategy",
+    "diagnostic_key",
+    "source",
+    "contract_key_canon",
+    "source_record_id",
+    "buyer_name",
+    "publication_date",
+    "contract_title",
+    "amount_value",
+]
+
+MATCHING_STRATEGY_RANKS = {
+    "buyer_date_title_amount": 0,
+    "buyer_title_amount": 1,
+    "buyer_date_title": 2,
+}
+
+MATCHING_CANDIDATE_CLASSES = {
+    "buyer_date_title_amount": "strong_candidate",
+    "buyer_title_amount": "weak_candidate",
+    "buyer_date_title": "weak_candidate",
+}
+
+
+def _build_matching_frame(
+    *,
+    source: str,
+    dataframe: Any,
+    contract_keys: Any,
+) -> Any:
+    import pandas as pd
+
+    if dataframe.empty:
+        return pd.DataFrame(
+            columns=[
+                "source",
+                "contract_key_canon",
+                "source_record_id",
+                "buyer_name",
+                "publication_date",
+                "contract_title",
+                "amount_value",
+                "diagnostic_buyer",
+                "diagnostic_date",
+                "diagnostic_title",
+                "diagnostic_amount",
+            ]
+        )
+
+    if source == "boe":
+        record_id = _source_text(dataframe, "contract_id", "file_number")
+        buyer = _source_text(dataframe, "buyer_name", "institution")
+        date = _source_text(dataframe, "publication_date")
+        title = _source_text(dataframe, "object")
+        amount = _source_amount(dataframe, "awarded_value_eur", "estimated_value_eur")
+    elif source == "place":
+        record_id = _source_text(dataframe, "source_entry_id", "contract_folder_id")
+        buyer = _source_text(dataframe, "buyer_name", "buyer_dir3")
+        date = _source_text(dataframe, "published_date")
+        title = _source_text(dataframe, "contract_title")
+        amount = _source_amount(dataframe, "total_amount", "estimated_overall_amount")
+    else:
+        record_id = _source_text(dataframe, "source_record_id", "source_entry_id")
+        buyer = _source_text(dataframe, "buyer_name", "buyer_id")
+        date = _source_text(dataframe, "publication_date")
+        title = _source_text(dataframe, "contract_title")
+        amount = _source_amount(dataframe, "awarded_amount_raw", "estimated_amount_raw")
+
+    keys = contract_keys.reindex(dataframe.index).astype("string").fillna("")
+    frame = pd.DataFrame(
+        {
+            "source": source,
+            "contract_key_canon": keys,
+            "source_record_id": record_id.astype("string").fillna(""),
+            "buyer_name": buyer.astype("string").fillna(""),
+            "publication_date": date.astype("string").fillna(""),
+            "contract_title": title.astype("string").fillna(""),
+            "amount_value": amount,
+        },
+        index=dataframe.index,
+    )
+    frame["diagnostic_buyer"] = _norm_text(frame["buyer_name"]).fillna("")
+    frame["diagnostic_date"] = _norm_date(_norm_text(frame["publication_date"])).fillna("")
+    frame["diagnostic_title"] = _norm_text(frame["contract_title"]).fillna("").str[:120]
+    frame["diagnostic_amount"] = _amount_key(frame["amount_value"])
+    return frame
+
+
+def _build_matching_diagnostics(
+    *,
+    source_frames: dict[str, Any],
+    exact_intersections: dict[str, int],
+    source_paths: dict[str, Path],
+) -> tuple[dict[str, Any], Any]:
+    import pandas as pd
+
+    warnings = []
+    for source, path in source_paths.items():
+        if not path.exists():
+            warnings.append(f"No existe dataset procesado de {source}: {path}")
+        elif source_frames[source].empty:
+            warnings.append(f"Dataset procesado de {source} sin filas para diagnostico.")
+
+    pair_frames = {}
+    candidates = []
+    for left, right in [("boe", "place"), ("boe", "opentender"), ("place", "opentender")]:
+        pair_key = f"{left}_{right}"
+        pair_frame = _build_pair_matching_candidates(
+            source_frames[left],
+            source_frames[right],
+            source_left=left,
+            source_right=right,
+        )
+        pair_frames[pair_key] = pair_frame
+        candidates.append(pair_frame)
+
+    all_candidates = (
+        pd.concat(candidates, ignore_index=True)
+        if any(not frame.empty for frame in candidates)
+        else pd.DataFrame(columns=MATCHING_CANDIDATE_COLUMNS)
+    )
+    candidate_counts = {key: int(len(frame)) for key, frame in pair_frames.items()}
+    candidate_class_counts = {}
+    for key, frame in pair_frames.items():
+        if frame.empty or "candidate_class" not in frame.columns:
+            candidate_class_counts[key] = {}
+            continue
+        candidate_class_counts[key] = {
+            str(candidate_class): int(count)
+            for candidate_class, count in frame["candidate_class"].value_counts().items()
+        }
+    diagnostics = {
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "purpose": (
+            "Diagnostico de matching aproximado; no sustituye contract_key_canon "
+            "ni acredita contraste interfuente definitivo."
+        ),
+        "warnings": warnings,
+        "official_key_policy": _matching_official_key_policy(),
+        "exact_intersections": exact_intersections,
+        "component_coverage": {
+            source: _matching_component_coverage(frame)
+            for source, frame in source_frames.items()
+        },
+        "candidate_counts": candidate_counts,
+        "candidate_class_counts": candidate_class_counts,
+        "candidate_policy": {
+            "exact_match": (
+                "Solo las intersecciones por contract_key_canon se consideran matches exactos."
+            ),
+            "strong_candidate": (
+                "Coincidencia aproximada por comprador, fecha, titulo e importe; requiere "
+                "revision antes de fusionar."
+            ),
+            "weak_candidate": (
+                "Coincidencia parcial sin todos los componentes; sirve para exploracion, "
+                "no para integracion automatica."
+            ),
+            "no_match": (
+                "Ausencia de interseccion exacta o candidato aproximado con las reglas actuales."
+            ),
+        },
+        "candidate_examples": {
+            key: _records_for_json(frame.head(50))
+            for key, frame in pair_frames.items()
+        },
+    }
+    return diagnostics, all_candidates
+
+
+def _build_pair_matching_candidates(
+    left: Any,
+    right: Any,
+    *,
+    source_left: str,
+    source_right: str,
+) -> Any:
+    import pandas as pd
+
+    left_keys = _expanded_matching_keys(left)
+    right_keys = _expanded_matching_keys(right)
+    if left_keys.empty or right_keys.empty:
+        return pd.DataFrame(columns=MATCHING_CANDIDATE_COLUMNS)
+
+    merged = left_keys.merge(
+        right_keys,
+        on=["match_strategy", "diagnostic_key"],
+        suffixes=("_left", "_right"),
+    )
+    if merged.empty:
+        return pd.DataFrame(columns=MATCHING_CANDIDATE_COLUMNS)
+
+    merged = merged[
+        merged["contract_key_canon_left"].astype("string")
+        != merged["contract_key_canon_right"].astype("string")
+    ]
+    if merged.empty:
+        return pd.DataFrame(columns=MATCHING_CANDIDATE_COLUMNS)
+
+    candidates = pd.DataFrame(
+        {
+            "candidate_class": merged["match_strategy"].map(MATCHING_CANDIDATE_CLASSES),
+            "match_strategy": merged["match_strategy"],
+            "source_left": source_left,
+            "source_right": source_right,
+            "contract_key_left": merged["contract_key_canon_left"],
+            "contract_key_right": merged["contract_key_canon_right"],
+            "source_record_id_left": merged["source_record_id_left"],
+            "source_record_id_right": merged["source_record_id_right"],
+            "buyer_left": merged["buyer_name_left"],
+            "buyer_right": merged["buyer_name_right"],
+            "date_left": merged["publication_date_left"],
+            "date_right": merged["publication_date_right"],
+            "title_left": merged["contract_title_left"],
+            "title_right": merged["contract_title_right"],
+            "amount_left": merged["amount_value_left"],
+            "amount_right": merged["amount_value_right"],
+            "diagnostic_key": merged["diagnostic_key"],
+        }
+    )
+    candidates["candidate_class"] = candidates["candidate_class"].fillna("weak_candidate")
+    candidates["_strategy_rank"] = candidates["match_strategy"].map(MATCHING_STRATEGY_RANKS)
+    candidates = candidates.sort_values(
+        ["_strategy_rank", "source_record_id_left", "source_record_id_right"],
+        kind="stable",
+    )
+    candidates = candidates.drop_duplicates(
+        subset=[
+            "source_left",
+            "source_right",
+            "contract_key_left",
+            "contract_key_right",
+        ],
+        keep="first",
+    )
+    return candidates[MATCHING_CANDIDATE_COLUMNS].reset_index(drop=True)
+
+
+def _expanded_matching_keys(frame: Any) -> Any:
+    import pandas as pd
+
+    if frame.empty:
+        return pd.DataFrame(columns=MATCHING_KEY_COLUMNS)
+
+    strategies = [
+        (
+            "buyer_date_title_amount",
+            ["diagnostic_buyer", "diagnostic_date", "diagnostic_title", "diagnostic_amount"],
+        ),
+        ("buyer_title_amount", ["diagnostic_buyer", "diagnostic_title", "diagnostic_amount"]),
+        ("buyer_date_title", ["diagnostic_buyer", "diagnostic_date", "diagnostic_title"]),
+    ]
+    expanded = []
+    for strategy, components in strategies:
+        mask = frame["contract_key_canon"].astype("string").str.strip() != ""
+        for component in components:
+            mask &= frame[component].astype("string").str.strip() != ""
+        if not mask.any():
+            continue
+        keyed = frame.loc[mask, MATCHING_KEY_COLUMNS[2:]].copy()
+        keyed["match_strategy"] = strategy
+        keyed["diagnostic_key"] = (
+            strategy
+            + "|"
+            + frame.loc[mask, components].astype("string").agg("|".join, axis=1)
+        )
+        expanded.append(keyed[MATCHING_KEY_COLUMNS])
+    if not expanded:
+        return pd.DataFrame(columns=MATCHING_KEY_COLUMNS)
+    return pd.concat(expanded, ignore_index=True)
+
+
+def _matching_component_coverage(frame: Any) -> dict[str, Any]:
+    total_rows = int(len(frame))
+    components = {
+        "contract_key_canon": "contract_key_canon",
+        "buyer": "diagnostic_buyer",
+        "date": "diagnostic_date",
+        "title": "diagnostic_title",
+        "amount": "diagnostic_amount",
+    }
+    result: dict[str, Any] = {"rows": total_rows}
+    for name, column in components.items():
+        present = (
+            int((frame[column].astype("string").str.strip() != "").sum())
+            if column in frame.columns
+            else 0
+        )
+        result[name] = {
+            "present": present,
+            "coverage_ratio": round(present / total_rows, 6) if total_rows else None,
+        }
+    return result
+
+
+def _matching_official_key_policy() -> dict[str, list[str]]:
+    return {
+        "boe": ["file_number", "buyer_name", "publication_date", "fallback:contract_id"],
+        "place": [
+            "contract_folder_id",
+            "buyer_dir3",
+            "published_date",
+            "fallback:source_entry_id",
+        ],
+        "opentender": [
+            "source_record_id",
+            "buyer_name",
+            "publication_date",
+            "fallback:source_entry_id",
+        ],
+    }
+
+
+def _source_text(dataframe: Any, *columns: str) -> Any:
+    import pandas as pd
+
+    for column in columns:
+        if column in dataframe.columns:
+            return dataframe[column]
+    return pd.Series([""] * len(dataframe), index=dataframe.index)
+
+
+def _source_amount(dataframe: Any, *columns: str) -> Any:
+    import pandas as pd
+
+    result = pd.Series(pd.NA, index=dataframe.index, dtype="Float64")
+    for column in columns:
+        if column not in dataframe.columns:
+            continue
+        values = pd.to_numeric(dataframe[column], errors="coerce")
+        result = result.where(result.notna(), values)
+    return result
+
+
+def _amount_key(series: Any) -> Any:
+    numeric = series.round(0).astype("Int64")
+    return numeric.astype("string").fillna("")
+
+
+def _records_for_json(dataframe: Any) -> list[dict[str, Any]]:
+    return [_json_safe_record(record) for record in dataframe.to_dict("records")]
+
+
+def _json_safe_record(record: dict[str, Any]) -> dict[str, Any]:
+    return {key: _json_safe_value(value) for key, value in record.items()}
+
+
+def _json_safe_value(value: Any) -> Any:
+    try:
+        import pandas as pd
+
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return value
 
 
 def _build_contract_keys(
@@ -922,6 +1635,20 @@ def _load_json_dict(path: Path) -> dict[str, Any]:
         return {}
 
 
+def _cleanup_empty_parents(paths: list[Path], *, stop_dir: Path) -> None:
+    roots = sorted({path.parent for path in paths}, key=lambda item: len(item.parts), reverse=True)
+    for start in roots:
+        current = start
+        while current != stop_dir.parent:
+            try:
+                current.rmdir()
+            except OSError:
+                break
+            if current == stop_dir:
+                break
+            current = current.parent
+
+
 def _jsonish(value: Any) -> str:
     if isinstance(value, list):
         return json.dumps(value, ensure_ascii=False)
@@ -971,6 +1698,71 @@ def _input_artifact_metadata(path: Path, *, compute_sha: bool = True) -> dict[st
         "sha256": digest.hexdigest() if digest else None,
         "fingerprint_mode": "sha256" if digest else "size_mtime",
         "modified_utc": datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat(),
+    }
+
+
+def _build_source_snapshot_id(
+    input_artifacts: dict[str, Any],
+    *,
+    year: int,
+    cpv_prefix: str,
+) -> str:
+    payload = {
+        "agent": "agent1",
+        "year": year,
+        "cpv_prefix": cpv_prefix,
+        "input_artifacts": _stable_snapshot_payload(input_artifacts),
+    }
+    return _snapshot_id_from_payload(payload)
+
+
+def _build_processed_snapshot_id(
+    *,
+    output_dir: Path,
+    cpv_prefix: str,
+    year: int | None,
+    paths: list[Path],
+) -> str:
+    artifacts = [
+        _path_snapshot_payload(path)
+        for path in paths
+        if path.exists()
+    ]
+    payload = {
+        "agent": "agent1",
+        "year": year,
+        "cpv_prefix": cpv_prefix,
+        "output_dir": str(output_dir),
+        "processed_artifacts": artifacts,
+    }
+    return _snapshot_id_from_payload(payload)
+
+
+def _snapshot_id_from_payload(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    return f"agent1:{hashlib.sha256(encoded.encode('utf-8')).hexdigest()[:16]}"
+
+
+def _stable_snapshot_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _stable_snapshot_payload(value[key])
+            for key in sorted(value)
+            if key != "modified_utc"
+        }
+    if isinstance(value, list):
+        return [_stable_snapshot_payload(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _path_snapshot_payload(path: Path) -> dict[str, Any]:
+    return {
+        "path": str(path),
+        "name": path.name,
+        "exists": path.exists(),
+        "size_bytes": path.stat().st_size if path.exists() else None,
     }
 
 

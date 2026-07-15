@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from collections import Counter
-from dataclasses import dataclass, asdict
-from datetime import UTC, datetime
-from decimal import Decimal, InvalidOperation
-from pathlib import Path
-from typing import Any
 import json
 import re
 import sys
 import xml.etree.ElementTree as ET
 import zipfile
+from collections import Counter
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -159,9 +159,18 @@ def parse_place_zip(
             raw_bytes = zf.read(atom_name)
             for entry_bytes in _iter_atom_entry_chunks(raw_bytes):
                 entries_seen += 1
-                if cpv_prefix != "all" and not _entry_may_contain_cpv_prefix(entry_bytes, cpv_prefix):
+                if cpv_prefix != "all" and not _entry_may_contain_cpv_prefix(
+                    entry_bytes, cpv_prefix
+                ):
                     if progress_every and entries_seen % progress_every == 0:
-                        _print_place_progress(zip_path, atom_index, total_atom_files, entries_seen, candidates_seen, len(out))
+                        _print_place_progress(
+                            zip_path,
+                            atom_index,
+                            total_atom_files,
+                            entries_seen,
+                            candidates_seen,
+                            len(out),
+                        )
                     continue
 
                 candidates_seen += 1
@@ -178,13 +187,38 @@ def parse_place_zip(
                     )
                 )
                 if progress_every and entries_seen % progress_every == 0:
-                    _print_place_progress(zip_path, atom_index, total_atom_files, entries_seen, candidates_seen, len(out))
+                    _print_place_progress(
+                        zip_path,
+                        atom_index,
+                        total_atom_files,
+                        entries_seen,
+                        candidates_seen,
+                        len(out),
+                    )
                 if limit is not None and len(out) >= limit:
-                    _print_place_progress(zip_path, atom_index, total_atom_files, entries_seen, candidates_seen, len(out), final=True)
+                    _print_place_progress(
+                        zip_path,
+                        atom_index,
+                        total_atom_files,
+                        entries_seen,
+                        candidates_seen,
+                        len(out),
+                        final=True,
+                    )
                     return out
             if progress_every and atom_index % 25 == 0:
-                _print_place_progress(zip_path, atom_index, total_atom_files, entries_seen, candidates_seen, len(out))
-    _print_place_progress(zip_path, total_atom_files, total_atom_files, entries_seen, candidates_seen, len(out), final=True)
+                _print_place_progress(
+                    zip_path, atom_index, total_atom_files, entries_seen, candidates_seen, len(out)
+                )
+    _print_place_progress(
+        zip_path,
+        total_atom_files,
+        total_atom_files,
+        entries_seen,
+        candidates_seen,
+        len(out),
+        final=True,
+    )
     return out
 
 
@@ -206,19 +240,21 @@ def _iter_atom_entry_chunks(raw_bytes: bytes):
 
 def _entry_may_contain_cpv_prefix(entry_bytes: bytes, cpv_prefix: str) -> bool:
     prefix = re.escape(str(cpv_prefix)).encode("ascii")
-    return bool(re.search(rb"<[^>]*ItemClassificationCode[^>]*>\s*" + prefix + rb"\d+", entry_bytes))
+    return bool(
+        re.search(rb"<[^>]*ItemClassificationCode[^>]*>\s*" + prefix + rb"\d+", entry_bytes)
+    )
 
 
 def _parse_entry_chunk(entry_bytes: bytes) -> ET.Element:
     wrapped = (
         b'<feed xmlns="http://www.w3.org/2005/Atom" '
-        b'xmlns:cbc-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2" '
+        b'xmlns:cbc-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:'
+        b'CommonBasicComponents-2" '
         b'xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2" '
         b'xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2" '
-        b'xmlns:cac-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2" '
-        b'xmlns:at="http://purl.org/atompub/tombstones/1.0">'
-        + entry_bytes
-        + b"</feed>"
+        b'xmlns:cac-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:'
+        b'CommonAggregateComponents-2" '
+        b'xmlns:at="http://purl.org/atompub/tombstones/1.0">' + entry_bytes + b"</feed>"
     )
     root = ET.fromstring(wrapped)
     entry = root.find(_q(ATOM_NS, "entry"))
@@ -247,7 +283,11 @@ def parse_place_entry(
     status_code = _text(status_node)
 
     buyer = _first_party(contract_folder)
-    buyer_name = _text(buyer.find(f"{_q(CAC_NS, 'PartyName')}/{_q(CBC_NS, 'Name')}")) if buyer is not None else None
+    buyer_name = (
+        _text(buyer.find(f"{_q(CAC_NS, 'PartyName')}/{_q(CBC_NS, 'Name')}"))
+        if buyer is not None
+        else None
+    )
     buyer_dir3 = _find_id_for_scheme(buyer, "DIR3") if buyer is not None else None
     buyer_nif = _find_id_for_scheme(buyer, "NIF") if buyer is not None else None
     buyer_platform_id = _find_id_for_scheme(buyer, "ID_PLATAFORMA") if buyer is not None else None
@@ -257,10 +297,15 @@ def parse_place_entry(
         project = entry.find(f".//{_q(CAC_NS, 'ProcurementProject')}")
 
     contract_title = _text(project.find(_q(CBC_NS, "Name"))) if project is not None else None
-    contract_type_code = _text(project.find(_q(CBC_NS, "TypeCode"))) if project is not None else None
+    contract_type_code = (
+        _text(project.find(_q(CBC_NS, "TypeCode"))) if project is not None else None
+    )
 
     cpv_nodes = (
-        project.findall(f".//{_q(CAC_NS, 'RequiredCommodityClassification')}/{_q(CBC_NS, 'ItemClassificationCode')}")
+        project.findall(
+            f".//{_q(CAC_NS, 'RequiredCommodityClassification')}/"
+            f"{_q(CBC_NS, 'ItemClassificationCode')}"
+        )
         if project is not None
         else []
     )
@@ -282,27 +327,51 @@ def parse_place_entry(
         else None
     )
     total_amount = _parse_amount(
-        _text(
-            budget_amount.find(_q(CBC_NS, "TotalAmount")) if budget_amount is not None else None
-        )
+        _text(budget_amount.find(_q(CBC_NS, "TotalAmount")) if budget_amount is not None else None)
     )
     tax_exclusive_amount = _parse_amount(
         _text(
-            budget_amount.find(_q(CBC_NS, "TaxExclusiveAmount")) if budget_amount is not None else None
+            budget_amount.find(_q(CBC_NS, "TaxExclusiveAmount"))
+            if budget_amount is not None
+            else None
         )
     )
 
-    tendering = contract_folder.find(_q(CAC_NS, "TenderingProcess")) if contract_folder is not None else None
-    procedure_code = _text(tendering.find(_q(CBC_NS, "ProcedureCode"))) if tendering is not None else None
+    tendering = (
+        contract_folder.find(_q(CAC_NS, "TenderingProcess"))
+        if contract_folder is not None
+        else None
+    )
+    procedure_code = (
+        _text(tendering.find(_q(CBC_NS, "ProcedureCode"))) if tendering is not None else None
+    )
 
-    tender_result = contract_folder.find(_q(CAC_NS, "TenderResult")) if contract_folder is not None else None
-    result_code = _text(tender_result.find(_q(CBC_NS, "ResultCode"))) if tender_result is not None else None
-    award_date = _text(tender_result.find(_q(CBC_NS, "AwardDate"))) if tender_result is not None else None
-    received_tender_quantity = _text(tender_result.find(_q(CBC_NS, "ReceivedTenderQuantity"))) if tender_result is not None else None
+    tender_result = (
+        contract_folder.find(_q(CAC_NS, "TenderResult")) if contract_folder is not None else None
+    )
+    result_code = (
+        _text(tender_result.find(_q(CBC_NS, "ResultCode"))) if tender_result is not None else None
+    )
+    award_date = (
+        _text(tender_result.find(_q(CBC_NS, "AwardDate"))) if tender_result is not None else None
+    )
+    received_tender_quantity = (
+        _text(tender_result.find(_q(CBC_NS, "ReceivedTenderQuantity")))
+        if tender_result is not None
+        else None
+    )
 
-    winning_party = tender_result.find(_q(CAC_NS, "WinningParty")) if tender_result is not None else None
-    winning_party_name = _text(winning_party.find(f"{_q(CAC_NS, 'PartyName')}/{_q(CBC_NS, 'Name')}")) if winning_party is not None else None
-    winning_party_nif = _find_id_for_scheme(winning_party, "NIF") if winning_party is not None else None
+    winning_party = (
+        tender_result.find(_q(CAC_NS, "WinningParty")) if tender_result is not None else None
+    )
+    winning_party_name = (
+        _text(winning_party.find(f"{_q(CAC_NS, 'PartyName')}/{_q(CBC_NS, 'Name')}"))
+        if winning_party is not None
+        else None
+    )
+    winning_party_nif = (
+        _find_id_for_scheme(winning_party, "NIF") if winning_party is not None else None
+    )
 
     return PlaceRecord(
         source_dataset=source_dataset,
@@ -403,7 +472,9 @@ def _compare_timestamp(left: str | None, right: str | None) -> bool:
 def _first_party(contract_folder: ET.Element | None) -> ET.Element | None:
     if contract_folder is None:
         return None
-    party = contract_folder.find(f".//{_q(CAC_EXT_NS, 'LocatedContractingParty')}/{_q(CAC_NS, 'Party')}")
+    party = contract_folder.find(
+        f".//{_q(CAC_EXT_NS, 'LocatedContractingParty')}/{_q(CAC_NS, 'Party')}"
+    )
     if party is not None:
         return party
     return contract_folder.find(f".//{_q(CAC_NS, 'Party')}")
@@ -412,7 +483,9 @@ def _first_party(contract_folder: ET.Element | None) -> ET.Element | None:
 def _find_id_for_scheme(node: ET.Element | None, scheme: str) -> str | None:
     if node is None:
         return None
-    for identification in node.findall(f".//{_q(CAC_NS, 'PartyIdentification')}/{_q(CBC_NS, 'ID')}"):
+    for identification in node.findall(
+        f".//{_q(CAC_NS, 'PartyIdentification')}/{_q(CBC_NS, 'ID')}"
+    ):
         if identification.get("schemeName", "").upper() == scheme.upper():
             return _text(identification)
     return None
@@ -473,7 +546,9 @@ def _print_place_progress(
 def top_counter(dataframe: pd.DataFrame, column: str) -> dict[str, int]:
     if dataframe.empty or column not in dataframe.columns:
         return {}
-    return dict(Counter(filter(None, dataframe[column].dropna().astype(str).tolist())).most_common(20))
+    return dict(
+        Counter(filter(None, dataframe[column].dropna().astype(str).tolist())).most_common(20)
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

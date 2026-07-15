@@ -1,0 +1,263 @@
+{
+  "dataset": "agent4_evaluation_report",
+  "schema_version": "0.1.0",
+  "generated_at_utc": "2026-07-14T11:51:27.391256+00:00",
+  "eval_set_path": "data\\synthetic\\agent4_corpus\\agent4_eval_set.json",
+  "corpus_index": "data\\synthetic\\agent4_corpus\\agent4_corpus_index.json",
+  "mode": "offline",
+  "retrieval_limit": 5,
+  "agent4_scope": "Agent4 es el agente documental/RAG del sistema. En el MVP trabaja sobre documentos locales, sinteticos o descargados de forma explicita, extrae texto, lo fragmenta, recupera evidencias y genera una ficha explicable con citas para revision humana.",
+  "document_source_policy": [
+    "No hace crawling ni navegacion web automatizada en el MVP.",
+    "No descarga pliegos ni anexos de PLACSP automaticamente.",
+    "Solo descarga documentos remotos cuando se invoca un comando explicito.",
+    "La descarga remota implementada se limita a anuncios BOE-B HTML individuales.",
+    "El corpus por defecto sigue siendo local/sintetico para pruebas reproducibles."
+  ],
+  "implemented_in_mvp": [
+    "Carga documentos locales .txt, .html y .md.",
+    "Convierte HTML a texto con BeautifulSoup si esta disponible o html.parser como fallback.",
+    "Divide documentos en chunks trazables.",
+    "Genera embeddings deterministas offline para tests y ejecuciones reproducibles.",
+    "Puede usar Ollama para embeddings/generacion si se activan servicios.",
+    "Puede indexar y consultar Qdrant si esta disponible.",
+    "Recupera evidencia textual relacionada con un contrato.",
+    "Genera ficha explicable con contrato, score, flags, metricas Agent3, evidencias, citas y warnings.",
+    "Registra fuentes oficiales BOE/PLACSP como hoja de ruta tecnica trazable.",
+    "Descarga anuncios BOE-B HTML individuales cuando el usuario proporciona una URL concreta."
+  ],
+  "not_implemented_in_mvp": [
+    "Scraping en vivo masivo de BOE o PLACSP.",
+    "Navegacion automatizada por webs.",
+    "Descarga automatica de pliegos, anexos o resoluciones desde PLACSP.",
+    "Pipeline NLP principal cerrado con spaCy.",
+    "Extraccion compleja de entidades juridicas en documentos reales.",
+    "Evaluacion RAGAS completa sobre corpus documental amplio.",
+    "Corpus documental real amplio mantenido por Agent4."
+  ],
+  "official_source_registry": {
+    "dataset": "agent4_source_registry",
+    "version": "0.1.0",
+    "source_count": 15,
+    "implemented_source_ids": [
+      "boe_html_individual"
+    ],
+    "registered_source_ids": [
+      "boe_html_individual",
+      "boe_open_data_api",
+      "boe_summary_by_date",
+      "boe_section_v_a",
+      "placsp_open_data_general",
+      "placsp_buyer_profiles",
+      "placsp_aggregation",
+      "placsp_minor_contracts",
+      "placsp_own_resources",
+      "placsp_market_consultations",
+      "placsp_operational_web",
+      "placsp_syndication_spec",
+      "placsp_dataset_summary",
+      "placsp_contracting_authorities",
+      "datos_gob_placsp_catalog"
+    ]
+  },
+  "summary": {
+    "cases_count": 3,
+    "cases_with_evidence": 2,
+    "evidence_case_ratio": 0.666667,
+    "expectation_accuracy": 1.0,
+    "average_citation_coverage": 1.0,
+    "average_precision_at_k": 1.0,
+    "average_expected_document_recall": 1.0,
+    "average_expected_term_coverage": 0.75,
+    "average_citation_traceability": 1.0,
+    "average_contract_key_consistency": 1.0,
+    "decision_boundary_coverage": 1.0,
+    "no_unsupported_fraud_claim_ratio": 1.0,
+    "practical_validation_pass_ratio": 1.0,
+    "warnings_count": 5
+  },
+  "tfm_practical_evaluation": {
+    "tfm_reading": "La capa documental se evalua como soporte explicativo del TFM: debe recuperar evidencia, citarla de forma trazable, conservar el contrato correcto y evitar afirmaciones no soportadas.",
+    "llm_local_scope": "La evaluacion offline valida recuperacion, citas y estructura de ficha. La calidad generativa del LLM local queda como contraste futuro con el mismo protocolo.",
+    "dimensions": [
+      {
+        "dimension": "Fidelidad documental",
+        "metric": "average_precision_at_k",
+        "value": 1.0,
+        "reading": "la evidencia recuperada coincide con documentos esperados"
+      },
+      {
+        "dimension": "Cobertura documental",
+        "metric": "average_expected_document_recall",
+        "value": 1.0,
+        "reading": "los documentos esperados aparecen en el contexto recuperado"
+      },
+      {
+        "dimension": "Trazabilidad de citas",
+        "metric": "average_citation_traceability",
+        "value": 1.0,
+        "reading": "las citas conservan document_id, chunk_id y contract_key_canon"
+      },
+      {
+        "dimension": "Consistencia del contrato",
+        "metric": "average_contract_key_consistency",
+        "value": 1.0,
+        "reading": "la evidencia usada pertenece al contrato consultado"
+      },
+      {
+        "dimension": "Prudencia explicativa",
+        "metric": "no_unsupported_fraud_claim_ratio",
+        "value": 1.0,
+        "reading": "la ficha no declara fraude sin soporte documental"
+      },
+      {
+        "dimension": "Validacion practica",
+        "metric": "practical_validation_pass_ratio",
+        "value": 1.0,
+        "reading": "los casos cumplen las condiciones minimas de ficha trazable"
+      }
+    ],
+    "validated_scope": [
+      "retrieval local sobre corpus sintetico",
+      "citas trazables por documento, fragmento y contrato",
+      "casos con evidencia y caso negativo sin evidencia",
+      "frontera de decision orientada a revision humana"
+    ],
+    "future_validation": [
+      "ampliar corpus con pliegos y adjudicaciones reales heterogeneas",
+      "comparar modo offline, Qdrant y LLM local con el mismo set de evaluacion",
+      "incorporar mas casos negativos y preguntas adversariales",
+      "ejecutar RAGAS u otra evaluacion externa cuando el corpus sea representativo"
+    ]
+  },
+  "ragas": {
+    "status": "not_run",
+    "reason": "Corpus sintetico demasiado pequeno para metricas RAGAS representativas."
+  },
+  "limitations": [
+    "La evaluacion local mide trazabilidad y retrieval, no correccion juridica.",
+    "El corpus sintetico no representa la variabilidad documental real.",
+    "Agent4 no declara fraude; solo resume evidencia para revision humana."
+  ],
+  "cases": [
+    {
+      "case_id": "eval-pw-2024-0001-evidence",
+      "contract_key_canon": "PW-2024-0001",
+      "question": "evidencia documental adjudicacion pliego",
+      "expect_evidence": true,
+      "has_evidence": true,
+      "expectation_met": true,
+      "evidence_count": 2,
+      "citation_count": 2,
+      "citation_coverage_ratio": 1.0,
+      "precision_at_k": 1.0,
+      "expected_document_recall": 1.0,
+      "expected_terms": [
+        "adjudicacion",
+        "pliego"
+      ],
+      "expected_terms_found": [
+        "adjudicacion",
+        "pliego"
+      ],
+      "expected_term_coverage_ratio": 1.0,
+      "expected_document_ids": [
+        "pw-2024-0001-adjudicacion-84be33783e7dcb3b",
+        "pw-2024-0001-pliego-8d56c46cb23bc249"
+      ],
+      "retrieved_document_ids": [
+        "pw-2024-0001-adjudicacion-84be33783e7dcb3b",
+        "pw-2024-0001-pliego-8d56c46cb23bc249"
+      ],
+      "matching_document_ids": [
+        "pw-2024-0001-adjudicacion-84be33783e7dcb3b",
+        "pw-2024-0001-pliego-8d56c46cb23bc249"
+      ],
+      "citation_traceability_ratio": 1.0,
+      "contract_key_consistency_ratio": 1.0,
+      "decision_boundary_present": true,
+      "no_evidence_warning_present": false,
+      "unsupported_fraud_claim": false,
+      "practical_validation_passed": true,
+      "generation_mode": "deterministic_fallback",
+      "warnings": [
+        "Vector store no configurado; se usara retrieval local por keyword."
+      ]
+    },
+    {
+      "case_id": "eval-pw-2024-0002-evidence",
+      "contract_key_canon": "PW-2024-0002",
+      "question": "informe fiscalizacion auditoria",
+      "expect_evidence": true,
+      "has_evidence": true,
+      "expectation_met": true,
+      "evidence_count": 1,
+      "citation_count": 1,
+      "citation_coverage_ratio": 1.0,
+      "precision_at_k": 1.0,
+      "expected_document_recall": 1.0,
+      "expected_terms": [
+        "informe",
+        "auditoria"
+      ],
+      "expected_terms_found": [
+        "informe"
+      ],
+      "expected_term_coverage_ratio": 0.5,
+      "expected_document_ids": [
+        "pw-2024-0002-informe-30b0d6194c7511c3"
+      ],
+      "retrieved_document_ids": [
+        "pw-2024-0002-informe-30b0d6194c7511c3"
+      ],
+      "matching_document_ids": [
+        "pw-2024-0002-informe-30b0d6194c7511c3"
+      ],
+      "citation_traceability_ratio": 1.0,
+      "contract_key_consistency_ratio": 1.0,
+      "decision_boundary_present": true,
+      "no_evidence_warning_present": false,
+      "unsupported_fraud_claim": false,
+      "practical_validation_passed": true,
+      "generation_mode": "deterministic_fallback",
+      "warnings": [
+        "Vector store no configurado; se usara retrieval local por keyword."
+      ]
+    },
+    {
+      "case_id": "eval-pw-2024-9999-no-docs",
+      "contract_key_canon": "PW-2024-9999",
+      "question": "evidencia documental",
+      "expect_evidence": false,
+      "has_evidence": false,
+      "expectation_met": true,
+      "evidence_count": 0,
+      "citation_count": 0,
+      "citation_coverage_ratio": null,
+      "precision_at_k": null,
+      "expected_document_recall": null,
+      "expected_terms": [],
+      "expected_terms_found": [],
+      "expected_term_coverage_ratio": null,
+      "expected_document_ids": [],
+      "retrieved_document_ids": [],
+      "matching_document_ids": [],
+      "citation_traceability_ratio": null,
+      "contract_key_consistency_ratio": null,
+      "decision_boundary_present": true,
+      "no_evidence_warning_present": true,
+      "unsupported_fraud_claim": false,
+      "practical_validation_passed": true,
+      "generation_mode": "deterministic_fallback",
+      "warnings": [
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ]
+    }
+  ],
+  "outputs": {
+    "json": "data\\processed\\agent4_evaluation_report.json",
+    "markdown": "data\\processed\\agent4_evaluation_report.md"
+  }
+}

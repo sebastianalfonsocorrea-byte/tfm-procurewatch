@@ -1,0 +1,42 @@
+{
+  "dataset": "agent4_eval_set",
+  "version": "0.1.0",
+  "description": "Casos sinteticos minimos para evaluar trazabilidad documental de Agent4.",
+  "cases": [
+    {
+      "case_id": "eval-pw-2024-0001-evidence",
+      "contract_key_canon": "PW-2024-0001",
+      "question": "evidencia documental adjudicacion pliego",
+      "expected_document_ids": [
+        "pw-2024-0001-adjudicacion-84be33783e7dcb3b",
+        "pw-2024-0001-pliego-8d56c46cb23bc249"
+      ],
+      "expected_terms": [
+        "adjudicacion",
+        "pliego"
+      ],
+      "expect_evidence": true
+    },
+    {
+      "case_id": "eval-pw-2024-0002-evidence",
+      "contract_key_canon": "PW-2024-0002",
+      "question": "informe fiscalizacion auditoria",
+      "expected_document_ids": [
+        "pw-2024-0002-informe-30b0d6194c7511c3"
+      ],
+      "expected_terms": [
+        "informe",
+        "auditoria"
+      ],
+      "expect_evidence": true
+    },
+    {
+      "case_id": "eval-pw-2024-9999-no-docs",
+      "contract_key_canon": "PW-2024-9999",
+      "question": "evidencia documental",
+      "expected_document_ids": [],
+      "expected_terms": [],
+      "expect_evidence": false
+    }
+  ]
+}

@@ -1,0 +1,1367 @@
+{
+  "dataset": "procurewatch_case_studies",
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "inputs": {
+    "canonical": {
+      "path": "data\\processed_sample\\agent2_contracts_canonical.parquet",
+      "rows": 3437,
+      "sha256": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+    },
+    "scores": {
+      "path": "data\\processed_sample\\agent2_evaluation\\base\\agent2_risk_scores.parquet",
+      "rows": 3437,
+      "sha256": "d05946e9c4b56d383c67d7ae9753a8a6283c3b297326d5611d3324371872fd69"
+    },
+    "flags": {
+      "path": "data\\processed_sample\\agent2_evaluation\\base\\agent2_risk_flags.parquet",
+      "rows": 2420,
+      "sha256": "d2be21a26f9ac43591cf3aa86bd25b2eac72ed596ba078b441a26568c1e50fa5"
+    },
+    "agent3_features": {
+      "path": "data\\processed_sample\\agent3_case_studies\\agent3_agent2_features.parquet",
+      "rows": 3437,
+      "sha256": "a3f5ae5afc797d4756738b1a2e0cd07dba891189d91c889dacd357f47ef7ac20"
+    },
+    "corpus_index": {
+      "path": "data\\synthetic\\agent4_corpus\\agent4_corpus_index.json",
+      "rows": null,
+      "sha256": "b4a8fa44bdcef2b7249571530429834f21363055cbef415b9de4dedb47ed12f9"
+    }
+  },
+  "selection_policy": {
+    "high_score": "Cinco contratos con score maximo, priorizando parejas comprador-proveedor distintas para resolver empates.",
+    "medium_risk": "Tres contratos de nivel medio, priorizando el mayor score y diversidad entre PLACE, BOE y OpenTender.",
+    "control": "Dos contratos con score cero, sin flags y maxima evaluabilidad; uno de PLACE y otro de BOE."
+  },
+  "summary": {
+    "cases_count": 10,
+    "unique_contracts": 10,
+    "selection_breakdown": {
+      "high_score": 5,
+      "medium_risk": 3,
+      "control": 2
+    },
+    "source_breakdown": {
+      "place": 7,
+      "boe": 2,
+      "opentender": 1
+    },
+    "active_rules_count": 21,
+    "active_rules_with_evidence": 21,
+    "rule_evidence_coverage_ratio": 1.0,
+    "source_traceability_ratio": 1.0,
+    "relationships_available_ratio": 1.0,
+    "documentary_evidence_case_ratio": 0.0,
+    "explanation_complete_ratio": 1.0,
+    "prioritization_criteria_ratio": 1.0,
+    "unsupported_fraud_claims": 0,
+    "warnings_count": 56,
+    "practical_validation_passed": true
+  },
+  "cases": [
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-01",
+      "selection": {
+        "group": "high_score",
+        "group_rank": 1,
+        "rationale": "Score maximo observado (65) y diversidad comprador-proveedor."
+      },
+      "contract": {
+        "contract_key_canon": "202000000004E00125901",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/4515733",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Centro Nacional de Información Geográfica",
+        "buyer_id": "E00125901",
+        "supplier_name": "SERVICIOS POLITÉCNICOS AÉREOS, S.A.",
+        "supplier_id": "A78022381",
+        "contract_title": "Servicios para la realización del vuelo LIDAR que permita la obtención de información altimétrica en el ámbito de las Comunidades Autónomas de Andalucía (Noroeste y Centro) y las Ciudades Autónomas de Ceuta y Melilla (2 Lotes)",
+        "procedure": "1",
+        "publication_date": "",
+        "award_date": "2020-08-18",
+        "estimated_value_eur": 86011743.0,
+        "awarded_value_eur": 104074209.0,
+        "cpv_codes_raw": "71355100",
+        "cpv_code_list": "['71355100']"
+      },
+      "risk": {
+        "risk_score": 65.0,
+        "risk_level": "alto",
+        "flags_count": 3,
+        "active_rules": [
+          "RF-05",
+          "RF-03",
+          "RF-04"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Centro Nacional de Información Geográfica' / 'SERVICIOS POLITÉCNICOS AÉREOS, S.A.' se repite 2 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-04",
+          "severity": "alta",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Centro Nacional de Información Geográfica' / 'SERVICIOS POLITÉCNICOS AÉREOS, S.A.' concentra 104223335.45 EUR sobre 104411508.57 EUR del comprador (99.82%), en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 104074209.00 EUR frente a estimado 86011743.00 EUR; desviación 21.00%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 1,
+        "buyer_supplier_contract_share": 1.0,
+        "buyer_degree": 1.0,
+        "supplier_degree": 1.0,
+        "supplier_contracts_count": 1.0,
+        "contract_neighbor_count": 4,
+        "contract_degree_centrality": 0.0005455537,
+        "contract_betweenness_centrality": 0.0002956825,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 1,
+        "community_size": 1121,
+        "cpv_count": 1,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 202000000004E00125901. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 3,
+        "active_rules_count": 3,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-01.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-01.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-02",
+      "selection": {
+        "group": "high_score",
+        "group_rank": 2,
+        "rationale": "Score maximo observado (65) y diversidad comprador-proveedor."
+      },
+      "contract": {
+        "contract_key_canon": "2023/AR21U/00003340EEA0002984",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/14062782",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Intendencia de Madrid",
+        "buyer_id": "EA0002984",
+        "supplier_name": "BEYOND SOLUCIONES Y SERVICIOS SL",
+        "supplier_id": "B86692811",
+        "contract_title": "Basado AM Asistencia Tecnica CESIA Gabinete de Estudios",
+        "procedure": "7",
+        "publication_date": "",
+        "award_date": "2023-11-30",
+        "estimated_value_eur": 1335452.0,
+        "awarded_value_eur": 1615897.0,
+        "cpv_codes_raw": "71356300",
+        "cpv_code_list": "['71356300']"
+      },
+      "risk": {
+        "risk_score": 65.0,
+        "risk_level": "alto",
+        "flags_count": 3,
+        "active_rules": [
+          "RF-05",
+          "RF-03",
+          "RF-04"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Intendencia de Madrid' / 'BEYOND SOLUCIONES Y SERVICIOS SL' se repite 2 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-04",
+          "severity": "alta",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Intendencia de Madrid' / 'BEYOND SOLUCIONES Y SERVICIOS SL' concentra 1642665.00 EUR sobre 1664985.00 EUR del comprador (98.66%), en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 1615897.00 EUR frente a estimado 1335452.00 EUR; desviación 21.00%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 2,
+        "buyer_supplier_contract_share": 0.666667,
+        "buyer_degree": 2.0,
+        "supplier_degree": 3.0,
+        "supplier_contracts_count": 5.0,
+        "contract_neighbor_count": 4,
+        "contract_degree_centrality": 0.0005455537,
+        "contract_betweenness_centrality": 0.0001354679,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 17,
+        "community_size": 84,
+        "cpv_count": 1,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 2023/AR21U/00003340EEA0002984. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 3,
+        "active_rules_count": 3,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-02.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-02.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-03",
+      "selection": {
+        "group": "high_score",
+        "group_rank": 3,
+        "rationale": "Score maximo observado (65) y diversidad comprador-proveedor."
+      },
+      "contract": {
+        "contract_key_canon": "2023/AR42U/00002501EA0002985",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/14057268",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Intendente de Ferrol",
+        "buyer_id": "EA0002985",
+        "supplier_name": "ALHAMBRA SYSTEMS SA",
+        "supplier_id": "A41553702",
+        "contract_title": "CB. Servicio de Gestión Integral de las actividades de apoyo de las funciones económico administrativas en la Armada.- SECON FERROL",
+        "procedure": "7",
+        "publication_date": "",
+        "award_date": "2023-10-09",
+        "estimated_value_eur": 60480.0,
+        "awarded_value_eur": 731808.0,
+        "cpv_codes_raw": "71356300",
+        "cpv_code_list": "['71356300']"
+      },
+      "risk": {
+        "risk_score": 65.0,
+        "risk_level": "alto",
+        "flags_count": 3,
+        "active_rules": [
+          "RF-05",
+          "RF-03",
+          "RF-04"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Intendente de Ferrol' / 'ALHAMBRA SYSTEMS SA' se repite 3 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-04",
+          "severity": "alta",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Intendente de Ferrol' / 'ALHAMBRA SYSTEMS SA' concentra 28976172.00 EUR sobre 55167168.00 EUR del comprador (52.52%), en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 731808.00 EUR frente a estimado 60480.00 EUR; desviación 1110.00%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 3,
+        "buyer_supplier_contract_share": 0.375,
+        "buyer_degree": 4.0,
+        "supplier_degree": 2.0,
+        "supplier_contracts_count": 4.0,
+        "contract_neighbor_count": 4,
+        "contract_degree_centrality": 0.0005455537,
+        "contract_betweenness_centrality": 0.000112258,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 17,
+        "community_size": 84,
+        "cpv_count": 1,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 2023/AR42U/00002501EA0002985. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 3,
+        "active_rules_count": 3,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-03.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-03.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-04",
+      "selection": {
+        "group": "high_score",
+        "group_rank": 4,
+        "rationale": "Score maximo observado (65) y diversidad comprador-proveedor."
+      },
+      "contract": {
+        "contract_key_canon": "2023SE00020U01800001",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/13378186",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Rectorado de la Universitat de València",
+        "buyer_id": "U01800001",
+        "supplier_name": "OFICINA TECNICA TES, S.L.",
+        "supplier_id": "B96200308",
+        "contract_title": "Redacción del proyecto y dirección de las obras de reforma de las plantas 1 y 2 del Centro de Simulación Interdisciplinar en Salud (CESIS) en el edificio Rectorado II (antigua F. de Enfermería) en el C. de Blasco Ibáñez",
+        "procedure": "9",
+        "publication_date": "",
+        "award_date": "2023-12-05",
+        "estimated_value_eur": 44544.0,
+        "awarded_value_eur": 449152.0,
+        "cpv_codes_raw": "71221000",
+        "cpv_code_list": "['71221000']"
+      },
+      "risk": {
+        "risk_score": 65.0,
+        "risk_level": "alto",
+        "flags_count": 3,
+        "active_rules": [
+          "RF-05",
+          "RF-03",
+          "RF-04"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Rectorado de la Universitat de València' / 'OFICINA TECNICA TES, S.L.' se repite 2 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-04",
+          "severity": "alta",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Rectorado de la Universitat de València' / 'OFICINA TECNICA TES, S.L.' concentra 1334146.00 EUR sobre 1334146.00 EUR del comprador (100.00%), en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 449152.00 EUR frente a estimado 44544.00 EUR; desviación 908.33%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 2,
+        "buyer_supplier_contract_share": 1.0,
+        "buyer_degree": 1.0,
+        "supplier_degree": 1.0,
+        "supplier_contracts_count": 2.0,
+        "contract_neighbor_count": 4,
+        "contract_degree_centrality": 0.0005455537,
+        "contract_betweenness_centrality": 0.0001839112,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 16,
+        "community_size": 166,
+        "cpv_count": 1,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 2023SE00020U01800001. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 3,
+        "active_rules_count": 3,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-04.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-04.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-05",
+      "selection": {
+        "group": "high_score",
+        "group_rank": 5,
+        "rationale": "Score maximo observado (65) y diversidad comprador-proveedor."
+      },
+      "contract": {
+        "contract_key_canon": "300/2020/00618137LA0014114",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/14057304",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Área de Gobierno de Obras y Equipamientos",
+        "buyer_id": "LA0014114",
+        "supplier_name": "KREAN S.COOP",
+        "supplier_id": "F20545018",
+        "contract_title": "Contrato basado nº 9 del lote 4 del Acuerdo marco de servicios para la “Redacción de Proyectos de Obras de la Dirección General de Conservación de Vías Públicas (8 lotes)”",
+        "procedure": "7",
+        "publication_date": "",
+        "award_date": "2023-12-26",
+        "estimated_value_eur": 1697623.0,
+        "awarded_value_eur": 2054124.0,
+        "cpv_codes_raw": "71242000",
+        "cpv_code_list": "['71242000']"
+      },
+      "risk": {
+        "risk_score": 65.0,
+        "risk_level": "alto",
+        "flags_count": 3,
+        "active_rules": [
+          "RF-05",
+          "RF-03",
+          "RF-04"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Área de Gobierno de Obras y Equipamientos' / 'KREAN S.COOP' se repite 2 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-04",
+          "severity": "alta",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Área de Gobierno de Obras y Equipamientos' / 'KREAN S.COOP' concentra 4081192.00 EUR sobre 6572353.71 EUR del comprador (62.10%), en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 2054124.00 EUR frente a estimado 1697623.00 EUR; desviación 21.00%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 2,
+        "buyer_supplier_contract_share": 0.333333,
+        "buyer_degree": 5.0,
+        "supplier_degree": 3.0,
+        "supplier_contracts_count": 4.0,
+        "contract_neighbor_count": 4,
+        "contract_degree_centrality": 0.0005455537,
+        "contract_betweenness_centrality": 0.0001345678,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 1,
+        "community_size": 1121,
+        "cpv_count": 1,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 300/2020/00618137LA0014114. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 3,
+        "active_rules_count": 3,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-05.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-05.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-06",
+      "selection": {
+        "group": "medium_risk",
+        "group_rank": 1,
+        "rationale": "Nivel medio; mayor score disponible y diversidad de fuente."
+      },
+      "contract": {
+        "contract_key_canon": "18748/2023L03350007",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/14081930",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Presidencia del Cabildo Insular de Lanzarote",
+        "buyer_id": "L03350007",
+        "supplier_name": "PREVENTOS MEDIA SL",
+        "supplier_id": "B76019348",
+        "contract_title": "Servicios variados necesarios para la realización de los conciertos de Navidad organizados por el Centro Insular de Enseñanzas Musicales (CIEM) a celebrar los días 18, 19 y 20 de diciembre en el Teatro El Salinero.",
+        "procedure": "7",
+        "publication_date": "",
+        "award_date": "2023-11-27",
+        "estimated_value_eur": 5208.0,
+        "awarded_value_eur": 557256.0,
+        "cpv_codes_raw": "92000000, 51313000, 71318100",
+        "cpv_code_list": "['92000000' '51313000' '71318100']"
+      },
+      "risk": {
+        "risk_score": 45.0,
+        "risk_level": "medio",
+        "flags_count": 2,
+        "active_rules": [
+          "RF-05",
+          "RF-03"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Presidencia del Cabildo Insular de Lanzarote' / 'PREVENTOS MEDIA SL' se repite 6 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 557256.00 EUR frente a estimado 5208.00 EUR; desviación 10600.00%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 4,
+        "buyer_supplier_contract_share": 1.0,
+        "buyer_degree": 1.0,
+        "supplier_degree": 1.0,
+        "supplier_contracts_count": 4.0,
+        "contract_neighbor_count": 6,
+        "contract_degree_centrality": 0.0008183306,
+        "contract_betweenness_centrality": 0.0006351296,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 6,
+        "community_size": 241,
+        "cpv_count": 3,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 18748/2023L03350007. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 2,
+        "active_rules_count": 2,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-06.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-06.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-07",
+      "selection": {
+        "group": "medium_risk",
+        "group_rank": 2,
+        "rationale": "Nivel medio; mayor score disponible y diversidad de fuente."
+      },
+      "contract": {
+        "contract_key_canon": "4023014023800JEFATURADELAUNIDADDECONTRATACIONYGESTIONECONOMICADELEJERCITODELAIRE20141220",
+        "source": "boe",
+        "source_record_id": "BOE-B-2014-44710",
+        "source_dataset": "boe_2014_2024",
+        "source_file": "boe_sample.csv",
+        "buyer_name": "Jefatura de la Unidad de Contratación y Gestión Económica del Ejército del Aire",
+        "buyer_id": "MINISTERIO DE DEFENSA",
+        "supplier_name": "ELIMCO SISTEMAS, S.L.",
+        "supplier_id": "",
+        "contract_title": "Determinación del estado superficial de los pavimentos (Pci) de las plataformas y calles de rodaje de Las B.A. de Armilla, B.A. de Alcantarilla y B.A. de Getafe.-(20147412).",
+        "procedure": "Negociado sin publicidad",
+        "publication_date": "2014-12-20 00:00:00",
+        "award_date": "",
+        "estimated_value_eur": 53000.0,
+        "awarded_value_eur": 63767.0,
+        "cpv_codes_raw": "71600000 (Servicios de ensayo, análisis y consultoría técnicos).",
+        "cpv_code_list": "['71000000' '71600000']"
+      },
+      "risk": {
+        "risk_score": 45.0,
+        "risk_level": "medio",
+        "flags_count": 2,
+        "active_rules": [
+          "RF-02",
+          "RF-05"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-02",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "procedure",
+            "buyer_procedure_count",
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Procedimiento 'Negociado sin publicidad' repetido 2 veces para el comprador en los registros disponibles.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-05",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "procedure",
+            "buyer_procedure_count",
+            "estimated_value_eur",
+            "awarded_value_eur",
+            "deviation_ratio"
+          ],
+          "evidence_text": "Importe adjudicado 63767.00 EUR frente a estimado 53000.00 EUR; desviación 20.32%, superior al umbral 10.00%.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 1,
+        "buyer_supplier_contract_share": 0.045455,
+        "buyer_degree": 14.0,
+        "supplier_degree": 1.0,
+        "supplier_contracts_count": 1.0,
+        "contract_neighbor_count": 5,
+        "contract_degree_centrality": 0.0006819422,
+        "contract_betweenness_centrality": 0.0001900772,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 0,
+        "community_size": 1298,
+        "cpv_count": 2,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 4023014023800JEFATURADELAUNIDADDECONTRATACIONYGESTIONECONOMICADELEJERCITODELAIRE20141220. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 2,
+        "active_rules_count": 2,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-07.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-07.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-08",
+      "selection": {
+        "group": "medium_risk",
+        "group_rank": 3,
+        "rationale": "Nivel medio; mayor score disponible y diversidad de fuente."
+      },
+      "contract": {
+        "contract_key_canon": "1B575E5DE8344C4CB1E429FBB947ADE2DISTRITODECIUDADLINEAL20240730",
+        "source": "opentender",
+        "source_record_id": "1b575e5d-e834-4c4c-b1e4-29fbb947ade2",
+        "source_dataset": "data-es-ocds-2024.json",
+        "source_file": "data-es-ocds-2024.json",
+        "buyer_name": "Distrito de Ciudad Lineal",
+        "buyer_id": "ES_body_562eafc3b09de3e76ae8000f89c9b1902b8908fee2ef6bc9fcf3d8a53ea8760f",
+        "supplier_name": "INCO, ESTUDIO TÉCNICO, S.L.",
+        "supplier_id": "",
+        "contract_title": "Servicios de coordinación en materia de seguridad y saluden las obras en CO-03R CEIP GANDHI.",
+        "procedure": "1",
+        "publication_date": "2024-07-30T00:00:00.000Z",
+        "award_date": "2024-07-29T00:00:00.000Z",
+        "estimated_value_eur": 644.22,
+        "awarded_value_eur": 644.22,
+        "cpv_codes_raw": "71000000, 71310000",
+        "cpv_code_list": "['71000000' '71310000']"
+      },
+      "risk": {
+        "risk_score": 40.0,
+        "risk_level": "medio",
+        "flags_count": 2,
+        "active_rules": [
+          "RF-03",
+          "RF-04"
+        ],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [
+        {
+          "flag_code": "RF-03",
+          "severity": "media",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Distrito de Ciudad Lineal' / 'INCO, ESTUDIO TÉCNICO, S.L.' se repite 2 veces en el canonico.",
+          "rule_version": "1.0.0"
+        },
+        {
+          "flag_code": "RF-04",
+          "severity": "alta",
+          "confidence": 1.0,
+          "evidence_fields": [
+            "buyer_name",
+            "supplier_name",
+            "pair_count",
+            "pair_share",
+            "buyer_total_awarded",
+            "pair_awarded",
+            "pair_metric_source"
+          ],
+          "evidence_text": "La pareja comprador-proveedor 'Distrito de Ciudad Lineal' / 'INCO, ESTUDIO TÉCNICO, S.L.' concentra 821.38 EUR sobre 821.38 EUR del comprador (100.00%), en el canonico.",
+          "rule_version": "1.0.0"
+        }
+      ],
+      "relationships": {
+        "buyer_supplier_recurrence": 2,
+        "buyer_supplier_contract_share": 1.0,
+        "buyer_degree": 1.0,
+        "supplier_degree": 5.0,
+        "supplier_contracts_count": 8.0,
+        "contract_neighbor_count": 5,
+        "contract_degree_centrality": 0.0006819422,
+        "contract_betweenness_centrality": 0.0007148368,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 14,
+        "community_size": 171,
+        "cpv_count": 2,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 1B575E5DE8344C4CB1E429FBB947ADE2DISTRITODECIUDADLINEAL20240730. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 2,
+        "active_rules_count": 2,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-08.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-08.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-09",
+      "selection": {
+        "group": "control",
+        "group_rank": 1,
+        "rationale": "Score cero, sin flags y maxima evaluabilidad disponible."
+      },
+      "contract": {
+        "contract_key_canon": "00000020M030E03111703",
+        "source": "place",
+        "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/6135016",
+        "source_dataset": "agent1_sample",
+        "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+        "buyer_name": "Subdirección General de Gestión Económica y Patrimonial",
+        "buyer_id": "E03111703",
+        "supplier_name": "Restaura Capital Humano sl",
+        "supplier_id": "B88214911",
+        "contract_title": "Dirección de obra, dirección de ejecución y coordinación de seguridad y salud) de las obras de implantación de una zona de acceso restringido (Z.A.R) en el edificio sito en la calle Josefa Valcárcel nº 28 de Madrid,",
+        "procedure": "9",
+        "publication_date": "",
+        "award_date": "2020-09-25",
+        "estimated_value_eur": 826446.0,
+        "awarded_value_eur": 10000.0,
+        "cpv_codes_raw": "71000000",
+        "cpv_code_list": "['71000000']"
+      },
+      "risk": {
+        "risk_score": 0.0,
+        "risk_level": "bajo",
+        "flags_count": 0,
+        "active_rules": [],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [],
+      "relationships": {
+        "buyer_supplier_recurrence": 1,
+        "buyer_supplier_contract_share": 1.0,
+        "buyer_degree": 1.0,
+        "supplier_degree": 3.0,
+        "supplier_contracts_count": 3.0,
+        "contract_neighbor_count": 4,
+        "contract_degree_centrality": 0.0005455537,
+        "contract_betweenness_centrality": 0.0006621567,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 1,
+        "community_size": 1121,
+        "cpv_count": 1,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 00000020M030E03111703. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "Score cero significa ausencia de senales con los datos evaluables, no ausencia de riesgo.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 0,
+        "active_rules_count": 0,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "Este contrato se usa como control comparativo por no activar senales con los datos evaluables. No se declara ausencia de riesgo ni fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-09.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-09.md"
+      }
+    },
+    {
+      "dataset": "procurewatch_case_study",
+      "schema_version": "1.0.0",
+      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "case_id": "CS-10",
+      "selection": {
+        "group": "control",
+        "group_rank": 2,
+        "rationale": "Score cero, sin flags y maxima evaluabilidad disponible."
+      },
+      "contract": {
+        "contract_key_canon": "001/13/RL/05DIVISIONECONOMICAYTECNICACUERPONACIONALDEPOLICIA20140307",
+        "source": "boe",
+        "source_record_id": "BOE-B-2014-8275",
+        "source_dataset": "boe_2014_2024",
+        "source_file": "boe_sample.csv",
+        "buyer_name": "División Económica y Técnica (Cuerpo Nacional de Policía)",
+        "buyer_id": "MINISTERIO DEL INTERIOR",
+        "supplier_name": "GRUPO MGO, S.A.",
+        "supplier_id": "",
+        "contract_title": "Asistencia técnica para el desarrollo y planificación de la actividad preventiva de revisión y actualización de la evaluación inicial de riesgos, dentro del plan de prevención de riesgos laborales, de la Dirección General de la Policía.",
+        "procedure": "Abierto",
+        "publication_date": "2014-03-07 00:00:00",
+        "award_date": "",
+        "estimated_value_eur": 495867.77,
+        "awarded_value_eur": 432817.0,
+        "cpv_codes_raw": "71317000 (Servicios de consultoría en protección y control de riesgos).",
+        "cpv_code_list": "['71000000' '71317000']"
+      },
+      "risk": {
+        "risk_score": 0.0,
+        "risk_level": "bajo",
+        "flags_count": 0,
+        "active_rules": [],
+        "evaluation_status": "partially_evaluable",
+        "evaluable_rules_count": 5,
+        "not_evaluable_rules": [
+          "RF-06"
+        ],
+        "score_version": "2.0.0",
+        "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+      },
+      "rule_evidence": [],
+      "relationships": {
+        "buyer_supplier_recurrence": 1,
+        "buyer_supplier_contract_share": 0.033333,
+        "buyer_degree": 14.0,
+        "supplier_degree": 1.0,
+        "supplier_contracts_count": 1.0,
+        "contract_neighbor_count": 5,
+        "contract_degree_centrality": 0.0006819422,
+        "contract_betweenness_centrality": 0.0001903376,
+        "component_id": 0,
+        "component_size": 7333,
+        "community_id": 0,
+        "community_size": 1298,
+        "cpv_count": 2,
+        "has_supplier": true,
+        "agent3_version": "0.1.0"
+      },
+      "documentary_evidence": {
+        "evidences": [],
+        "citations": [],
+        "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 001/13/RL/05DIVISIONECONOMICAYTECNICACUERPONACIONALDEPOLICIA20140307. No se declara fraude.",
+        "generation": {
+          "mode": "deterministic_fallback",
+          "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+          "llm_model": null,
+          "fallback_reason": "no_evidence"
+        }
+      },
+      "warnings": [
+        "RF-06 no fue evaluable por falta de los campos requeridos.",
+        "Score cero significa ausencia de senales con los datos evaluables, no ausencia de riesgo.",
+        "No se han encontrado documentos para el contrato solicitado.",
+        "No se han generado chunks documentales.",
+        "No hay evidencia documental recuperada para responder con trazabilidad."
+      ],
+      "assessment": {
+        "prioritization_criterion_met": true,
+        "active_rules_with_evidence": 0,
+        "active_rules_count": 0,
+        "rule_evidence_complete": true,
+        "relationships_available": true,
+        "documentary_evidence_available": false,
+        "explanation_complete": true,
+        "unsupported_fraud_claim": false
+      },
+      "decision_boundary": "Este contrato se usa como control comparativo por no activar senales con los datos evaluables. No se declara ausencia de riesgo ni fraude.",
+      "outputs": {
+        "json": "data\\processed_sample\\case_studies\\cases\\CS-10.json",
+        "markdown": "data\\processed_sample\\case_studies\\cases\\CS-10.md"
+      }
+    }
+  ],
+  "limitations": [
+    "La seleccion usa la muestra reproducible de 3.437 contratos, no el canonico completo.",
+    "No existen etiquetas de fraude ni revision experta externa para estos diez casos.",
+    "La ausencia de evidencia documental se registra sin sustituirla por contenido sintetico.",
+    "Los importes y codigos de procedimiento deben verificarse en la fuente original."
+  ],
+  "decision_boundary": "Las fichas evaluan priorizacion y explicacion para revision humana; no declaran fraude.",
+  "outputs": {
+    "json": "data\\processed_sample\\case_studies\\case_studies_report.json",
+    "markdown": "data\\processed_sample\\case_studies\\case_studies_report.md",
+    "cases_dir": "data\\processed_sample\\case_studies\\cases"
+  }
+}

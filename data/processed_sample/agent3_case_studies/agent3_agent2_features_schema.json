@@ -1,0 +1,173 @@
+{
+  "dataset": "agent3_agent2_features",
+  "schema_version": "0.1.0",
+  "agent3_version": "0.1.0",
+  "generated_at_utc": "2026-07-15T10:42:15.958420+00:00",
+  "primary_key": [
+    "contract_key_canon"
+  ],
+  "feature_family": "agent3_graph_relation",
+  "intended_red_flags": [
+    "RF-03",
+    "RF-04",
+    "AUX-NETWORK"
+  ],
+  "description": "Features relacionales preparadas por Agent3 para scoring explicable futuro en Agent2. No declaran fraude.",
+  "limitations": [
+    "Los contratos sin proveedor mantienen has_supplier=false y metricas de proveedor nulas.",
+    "La calidad depende del matching actual de contract_key_canon y de IDs de entidades.",
+    "Las centralidades son senales auxiliares, no evidencia concluyente."
+  ],
+  "columns": [
+    {
+      "name": "contract_key_canon",
+      "type": "string",
+      "nullable": false,
+      "description": "Clave canonica de contrato."
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "nullable": true,
+      "description": "Fuente original del contrato."
+    },
+    {
+      "name": "source_record_id",
+      "type": "string",
+      "nullable": true,
+      "description": "ID del registro en la fuente."
+    },
+    {
+      "name": "buyer_supplier_recurrence",
+      "type": "integer",
+      "nullable": false,
+      "description": "Recurrencia comprador-proveedor."
+    },
+    {
+      "name": "buyer_supplier_contract_share",
+      "type": "float",
+      "nullable": false,
+      "description": "Peso del proveedor dentro de los contratos observados del comprador."
+    },
+    {
+      "name": "buyer_degree",
+      "type": "integer",
+      "nullable": true,
+      "description": "Numero de proveedores asociados al comprador."
+    },
+    {
+      "name": "supplier_degree",
+      "type": "integer",
+      "nullable": true,
+      "description": "Numero de compradores asociados al proveedor."
+    },
+    {
+      "name": "supplier_contracts_count",
+      "type": "integer",
+      "nullable": true,
+      "description": "Contratos asociados al proveedor."
+    },
+    {
+      "name": "contract_neighbor_count",
+      "type": "integer",
+      "nullable": false,
+      "description": "Vecinos directos del contrato."
+    },
+    {
+      "name": "contract_degree_centrality",
+      "type": "float",
+      "nullable": false,
+      "description": "Centralidad de grado del contrato."
+    },
+    {
+      "name": "contract_betweenness_centrality",
+      "type": "float",
+      "nullable": false,
+      "description": "Betweenness centrality del contrato."
+    },
+    {
+      "name": "buyer_neighbor_count",
+      "type": "integer",
+      "nullable": true,
+      "description": "Vecinos directos del comprador."
+    },
+    {
+      "name": "buyer_degree_centrality",
+      "type": "float",
+      "nullable": true,
+      "description": "Centralidad de grado del comprador."
+    },
+    {
+      "name": "buyer_betweenness_centrality",
+      "type": "float",
+      "nullable": true,
+      "description": "Betweenness centrality del comprador."
+    },
+    {
+      "name": "supplier_neighbor_count",
+      "type": "integer",
+      "nullable": true,
+      "description": "Vecinos directos del proveedor."
+    },
+    {
+      "name": "supplier_degree_centrality",
+      "type": "float",
+      "nullable": true,
+      "description": "Centralidad de grado del proveedor."
+    },
+    {
+      "name": "supplier_betweenness_centrality",
+      "type": "float",
+      "nullable": true,
+      "description": "Betweenness centrality del proveedor."
+    },
+    {
+      "name": "component_id",
+      "type": "integer",
+      "nullable": true,
+      "description": "Componente conectada del contrato."
+    },
+    {
+      "name": "component_size",
+      "type": "integer",
+      "nullable": true,
+      "description": "Tamano de la componente del contrato."
+    },
+    {
+      "name": "community_id",
+      "type": "integer",
+      "nullable": true,
+      "description": "Comunidad Louvain del contrato."
+    },
+    {
+      "name": "community_size",
+      "type": "integer",
+      "nullable": true,
+      "description": "Tamano de la comunidad del contrato."
+    },
+    {
+      "name": "cpv_count",
+      "type": "integer",
+      "nullable": false,
+      "description": "Numero de CPV asociados al contrato."
+    },
+    {
+      "name": "has_supplier",
+      "type": "boolean",
+      "nullable": false,
+      "description": "Indica si el contrato tiene proveedor."
+    },
+    {
+      "name": "agent3_version",
+      "type": "string",
+      "nullable": false,
+      "description": "Version de Agent3 que genero la feature."
+    },
+    {
+      "name": "generated_at_utc",
+      "type": "string",
+      "nullable": false,
+      "description": "Fecha UTC de generacion."
+    }
+  ]
+}

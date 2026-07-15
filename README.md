@@ -1,4 +1,4 @@
-﻿# ProcureWatch Analytics
+# ProcureWatch Analytics
 
 ProcureWatch Analytics es el prototipo tecnico del TFM para analizar datos abiertos de
 contratacion publica y priorizar casos con posibles patrones de riesgo. El sistema no declara
@@ -66,16 +66,17 @@ de cada agente.
 ## Documentacion operativa obligatoria para continuidad
 
 - `AGENTS.md` (contexto tecnico para nuevas sesiones).
-- `docs/PLAN_AGENTE1_PIPELINE.md` (estado y flujo del agente 1).
-- `docs/PLAN_AGENTE2_SCORING.md` (planteamiento de red flags y scoring).
-- `docs/PLAN_AGENTE3_GRAFOS.md` (grafos, Neo4j, NetworkX y relaciones).
-- `docs/PLAN_AGENTE4_RAG_LANGGRAPH.md` (estructura Agent4 con NLP/RAG/LangGraph).
-- `docs/SEGUIMIENTO_AGENTES.md` (seguimiento transversal de agentes).
-- `docs/PLAN_CAPA_DATOS_AGENTES.md` (PostgreSQL, Neo4j, Qdrant e IDs comunes).
-- `docs/PLAN_INGESTA_BATCH_AGENT1.md` (batch semanal/mensual + actualización total).
-- `docs/ARQUITECTURA_BATCH_Y_GRAFOS.md` (arquitectura de updates y Neo4j).
-- `docs/FUENTES_DATOS_Y_ROADMAP.md` (fuentes y prioridades).
-- `docs/STACK_TECNICO_PROYECTO.md` (stack Python + servicios + flujo técnico completo).
+- `docs/README.md` (indice navegable de documentacion).
+- `docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md` (estado y flujo del agente 1).
+- `docs/04_agentes/PLAN_AGENTE2_SCORING.md` (planteamiento de red flags y scoring).
+- `docs/04_agentes/PLAN_AGENTE3_GRAFOS.md` (grafos, Neo4j, NetworkX y relaciones).
+- `docs/04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md` (estructura Agent4 con NLP/RAG/LangGraph).
+- `docs/04_agentes/SEGUIMIENTO_AGENTES.md` (seguimiento transversal de agentes).
+- `docs/01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md` (PostgreSQL, Neo4j, Qdrant e IDs comunes).
+- `docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md` (batch semanal/mensual + actualización total).
+- `docs/01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md` (arquitectura de updates y Neo4j).
+- `docs/02_fuentes/FUENTES_DATOS_Y_ROADMAP.md` (fuentes y prioridades).
+- `docs/00_vision/STACK_TECNICO_PROYECTO.md` (stack Python + servicios + flujo técnico completo).
 
 ## Arranque rapido
 
@@ -196,7 +197,9 @@ Estado final observado:
 - Reconstruccion completa disponible con `--force-rebuild`.
 - `agent1_data_quality_summary.json`: estado `ok`.
 - `agent2_contracts_canonical.parquet`: 51.720 filas.
-- Tests actuales ejecutados con pytest: `15 passed`.
+- Validacion de la rama integrada en entorno minimo: `126 passed`, `1 skipped`; Ruff sin errores.
+  La prueba omitida corresponde a la integracion PostgreSQL cuando no esta instalado SQLAlchemy.
+- Validacion con SQLAlchemy disponible: `127 passed`, sin pruebas omitidas.
 
 Artefactos de continuidad:
 
@@ -207,3 +210,102 @@ Artefactos de continuidad:
 - `data/processed/agent2_contracts_canonical_schema.json`
 
 Siguiente trabajo: mejorar matching entre fuentes. La cobertura existe, pero las intersecciones BOE/PLACE/OpenTender siguen en 0 con la clave actual.
+
+## Evaluacion reproducible de Agent2
+
+La muestra versionada de 3.437 contratos permite ejecutar RF-01 a RF-06 y comparar la sensibilidad
+de los umbrales numericos:
+
+```powershell
+procurewatch evaluate-agent2
+```
+
+El comando genera tres escenarios (`lower`, `base`, `upper`) con factores 0,9, 1,0 y 1,1, junto
+con scores, flags y los reportes:
+
+- `data/processed_sample/agent2_evaluation/agent2_evaluation_report.json`
+- `data/processed_sample/agent2_evaluation/agent2_evaluation_report.md`
+
+La evaluacion registra cobertura por regla, campos ausentes, frecuencias, distribucion del score y
+estabilidad frente al escenario base. Es una evaluacion proxy sobre la muestra reproducible; no
+sustituye la ejecucion pendiente sobre el canonico completo de 51.720 contratos ni valida fraude.
+
+## Evaluacion de modularidad de Agent3
+
+Agent3 publica `modularity` en `agent3_network_summary.json` y
+`agent3_graph_report.json`. El valor se calcula sobre la particion Louvain reproducible del grafo
+simple no ponderado; queda como `null` cuando el grafo no contiene aristas.
+
+Resultados versionados:
+
+- muestra de 3.437 contratos: `Q=0.6051129926`;
+- demo integrada de 3 contratos: `Q=0.3165680473`.
+
+Ambos valores superan el objetivo metodologico `Q > 0.30`. El benchmark lo comprueba mediante
+`agent3.modularity`. La modularidad cuantifica estructura comunitaria, pero no demuestra fraude ni
+calidad juridica de las comunidades detectadas.
+
+## Dashboard y evolucion temporal
+
+El dashboard Streamlit integra ocho pestanas para revisar prioridad, caso, relaciones, evidencias y
+trazabilidad. La pestana `Evolucion temporal` usa los artefactos versionados de la evaluacion base de
+Agent2, de forma separada de la demo sintetica `PW-2024-0001`:
+
+```powershell
+streamlit run frontend/agent3_demo.py
+procurewatch validate-dashboard-demo
+```
+
+La serie cruza 3.437 scores con el canonico evaluado. Hay 976 contratos con fecha de publicacion
+valida, 2.461 sin fecha valida y 41 meses entre 2014-01 y 2017-05. Las barras representan contratos
+publicados y la linea el riesgo medio mensual en escala 0-100; no se imputan fechas ausentes. La
+validacion headless supera 11 comprobaciones, expone 18 metricas de Streamlit y no registra
+excepciones.
+
+Las rutas pueden sustituirse mediante `PROCUREWATCH_AGENT2_TEMPORAL_CANONICAL` y
+`PROCUREWATCH_AGENT2_TEMPORAL_SCORES`. Esta vista evalua la muestra reproducible de Agent2, no el
+canonico completo de 51.720 contratos.
+
+## Modos del benchmark
+
+El benchmark conserva el mismo conjunto de 34 metricas y cambia la evaluacion del dashboard segun
+se solicite expresamente:
+
+```powershell
+procurewatch run-benchmark
+procurewatch run-benchmark `
+  --include-dashboard `
+  --output-dir data/processed/benchmark_dashboard
+```
+
+- Sin `--include-dashboard`: 31 `pass`, 1 `warning`, 0 `fail` y 2 `not_applicable`.
+- Con `--include-dashboard`: 32 `pass`, 1 `warning`, 0 `fail` y 1 `not_applicable`.
+
+El estado global es `warning` en ambos modos por la ausencia de intersecciones exactas entre
+fuentes. La opcion de dashboard convierte `integrated.dashboard` de `not_applicable` a `pass`; no
+anade una metrica nueva. Los reportes quedan separados en `data/processed/benchmark/` y
+`data/processed/benchmark_dashboard/`.
+
+## Evaluacion de diez fichas de caso
+
+Las fichas cualitativas reutilizan el escenario base de Agent2 y las relaciones calculadas por
+Agent3 sobre la misma muestra. Primero se generan las features relacionales y despues las fichas:
+
+```powershell
+procurewatch run-agent3 `
+  --input data/processed_sample/agent2_contracts_canonical.parquet `
+  --output-dir data/processed_sample/agent3_case_studies
+procurewatch evaluate-case-studies
+```
+
+La seleccion reproducible incluye cinco contratos con score maximo, tres de riesgo medio y dos
+controles sin flags. Cada ficha JSON/Markdown conserva fuente, importes, procedimiento, reglas,
+evidencias, relaciones y advertencias. El corpus actual no contiene documentos asociados a esos
+diez contratos, por lo que la ausencia documental queda registrada y no se sustituye por contenido
+sintetico. Los artefactos agregados son:
+
+- `data/processed_sample/case_studies/case_studies_report.json`
+- `data/processed_sample/case_studies/case_studies_report.md`
+
+El benchmark incorpora `integration.case_studies.traceable`; las fichas evaluan priorizacion y
+explicacion para revision humana y no declaran fraude.

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
 import io
 import json
 import re
 import zipfile
-
+from pathlib import Path
+from typing import Any
 
 DEFAULT_BOE_INPUT = Path("data/raw/licitaciones_contrataciones_BOE_2014_2024-2(in).csv")
 DEFAULT_OPENTENDER_INPUT = Path("data/raw/opentender/data-es-ocds-json.zip")
@@ -36,10 +35,7 @@ def make_agent1_sample(
 
     boe_output = output_dir / "boe_sample.csv"
     opentender_output = output_dir / "opentender_2024_sample.zip"
-    place_outputs = [
-        output_dir / f"{path.stem}_sample.zip"
-        for path in place_inputs
-    ]
+    place_outputs = [output_dir / f"{path.stem}_sample.zip" for path in place_inputs]
 
     report = {
         "output_dir": str(output_dir),
@@ -166,12 +162,16 @@ def _make_place_sample(
     scanned = 0
     chunks: list[bytes] = []
     with zipfile.ZipFile(input_path, "r") as source_zip:
-        atom_files = sorted(name for name in source_zip.namelist() if name.lower().endswith(".atom"))
+        atom_files = sorted(
+            name for name in source_zip.namelist() if name.lower().endswith(".atom")
+        )
         for atom_name in atom_files:
             raw_bytes = source_zip.read(atom_name)
             for entry_bytes in _iter_atom_entry_chunks(raw_bytes):
                 scanned += 1
-                if cpv_prefix != "all" and not _entry_may_contain_cpv_prefix(entry_bytes, cpv_prefix):
+                if cpv_prefix != "all" and not _entry_may_contain_cpv_prefix(
+                    entry_bytes, cpv_prefix
+                ):
                     continue
                 chunks.append(entry_bytes)
                 selected += 1

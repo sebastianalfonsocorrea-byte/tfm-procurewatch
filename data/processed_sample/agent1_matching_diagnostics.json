@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-07-14T11:51:20.739440+00:00",
+  "purpose": "Diagnostico de matching aproximado; no sustituye contract_key_canon ni acredita contraste interfuente definitivo.",
+  "warnings": [],
+  "official_key_policy": {
+    "boe": [
+      "file_number",
+      "buyer_name",
+      "publication_date",
+      "fallback:contract_id"
+    ],
+    "place": [
+      "contract_folder_id",
+      "buyer_dir3",
+      "published_date",
+      "fallback:source_entry_id"
+    ],
+    "opentender": [
+      "source_record_id",
+      "buyer_name",
+      "publication_date",
+      "fallback:source_entry_id"
+    ]
+  },
+  "exact_intersections": {
+    "boe_place": 0,
+    "boe_opentender": 0,
+    "place_opentender": 0
+  },
+  "component_coverage": {
+    "boe": {
+      "rows": 1000,
+      "contract_key_canon": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "buyer": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "date": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "title": {
+        "present": 1000,
+        "coverage_ratio": 1.0
+      },
+      "amount": {
+        "present": 992,
+        "coverage_ratio": 0.992
+      }
+    },
+    "place": {
+      "rows": 1588,
+      "contract_key_canon": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      },
+      "buyer": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      },
+      "date": {
+        "present": 0,
+        "coverage_ratio": 0.0
+      },
+      "title": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      },
+      "amount": {
+        "present": 1588,
+        "coverage_ratio": 1.0
+      }
+    },
+    "opentender": {
+      "rows": 874,
+      "contract_key_canon": {
+        "present": 874,
+        "coverage_ratio": 1.0
+      },
+      "buyer": {
+        "present": 874,
+        "coverage_ratio": 1.0
+      },
+      "date": {
+        "present": 838,
+        "coverage_ratio": 0.95881
+      },
+      "title": {
+        "present": 874,
+        "coverage_ratio": 1.0
+      },
+      "amount": {
+        "present": 866,
+        "coverage_ratio": 0.990847
+      }
+    }
+  },
+  "candidate_counts": {
+    "boe_place": 0,
+    "boe_opentender": 0,
+    "place_opentender": 2
+  },
+  "candidate_class_counts": {
+    "boe_place": {},
+    "boe_opentender": {},
+    "place_opentender": {
+      "weak_candidate": 2
+    }
+  },
+  "candidate_policy": {
+    "exact_match": "Solo las intersecciones por contract_key_canon se consideran matches exactos.",
+    "strong_candidate": "Coincidencia aproximada por comprador, fecha, titulo e importe; requiere revision antes de fusionar.",
+    "weak_candidate": "Coincidencia parcial sin todos los componentes; sirve para exploracion, no para integracion automatica.",
+    "no_match": "Ausencia de interseccion exacta o candidato aproximado con las reglas actuales."
+  },
+  "candidate_examples": {
+    "boe_place": [],
+    "boe_opentender": [],
+    "place_opentender": [
+      {
+        "candidate_class": "weak_candidate",
+        "match_strategy": "buyer_title_amount",
+        "source_left": "place",
+        "source_right": "opentender",
+        "contract_key_left": "PA358/23|A03024005",
+        "contract_key_right": "75D2AE3A547E45AF9F8E5F6347666347|CONSEJODEADMINISTRACIONDEGESTIONDEINFRAESTRUCTURASSANITARIASDELPRINCIPADODEASTURIASSAU|20240105",
+        "source_record_id_left": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/13681501",
+        "source_record_id_right": "75d2ae3a-547e-45af-9f8e-5f6347666347",
+        "buyer_left": "Consejo de Administración de Gestión de Infraestructuras Sanitarias del Principado de Asturias, S.A.U.",
+        "buyer_right": "Consejo de Administración de Gestión de Infraestructuras Sanitarias del Principado de Asturias, S.A.U.",
+        "date_left": "",
+        "date_right": "2024-01-05T00:00:00.000Z",
+        "title_left": "Servicio de validación periódica, análisis de bioseguridad y biodescontaminación ambiental de áreas críticas del Hospital Universitario Central de Asturias y del Hospital Vital Álvarez Buylla de Mieres.",
+        "title_right": "Servicio de validación periódica, análisis de bioseguridad y biodescontaminación ambiental de áreas críticas del Hospital Universitario Central de Asturias y del Hospital Vital Álvarez Buylla de Mieres.",
+        "amount_left": 337590.0,
+        "amount_right": 337590.0,
+        "diagnostic_key": "buyer_title_amount|CONSEJODEADMINISTRACIONDEGESTIONDEINFRAESTRUCTURASSANITARIASDELPRINCIPADODEASTURIASSAU|SERVICIODEVALIDACIONPERIODICAANALISISDEBIOSEGURIDADYBIODESCONTAMINACIONAMBIENTALDEAREASCRITICASDELHOSPITALUNIVERSITARIOC|337590"
+      },
+      {
+        "candidate_class": "weak_candidate",
+        "match_strategy": "buyer_title_amount",
+        "source_left": "place",
+        "source_right": "opentender",
+        "contract_key_left": "PA385/23|A03024005",
+        "contract_key_right": "75D2AE3A547E45AF9F8E5F6347666347|CONSEJODEADMINISTRACIONDEGESTIONDEINFRAESTRUCTURASSANITARIASDELPRINCIPADODEASTURIASSAU|20240105",
+        "source_record_id_left": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/14081957",
+        "source_record_id_right": "75d2ae3a-547e-45af-9f8e-5f6347666347",
+        "buyer_left": "Consejo de Administración de Gestión de Infraestructuras Sanitarias del Principado de Asturias, S.A.U.",
+        "buyer_right": "Consejo de Administración de Gestión de Infraestructuras Sanitarias del Principado de Asturias, S.A.U.",
+        "date_left": "",
+        "date_right": "2024-01-05T00:00:00.000Z",
+        "title_left": "Servicio de validación periódica, análisis de bioseguridad y biodescontaminación ambiental de áreas críticas del Hospital Universitario Central de Asturias y del Hospital Vital Álvarez Buylla de Mieres.",
+        "title_right": "Servicio de validación periódica, análisis de bioseguridad y biodescontaminación ambiental de áreas críticas del Hospital Universitario Central de Asturias y del Hospital Vital Álvarez Buylla de Mieres.",
+        "amount_left": 337590.0,
+        "amount_right": 337590.0,
+        "diagnostic_key": "buyer_title_amount|CONSEJODEADMINISTRACIONDEGESTIONDEINFRAESTRUCTURASSANITARIASDELPRINCIPADODEASTURIASSAU|SERVICIODEVALIDACIONPERIODICAANALISISDEBIOSEGURIDADYBIODESCONTAMINACIONAMBIENTALDEAREASCRITICASDELHOSPITALUNIVERSITARIOC|337590"
+      }
+    ]
+  },
+  "outputs": {
+    "diagnostics_json": "data\\processed_sample\\agent1_matching_diagnostics.json",
+    "candidates_preview_csv": "data\\processed_sample\\agent1_matching_candidates_preview.csv"
+  }
+}
