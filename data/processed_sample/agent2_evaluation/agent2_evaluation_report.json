@@ -1,0 +1,473 @@
+{
+  "dataset": "agent2_threshold_sensitivity_evaluation",
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-15T09:16:46.487509+00:00",
+  "input": {
+    "path": "data\\processed_sample\\agent2_contracts_canonical.parquet",
+    "rows": 3437,
+    "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377",
+    "scope": "reproducible_sample"
+  },
+  "method": {
+    "rules": [
+      "RF-01",
+      "RF-02",
+      "RF-03",
+      "RF-04",
+      "RF-05",
+      "RF-06"
+    ],
+    "scenario_factors": {
+      "lower": 0.9,
+      "base": 1.0,
+      "upper": 1.1
+    },
+    "comparison_reference": "base",
+    "discrete_threshold_note": "RF-03 recurrence counts and RF-06 resolution days are discrete; multipliers can map to the same effective integer boundary."
+  },
+  "scenarios": {
+    "lower": {
+      "factor": 0.9,
+      "thresholds": {
+        "recurrence_threshold": 1.8,
+        "concentration_threshold": 0.45,
+        "deviation_threshold": 0.09000000000000001,
+        "temporal_days_threshold": 1.8
+      },
+      "rows": 3437,
+      "fully_evaluable_rows": 0,
+      "partially_evaluable_rows": 3437,
+      "not_evaluable_rows": 0,
+      "activated_contract_rows": 2069,
+      "activated_flags": 2427,
+      "flag_frequency": {
+        "RF-01": {
+          "count": 1104,
+          "contract_ratio": 0.32121035787023566
+        },
+        "RF-02": {
+          "count": 12,
+          "contract_ratio": 0.0034914169333721268
+        },
+        "RF-03": {
+          "count": 730,
+          "contract_ratio": 0.21239453011347106
+        },
+        "RF-04": {
+          "count": 36,
+          "contract_ratio": 0.01047425080011638
+        },
+        "RF-05": {
+          "count": 545,
+          "contract_ratio": 0.15856851905731742
+        },
+        "RF-06": {
+          "count": 0,
+          "contract_ratio": 0.0
+        }
+      },
+      "risk_level_breakdown": {
+        "alto": 13,
+        "bajo": 2864,
+        "medio": 560
+      },
+      "risk_band_distribution": {
+        "no_flags": 1368,
+        "low_positive": 1496,
+        "medium": 560,
+        "high": 13,
+        "critical": 0
+      },
+      "risk_score_distribution": {
+        "count": 3437,
+        "min": 0.0,
+        "q1": 0.0,
+        "median": 15.0,
+        "mean": 13.309572301425662,
+        "q3": 20.0,
+        "max": 65.0,
+        "std": 13.00923571429264
+      },
+      "rule_evaluability": {
+        "RF-01": {
+          "evaluable_rows": 3437,
+          "not_evaluable_rows": 0,
+          "evaluable_ratio": 1.0,
+          "required_fields": [
+            "contract_key_canon",
+            "supplier_name",
+            "source_tender_id"
+          ]
+        },
+        "RF-02": {
+          "evaluable_rows": 3425,
+          "not_evaluable_rows": 12,
+          "evaluable_ratio": 0.9965085830666278,
+          "required_fields": [
+            "procedure"
+          ]
+        },
+        "RF-03": {
+          "evaluable_rows": 2333,
+          "not_evaluable_rows": 1104,
+          "evaluable_ratio": 0.6787896421297643,
+          "required_fields": [
+            "buyer_name",
+            "supplier_name"
+          ]
+        },
+        "RF-04": {
+          "evaluable_rows": 1445,
+          "not_evaluable_rows": 1992,
+          "evaluable_ratio": 0.42042478906022696,
+          "required_fields": [
+            "buyer_name",
+            "supplier_name",
+            "awarded_value_eur"
+          ]
+        },
+        "RF-05": {
+          "evaluable_rows": 1796,
+          "not_evaluable_rows": 1641,
+          "evaluable_ratio": 0.5225487343613616,
+          "required_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur"
+          ]
+        },
+        "RF-06": {
+          "evaluable_rows": 0,
+          "not_evaluable_rows": 3437,
+          "evaluable_ratio": 0.0,
+          "required_fields": [
+            "publication_date",
+            "award_date"
+          ]
+        }
+      },
+      "missing_fields": {
+        "buyer_name": 0,
+        "supplier_name": 1104,
+        "procedure": 12,
+        "estimated_value_eur_missing_or_nonpositive": 150,
+        "awarded_value_eur": 1511,
+        "publication_date_invalid": 2461,
+        "award_date_invalid": 3067,
+        "pair_metric_unavailable": 1104,
+        "concentration_metric_unavailable": 1992
+      },
+      "agent3_features_status": "ignored",
+      "outputs": {
+        "risk_flags": "data\\processed_sample\\agent2_evaluation\\lower\\agent2_risk_flags.parquet",
+        "risk_scores": "data\\processed_sample\\agent2_evaluation\\lower\\agent2_risk_scores.parquet",
+        "report": "data\\processed_sample\\agent2_evaluation\\lower\\agent2_run_report.json"
+      }
+    },
+    "base": {
+      "factor": 1.0,
+      "thresholds": {
+        "recurrence_threshold": 2.0,
+        "concentration_threshold": 0.5,
+        "deviation_threshold": 0.1,
+        "temporal_days_threshold": 2.0
+      },
+      "rows": 3437,
+      "fully_evaluable_rows": 0,
+      "partially_evaluable_rows": 3437,
+      "not_evaluable_rows": 0,
+      "activated_contract_rows": 2066,
+      "activated_flags": 2420,
+      "flag_frequency": {
+        "RF-01": {
+          "count": 1104,
+          "contract_ratio": 0.32121035787023566
+        },
+        "RF-02": {
+          "count": 12,
+          "contract_ratio": 0.0034914169333721268
+        },
+        "RF-03": {
+          "count": 730,
+          "contract_ratio": 0.21239453011347106
+        },
+        "RF-04": {
+          "count": 34,
+          "contract_ratio": 0.009892347977887692
+        },
+        "RF-05": {
+          "count": 540,
+          "contract_ratio": 0.1571137620017457
+        },
+        "RF-06": {
+          "count": 0,
+          "contract_ratio": 0.0
+        }
+      },
+      "risk_level_breakdown": {
+        "alto": 13,
+        "bajo": 2871,
+        "medio": 553
+      },
+      "risk_band_distribution": {
+        "no_flags": 1371,
+        "low_positive": 1500,
+        "medium": 553,
+        "high": 13,
+        "critical": 0
+      },
+      "risk_score_distribution": {
+        "count": 3437,
+        "min": 0.0,
+        "q1": 0.0,
+        "median": 15.0,
+        "mean": 13.261565318591796,
+        "q3": 20.0,
+        "max": 65.0,
+        "std": 12.979671812282055
+      },
+      "rule_evaluability": {
+        "RF-01": {
+          "evaluable_rows": 3437,
+          "not_evaluable_rows": 0,
+          "evaluable_ratio": 1.0,
+          "required_fields": [
+            "contract_key_canon",
+            "supplier_name",
+            "source_tender_id"
+          ]
+        },
+        "RF-02": {
+          "evaluable_rows": 3425,
+          "not_evaluable_rows": 12,
+          "evaluable_ratio": 0.9965085830666278,
+          "required_fields": [
+            "procedure"
+          ]
+        },
+        "RF-03": {
+          "evaluable_rows": 2333,
+          "not_evaluable_rows": 1104,
+          "evaluable_ratio": 0.6787896421297643,
+          "required_fields": [
+            "buyer_name",
+            "supplier_name"
+          ]
+        },
+        "RF-04": {
+          "evaluable_rows": 1445,
+          "not_evaluable_rows": 1992,
+          "evaluable_ratio": 0.42042478906022696,
+          "required_fields": [
+            "buyer_name",
+            "supplier_name",
+            "awarded_value_eur"
+          ]
+        },
+        "RF-05": {
+          "evaluable_rows": 1796,
+          "not_evaluable_rows": 1641,
+          "evaluable_ratio": 0.5225487343613616,
+          "required_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur"
+          ]
+        },
+        "RF-06": {
+          "evaluable_rows": 0,
+          "not_evaluable_rows": 3437,
+          "evaluable_ratio": 0.0,
+          "required_fields": [
+            "publication_date",
+            "award_date"
+          ]
+        }
+      },
+      "missing_fields": {
+        "buyer_name": 0,
+        "supplier_name": 1104,
+        "procedure": 12,
+        "estimated_value_eur_missing_or_nonpositive": 150,
+        "awarded_value_eur": 1511,
+        "publication_date_invalid": 2461,
+        "award_date_invalid": 3067,
+        "pair_metric_unavailable": 1104,
+        "concentration_metric_unavailable": 1992
+      },
+      "agent3_features_status": "ignored",
+      "outputs": {
+        "risk_flags": "data\\processed_sample\\agent2_evaluation\\base\\agent2_risk_flags.parquet",
+        "risk_scores": "data\\processed_sample\\agent2_evaluation\\base\\agent2_risk_scores.parquet",
+        "report": "data\\processed_sample\\agent2_evaluation\\base\\agent2_run_report.json"
+      }
+    },
+    "upper": {
+      "factor": 1.1,
+      "thresholds": {
+        "recurrence_threshold": 2.2,
+        "concentration_threshold": 0.55,
+        "deviation_threshold": 0.11000000000000001,
+        "temporal_days_threshold": 2.2
+      },
+      "rows": 3437,
+      "fully_evaluable_rows": 0,
+      "partially_evaluable_rows": 3437,
+      "not_evaluable_rows": 0,
+      "activated_contract_rows": 1921,
+      "activated_flags": 2224,
+      "flag_frequency": {
+        "RF-01": {
+          "count": 1104,
+          "contract_ratio": 0.32121035787023566
+        },
+        "RF-02": {
+          "count": 12,
+          "contract_ratio": 0.0034914169333721268
+        },
+        "RF-03": {
+          "count": 566,
+          "contract_ratio": 0.16467849869071866
+        },
+        "RF-04": {
+          "count": 3,
+          "contract_ratio": 0.0008728542333430317
+        },
+        "RF-05": {
+          "count": 539,
+          "contract_ratio": 0.15682281059063136
+        },
+        "RF-06": {
+          "count": 0,
+          "contract_ratio": 0.0
+        }
+      },
+      "risk_level_breakdown": {
+        "bajo": 2891,
+        "medio": 546
+      },
+      "risk_band_distribution": {
+        "no_flags": 1516,
+        "low_positive": 1375,
+        "medium": 546,
+        "high": 0,
+        "critical": 0
+      },
+      "risk_score_distribution": {
+        "count": 3437,
+        "min": 0.0,
+        "q1": 0.0,
+        "median": 15.0,
+        "mean": 12.119581029967994,
+        "q3": 20.0,
+        "max": 45.0,
+        "std": 12.562718445177955
+      },
+      "rule_evaluability": {
+        "RF-01": {
+          "evaluable_rows": 3437,
+          "not_evaluable_rows": 0,
+          "evaluable_ratio": 1.0,
+          "required_fields": [
+            "contract_key_canon",
+            "supplier_name",
+            "source_tender_id"
+          ]
+        },
+        "RF-02": {
+          "evaluable_rows": 3425,
+          "not_evaluable_rows": 12,
+          "evaluable_ratio": 0.9965085830666278,
+          "required_fields": [
+            "procedure"
+          ]
+        },
+        "RF-03": {
+          "evaluable_rows": 2333,
+          "not_evaluable_rows": 1104,
+          "evaluable_ratio": 0.6787896421297643,
+          "required_fields": [
+            "buyer_name",
+            "supplier_name"
+          ]
+        },
+        "RF-04": {
+          "evaluable_rows": 1445,
+          "not_evaluable_rows": 1992,
+          "evaluable_ratio": 0.42042478906022696,
+          "required_fields": [
+            "buyer_name",
+            "supplier_name",
+            "awarded_value_eur"
+          ]
+        },
+        "RF-05": {
+          "evaluable_rows": 1796,
+          "not_evaluable_rows": 1641,
+          "evaluable_ratio": 0.5225487343613616,
+          "required_fields": [
+            "estimated_value_eur",
+            "awarded_value_eur"
+          ]
+        },
+        "RF-06": {
+          "evaluable_rows": 0,
+          "not_evaluable_rows": 3437,
+          "evaluable_ratio": 0.0,
+          "required_fields": [
+            "publication_date",
+            "award_date"
+          ]
+        }
+      },
+      "missing_fields": {
+        "buyer_name": 0,
+        "supplier_name": 1104,
+        "procedure": 12,
+        "estimated_value_eur_missing_or_nonpositive": 150,
+        "awarded_value_eur": 1511,
+        "publication_date_invalid": 2461,
+        "award_date_invalid": 3067,
+        "pair_metric_unavailable": 1104,
+        "concentration_metric_unavailable": 1992
+      },
+      "agent3_features_status": "ignored",
+      "outputs": {
+        "risk_flags": "data\\processed_sample\\agent2_evaluation\\upper\\agent2_risk_flags.parquet",
+        "risk_scores": "data\\processed_sample\\agent2_evaluation\\upper\\agent2_risk_scores.parquet",
+        "report": "data\\processed_sample\\agent2_evaluation\\upper\\agent2_run_report.json"
+      }
+    }
+  },
+  "comparisons_to_base": {
+    "lower": {
+      "matched_rows": 3437,
+      "score_changed_rows": 7,
+      "score_unchanged_ratio": 0.9979633401221996,
+      "risk_level_changed_rows": 7,
+      "risk_level_unchanged_ratio": 0.9979633401221996,
+      "flag_set_changed_rows": 7,
+      "flag_set_unchanged_ratio": 0.9979633401221996,
+      "mean_absolute_score_delta": 0.04800698283386674,
+      "mean_score_delta": 0.04800698283386674
+    },
+    "upper": {
+      "matched_rows": 3437,
+      "score_changed_rows": 168,
+      "score_unchanged_ratio": 0.9511201629327902,
+      "risk_level_changed_rows": 33,
+      "risk_level_unchanged_ratio": 0.9903986034332266,
+      "flag_set_changed_rows": 168,
+      "flag_set_unchanged_ratio": 0.9511201629327902,
+      "mean_absolute_score_delta": 1.1419842886237999,
+      "mean_score_delta": -1.1419842886237999
+    }
+  },
+  "limitations": [
+    "The evaluation uses the 3,437-row reproducible sample, not the 51,720-row full run.",
+    "The results prioritise human review and do not classify or confirm fraud.",
+    "The sensitivity analysis evaluates deterministic rules without labelled outcomes."
+  ],
+  "outputs": {
+    "json": "data\\processed_sample\\agent2_evaluation\\agent2_evaluation_report.json",
+    "markdown": "data\\processed_sample\\agent2_evaluation\\agent2_evaluation_report.md"
+  }
+}

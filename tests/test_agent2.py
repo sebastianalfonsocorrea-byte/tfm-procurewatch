@@ -7,7 +7,13 @@ from io import StringIO
 from pathlib import Path
 from uuid import uuid4
 
-from procurewatch.agent2 import Agent2Contract, run_agent2, run_agent2_mvp, score_contract
+from procurewatch.agent2 import (
+    Agent2Contract,
+    run_agent2,
+    run_agent2_evaluation,
+    run_agent2_mvp,
+    score_contract,
+)
 from procurewatch.cli import main
 
 
@@ -112,7 +118,9 @@ class Agent2Tests(unittest.TestCase):
         scores_by_contract = scores.set_index("contract_key_canon")
 
         self.assertEqual(report["rows"], 5)
-        self.assertEqual(report["evaluable_rows"], 5)
+        self.assertEqual(report["evaluable_rows"], 4)
+        self.assertEqual(report["fully_evaluable_rows"], 4)
+        self.assertEqual(report["partially_evaluable_rows"], 1)
         self.assertEqual(report["not_evaluable_rows"], 0)
         self.assertEqual(report["activated_contract_rows"], 5)
         self.assertEqual(report["activated_flags"], 14)
@@ -149,7 +157,12 @@ class Agent2Tests(unittest.TestCase):
             ["RF-01", "RF-02", "RF-06"],
         )
 
-        self.assertTrue((scores["evaluation_status"] == "evaluado").all())
+        self.assertEqual(
+            scores["evaluation_status"].value_counts().to_dict(),
+            {"fully_evaluable": 4, "partially_evaluable": 1},
+        )
+        self.assertEqual(report["rule_evaluability"]["RF-03"]["not_evaluable_rows"], 1)
+        self.assertEqual(report["missing_fields"]["supplier_name"], 1)
         self.assertFalse(scores["agent3_features_used"].any())
         self.assertEqual(report["agent3_features_status"], "ignored")
         self.assertIn("source_snapshot_id", report)
@@ -256,6 +269,26 @@ class Agent2Tests(unittest.TestCase):
         self.assertEqual(report["activated_flags"], 0)
         self.assertTrue(flags.empty)
         self.assertFalse(scores["agent3_features_used"].any())
+
+    def test_run_agent2_evaluation_compares_three_threshold_scenarios(self) -> None:
+        import pandas as pd
+
+        workspace = _test_workspace("evaluation")
+        input_path = workspace / "canonical.parquet"
+        output_dir = workspace / "evaluation"
+        pd.DataFrame(_mvp_contracts()).to_parquet(input_path, index=False)
+
+        report = run_agent2_evaluation(input_path=input_path, output_dir=output_dir)
+
+        self.assertEqual(set(report["scenarios"]), {"lower", "base", "upper"})
+        self.assertEqual(report["input"]["rows"], 5)
+        self.assertEqual(report["scenarios"]["base"]["fully_evaluable_rows"], 4)
+        self.assertGreater(report["comparisons_to_base"]["lower"]["score_changed_rows"], 0)
+        self.assertGreater(report["comparisons_to_base"]["upper"]["score_changed_rows"], 0)
+        self.assertTrue((output_dir / "agent2_evaluation_report.json").exists())
+        self.assertTrue((output_dir / "agent2_evaluation_report.md").exists())
+        for scenario in ("lower", "base", "upper"):
+            self.assertTrue((output_dir / scenario / "agent2_risk_scores.parquet").exists())
 
 
 def _contracts() -> list[dict[str, object]]:

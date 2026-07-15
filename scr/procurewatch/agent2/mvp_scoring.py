@@ -20,6 +20,7 @@ def score_contract_mvp(
     contract: Agent2Contract,
     *,
     deviation_threshold: float = 0.10,
+    temporal_days_threshold: float = 2.0,
 ) -> Agent2Score:
     red_flags: list[str] = []
     evidence: dict[str, object] = {}
@@ -44,7 +45,7 @@ def score_contract_mvp(
             evidence["deviation_ratio"] = (
                 contract.awarded_value_eur - contract.estimated_value_eur
             ) / contract.estimated_value_eur
-    if temporal_anomaly(contract):
+    if temporal_anomaly(contract, temporal_days_threshold=temporal_days_threshold):
         red_flags.append("RF-06")
         evidence["publication_date"] = contract.publication_date
         evidence["award_date"] = contract.award_date

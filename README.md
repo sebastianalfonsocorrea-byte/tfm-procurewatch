@@ -197,7 +197,8 @@ Estado final observado:
 - Reconstruccion completa disponible con `--force-rebuild`.
 - `agent1_data_quality_summary.json`: estado `ok`.
 - `agent2_contracts_canonical.parquet`: 51.720 filas.
-- Tests actuales ejecutados con pytest: `15 passed`.
+- Validacion actual de la rama integrada: `117 passed`, `1 skipped`; Ruff sin errores. La prueba
+  omitida corresponde a la integracion PostgreSQL cuando no esta instalado el extra `db`.
 
 Artefactos de continuidad:
 
@@ -208,3 +209,22 @@ Artefactos de continuidad:
 - `data/processed/agent2_contracts_canonical_schema.json`
 
 Siguiente trabajo: mejorar matching entre fuentes. La cobertura existe, pero las intersecciones BOE/PLACE/OpenTender siguen en 0 con la clave actual.
+
+## Evaluacion reproducible de Agent2
+
+La muestra versionada de 3.437 contratos permite ejecutar RF-01 a RF-06 y comparar la sensibilidad
+de los umbrales numericos:
+
+```powershell
+procurewatch evaluate-agent2
+```
+
+El comando genera tres escenarios (`lower`, `base`, `upper`) con factores 0,9, 1,0 y 1,1, junto
+con scores, flags y los reportes:
+
+- `data/processed_sample/agent2_evaluation/agent2_evaluation_report.json`
+- `data/processed_sample/agent2_evaluation/agent2_evaluation_report.md`
+
+La evaluacion registra cobertura por regla, campos ausentes, frecuencias, distribucion del score y
+estabilidad frente al escenario base. Es una evaluacion proxy sobre la muestra reproducible; no
+sustituye la ejecucion pendiente sobre el canonico completo de 51.720 contratos ni valida fraude.

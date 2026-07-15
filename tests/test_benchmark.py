@@ -30,6 +30,11 @@ class BenchmarkTests(unittest.TestCase):
                 demo / "agent2_agent3_agent4_demo_report.json",
                 _integrated_report(),
             )
+            (processed / "agent2_evaluation").mkdir()
+            _write_json(
+                processed / "agent2_evaluation" / "agent2_evaluation_report.json",
+                _agent2_evaluation(),
+            )
 
             report = run_benchmark(
                 processed_dir=processed,
@@ -41,6 +46,12 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(report["status"], "warning")
             self.assertEqual(report["agents"]["agent1"]["status"], "warning")
             self.assertEqual(report["agents"]["agent4"]["status"], "pass")
+            sensitivity = next(
+                metric
+                for metric in report["agents"]["agent2"]["metrics"]
+                if metric["metric_id"] == "agent2.threshold_sensitivity.documented"
+            )
+            self.assertEqual(sensitivity["status"], "pass")
             self.assertTrue((output / "benchmark_report.json").exists())
             self.assertTrue((output / "benchmark_report.md").exists())
             payload = json.loads((output / "benchmark_report.json").read_text(encoding="utf-8"))
@@ -147,6 +158,16 @@ def _integrated_report() -> dict[str, object]:
             {"name": "agent4_has_evidence_and_citations", "passed": True},
         ],
         "limitations": ["Demo sintetica y offline."],
+    }
+
+
+def _agent2_evaluation() -> dict[str, object]:
+    return {
+        "scenarios": {"lower": {}, "base": {}, "upper": {}},
+        "comparisons_to_base": {
+            "lower": {"score_unchanged_ratio": 0.9},
+            "upper": {"score_unchanged_ratio": 0.95},
+        },
     }
 
 

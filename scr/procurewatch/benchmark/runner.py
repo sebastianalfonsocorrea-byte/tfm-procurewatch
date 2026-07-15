@@ -10,7 +10,7 @@ DEFAULT_PROCESSED_DIR = Path("data/processed_sample")
 DEFAULT_DEMO_DIR = Path("data/processed/agent3_agent4_demo_2026_06_23")
 DEFAULT_AGENT4_EVALUATION_PATH = Path("data/processed/agent4_evaluation_report.json")
 DEFAULT_BENCHMARK_OUTPUT_DIR = Path("data/processed/benchmark")
-BENCHMARK_SCHEMA_VERSION = "0.2.0"
+BENCHMARK_SCHEMA_VERSION = "0.3.0"
 
 PASS = "pass"
 WARNING = "warning"
@@ -231,6 +231,7 @@ def _evaluate_agent2(processed_dir: Path, demo_dir: Path) -> dict[str, Any]:
 
     if scores_path.exists():
         metrics.extend(_agent2_from_score_tables(scores_path, flags_path, report_path))
+        metrics.append(_agent2_sensitivity_metric(processed_dir))
         return _agent_result("agent2", metrics, limitations)
 
     integrated = _read_json(demo_dir / "agent2_agent3_agent4_demo_report.json")
@@ -246,6 +247,7 @@ def _evaluate_agent2(processed_dir: Path, demo_dir: Path) -> dict[str, Any]:
             )
         )
         limitations.append("No se encontro scoring Agent2 ni demo integrada para evaluarlo.")
+        metrics.append(_agent2_sensitivity_metric(processed_dir))
         return _agent_result("agent2", metrics, limitations)
 
     summary = integrated.get("summary", {})
@@ -274,7 +276,40 @@ def _evaluate_agent2(processed_dir: Path, demo_dir: Path) -> dict[str, Any]:
     limitations.append(
         "Agent2 se mide desde la demo integrada porque no hay scoring completo en processed_dir."
     )
+    metrics.append(_agent2_sensitivity_metric(processed_dir))
     return _agent_result("agent2", metrics, limitations)
+
+
+def _agent2_sensitivity_metric(processed_dir: Path) -> dict[str, Any]:
+    path = processed_dir / "agent2_evaluation" / "agent2_evaluation_report.json"
+    report = _read_json(path)
+    if report is None:
+        return _metric(
+            "agent2.threshold_sensitivity.documented",
+            "Sensibilidad de umbrales Agent2 documentada",
+            False,
+            "3 escenarios",
+            NOT_APPLICABLE,
+            str(path),
+        )
+    scenarios = report.get("scenarios", {})
+    comparisons = report.get("comparisons_to_base", {})
+    complete = (
+        set(scenarios) >= {"lower", "base", "upper"}
+        and set(comparisons) >= {"lower", "upper"}
+        and all(
+            comparisons.get(name, {}).get("score_unchanged_ratio") is not None
+            for name in ("lower", "upper")
+        )
+    )
+    return _metric(
+        "agent2.threshold_sensitivity.documented",
+        "Sensibilidad de umbrales Agent2 documentada",
+        len(scenarios),
+        "3 escenarios y comparacion con base",
+        PASS if complete else FAIL,
+        str(path),
+    )
 
 
 def _agent2_from_score_tables(

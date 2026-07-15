@@ -1,0 +1,143 @@
+{
+  "input_path": "data\\processed_sample\\agent2_contracts_canonical.parquet",
+  "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377",
+  "rows": 3437,
+  "scored_rows": 3437,
+  "evaluable_rows": 0,
+  "fully_evaluable_rows": 0,
+  "partially_evaluable_rows": 3437,
+  "not_evaluable_rows": 0,
+  "activated_flags": 2427,
+  "activated_contract_rows": 2069,
+  "rules": {
+    "RF-01": {
+      "description": "Falta adjudicatario o identificador equivalente.",
+      "weight": 15.0
+    },
+    "RF-02": {
+      "description": "Procedimiento de contratación sensible o de urgencia.",
+      "weight": 20.0
+    },
+    "RF-03": {
+      "description": "Recurrencia comprador-proveedor observada en el canonico.",
+      "weight": 20.0,
+      "recurrence_threshold": 1.8,
+      "rule_version": "1.0.0"
+    },
+    "RF-04": {
+      "description": "Concentración de importe adjudicado en la pareja comprador-proveedor.",
+      "weight": 20.0,
+      "recurrence_threshold": 1.8,
+      "concentration_threshold": 0.45,
+      "rule_version": "1.0.0"
+    },
+    "RF-05": {
+      "description": "Importe adjudicado superior al estimado.",
+      "weight": 25.0,
+      "deviation_threshold": 0.09000000000000001,
+      "rule_version": "1.0.0"
+    },
+    "RF-06": {
+      "description": "Patrón temporal anómalo entre publicación y adjudicación.",
+      "weight": 15.0,
+      "temporal_days_threshold": 1.8,
+      "rule_version": "1.0.0"
+    }
+  },
+  "thresholds": {
+    "deviation_threshold": 0.09000000000000001,
+    "recurrence_threshold": 1.8,
+    "concentration_threshold": 0.45,
+    "temporal_days_threshold": 1.8
+  },
+  "rule_evaluability": {
+    "RF-01": {
+      "evaluable_rows": 3437,
+      "not_evaluable_rows": 0,
+      "evaluable_ratio": 1.0,
+      "required_fields": [
+        "contract_key_canon",
+        "supplier_name",
+        "source_tender_id"
+      ]
+    },
+    "RF-02": {
+      "evaluable_rows": 3425,
+      "not_evaluable_rows": 12,
+      "evaluable_ratio": 0.9965085830666278,
+      "required_fields": [
+        "procedure"
+      ]
+    },
+    "RF-03": {
+      "evaluable_rows": 2333,
+      "not_evaluable_rows": 1104,
+      "evaluable_ratio": 0.6787896421297643,
+      "required_fields": [
+        "buyer_name",
+        "supplier_name"
+      ]
+    },
+    "RF-04": {
+      "evaluable_rows": 1445,
+      "not_evaluable_rows": 1992,
+      "evaluable_ratio": 0.42042478906022696,
+      "required_fields": [
+        "buyer_name",
+        "supplier_name",
+        "awarded_value_eur"
+      ]
+    },
+    "RF-05": {
+      "evaluable_rows": 1796,
+      "not_evaluable_rows": 1641,
+      "evaluable_ratio": 0.5225487343613616,
+      "required_fields": [
+        "estimated_value_eur",
+        "awarded_value_eur"
+      ]
+    },
+    "RF-06": {
+      "evaluable_rows": 0,
+      "not_evaluable_rows": 3437,
+      "evaluable_ratio": 0.0,
+      "required_fields": [
+        "publication_date",
+        "award_date"
+      ]
+    }
+  },
+  "missing_fields": {
+    "buyer_name": 0,
+    "supplier_name": 1104,
+    "procedure": 12,
+    "estimated_value_eur_missing_or_nonpositive": 150,
+    "awarded_value_eur": 1511,
+    "publication_date_invalid": 2461,
+    "award_date_invalid": 3067,
+    "pair_metric_unavailable": 1104,
+    "concentration_metric_unavailable": 1992
+  },
+  "score_version": "2.0.0",
+  "agent3_features_path": null,
+  "agent3_features_status": "ignored",
+  "agent3_features_rows": 0,
+  "agent3_features_matched_rows": 0,
+  "agent3_features_warnings": [],
+  "flag_breakdown": {
+    "RF-01": 1104,
+    "RF-02": 12,
+    "RF-03": 730,
+    "RF-04": 36,
+    "RF-05": 545
+  },
+  "risk_level_breakdown": {
+    "alto": 13,
+    "bajo": 2864,
+    "medio": 560
+  },
+  "outputs": {
+    "risk_flags": "data\\processed_sample\\agent2_evaluation\\lower\\agent2_risk_flags.parquet",
+    "risk_scores": "data\\processed_sample\\agent2_evaluation\\lower\\agent2_risk_scores.parquet"
+  }
+}

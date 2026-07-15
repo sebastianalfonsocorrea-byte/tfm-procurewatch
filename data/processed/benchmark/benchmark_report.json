@@ -1,7 +1,7 @@
 {
   "dataset": "procurewatch_benchmark_report",
-  "schema_version": "0.2.0",
-  "generated_at_utc": "2026-07-14T11:51:38.601670+00:00",
+  "schema_version": "0.3.0",
+  "generated_at_utc": "2026-07-15T09:16:54.450371+00:00",
   "status": "warning",
   "inputs": {
     "processed_dir": "data\\processed_sample",
@@ -20,9 +20,9 @@
       "agent4": "pass",
       "integrated": "pass"
     },
-    "metrics_count": 31,
+    "metrics_count": 32,
     "status_counts": {
-      "pass": 28,
+      "pass": 29,
       "warning": 1,
       "fail": 0,
       "not_applicable": 2
@@ -186,12 +186,20 @@
           "threshold": "> 0",
           "status": "pass",
           "evidence": "integrated.summary.agent2_red_flags"
+        },
+        {
+          "metric_id": "agent2.threshold_sensitivity.documented",
+          "label": "Sensibilidad de umbrales Agent2 documentada",
+          "value": 3,
+          "threshold": "3 escenarios y comparacion con base",
+          "status": "pass",
+          "evidence": "data\\processed_sample\\agent2_evaluation\\agent2_evaluation_report.json"
         }
       ],
       "limitations": [
         "Agent2 se mide desde la demo integrada porque no hay scoring completo en processed_dir."
       ],
-      "metrics_count": 2,
+      "metrics_count": 3,
       "agent": "agent2"
     },
     "agent3": {

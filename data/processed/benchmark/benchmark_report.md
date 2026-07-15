@@ -1,7 +1,7 @@
 # Benchmark ProcureWatch
 
 - Estado global: **warning**
-- Metricas evaluadas: **31**
+- Metricas evaluadas: **32**
 
 ## Lectura en contexto de TFM
 
@@ -30,7 +30,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 | Agente | Estado | Metricas |
 |---|---|---:|
 | agent1 | warning | 9 |
-| agent2 | pass | 2 |
+| agent2 | pass | 3 |
 | agent3 | pass | 6 |
 | agent4 | pass | 8 |
 | integrated | pass | 6 |
@@ -59,6 +59,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 |---|---:|---|---|---|
 | Score Agent2 presente en demo integrada | 0.5000 | no nulo | pass | integrated.summary.agent2_risk_score |
 | Red flags Agent2 presentes en demo integrada | 2 | > 0 | pass | integrated.summary.agent2_red_flags |
+| Sensibilidad de umbrales Agent2 documentada | 3 | 3 escenarios y comparacion con base | pass | data\processed_sample\agent2_evaluation\agent2_evaluation_report.json |
 
 - Agent2 se mide desde la demo integrada porque no hay scoring completo en processed_dir.
 

@@ -392,10 +392,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     agent2_mvp_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
     agent2_mvp_parser.add_argument("--deviation-threshold", type=float, default=0.10)
+    agent2_mvp_parser.add_argument("--recurrence-threshold", type=float, default=2.0)
+    agent2_mvp_parser.add_argument("--concentration-threshold", type=float, default=0.50)
+    agent2_mvp_parser.add_argument("--temporal-days-threshold", type=float, default=2.0)
     agent2_mvp_parser.add_argument(
         "--agent3-features-path",
         type=Path,
         default=Path("data/processed/agent3_agent2_features.parquet"),
+    )
+    agent2_evaluation_parser = subparsers.add_parser(
+        "evaluate-agent2",
+        help="Evalua RF-01..RF-06 con umbrales -10 por ciento, base y +10 por ciento.",
+    )
+    agent2_evaluation_parser.add_argument(
+        "--input",
+        type=Path,
+        default=Path("data/processed_sample/agent2_contracts_canonical.parquet"),
+    )
+    agent2_evaluation_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed_sample/agent2_evaluation"),
+    )
+    agent2_evaluation_parser.add_argument(
+        "--agent3-features-path",
+        type=Path,
+        default=None,
     )
     agent3_parser = subparsers.add_parser(
         "run-agent3",
@@ -957,6 +979,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             input_path=args.input,
             output_dir=args.output_dir,
             deviation_threshold=args.deviation_threshold,
+            recurrence_threshold=args.recurrence_threshold,
+            concentration_threshold=args.concentration_threshold,
+            temporal_days_threshold=args.temporal_days_threshold,
             agent3_features_path=args.agent3_features_path,
         )
         print("Agente 2 MVP ejecutado")
@@ -964,6 +989,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Contratos con flags: {report['activated_contract_rows']}")
         print(f"- Flags activadas: {report['activated_flags']}")
         print(f"- Reporte agente: {report['report_path']}")
+        return 0
+    if args.command == "evaluate-agent2":
+        from .agent2 import run_agent2_evaluation
+
+        report = run_agent2_evaluation(
+            input_path=args.input,
+            output_dir=args.output_dir,
+            agent3_features_path=args.agent3_features_path,
+        )
+        base = report["scenarios"]["base"]
+        print("Evaluacion de Agent2 completada")
+        print(f"- Contratos procesados: {report['input']['rows']}")
+        print(f"- Completamente evaluables: {base['fully_evaluable_rows']}")
+        print(f"- Parcialmente evaluables: {base['partially_evaluable_rows']}")
+        print(f"- Reporte JSON: {report['outputs']['json']}")
+        print(f"- Reporte Markdown: {report['outputs']['markdown']}")
         return 0
     if args.command == "run-agent3":
         from .agent3 import run_agent3

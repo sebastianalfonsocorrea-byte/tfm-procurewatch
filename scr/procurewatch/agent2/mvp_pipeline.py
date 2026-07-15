@@ -54,21 +54,32 @@ RULE_METADATA = {
 
 SCORE_VERSION = "2.0.0"
 DEFAULT_DEVIATION_THRESHOLD = 0.10
-RECURRENCE_THRESHOLD = 2
-CONCENTRATION_THRESHOLD = 0.50
+DEFAULT_RECURRENCE_THRESHOLD = 2.0
+DEFAULT_CONCENTRATION_THRESHOLD = 0.50
+DEFAULT_TEMPORAL_DAYS_THRESHOLD = 2.0
+RULE_CODES = [RF01_CODE, RF02_CODE, RF03_CODE, RF04_CODE, RF05_CODE, RF06_CODE]
 
 
 def run_agent2_mvp(
     input_path: Path,
     output_dir: Path,
     deviation_threshold: float = DEFAULT_DEVIATION_THRESHOLD,
+    recurrence_threshold: float = DEFAULT_RECURRENCE_THRESHOLD,
+    concentration_threshold: float = DEFAULT_CONCENTRATION_THRESHOLD,
+    temporal_days_threshold: float = DEFAULT_TEMPORAL_DAYS_THRESHOLD,
     agent3_features_path: Path | None = None,
 ) -> dict[str, Any]:
     """Execute the Agent 2 MVP over the canonical dataset produced by Agent 1."""
     import pandas as pd
 
-    if deviation_threshold < 0:
-        raise ValueError("deviation_threshold must be greater than or equal to zero")
+    thresholds = {
+        "deviation_threshold": deviation_threshold,
+        "recurrence_threshold": recurrence_threshold,
+        "concentration_threshold": concentration_threshold,
+        "temporal_days_threshold": temporal_days_threshold,
+    }
+    if any(value < 0 for value in thresholds.values()):
+        raise ValueError("Agent2 thresholds must be greater than or equal to zero")
     if not input_path.exists():
         raise FileNotFoundError(input_path)
 
@@ -182,7 +193,7 @@ def run_agent2_mvp(
         contracts["estimated_value_eur"].gt(0) & contracts["awarded_value_eur"].notna()
     )
 
-    for index, record in enumerate(contracts.to_dict(orient="records")):
+    for record in contracts.to_dict(orient="records"):
         contract = _record_to_contract(record)
         source_tender_id = _clean_text(record.get("source_tender_id"))
         buyer_key = _normalize_key(_clean_text(record.get("buyer_name")))
@@ -203,7 +214,11 @@ def run_agent2_mvp(
                 "resolution_days": _int_or_none(record.get("resolution_days")),
             }
         )
-        score = score_contract_mvp(contract, deviation_threshold=deviation_threshold)
+        score = score_contract_mvp(
+            contract,
+            deviation_threshold=deviation_threshold,
+            temporal_days_threshold=temporal_days_threshold,
+        )
         active_flags = list(score.red_flags)
         base_scores.append(
             {
@@ -212,9 +227,6 @@ def run_agent2_mvp(
                 "risk_level": _risk_level_from_score(score.risk_score),
                 "flags_count": len(active_flags),
                 "top_flags": json.dumps(active_flags, ensure_ascii=False),
-                "evaluation_status": (
-                    "evaluado" if bool(rf05_evaluable_mask.iloc[index]) else "no_evaluable"
-                ),
                 "score_version": SCORE_VERSION,
                 "source_snapshot_id": snapshot_id,
                 "agent3_features_used": bool(record.get("agent3_features_used", False)),
@@ -232,6 +244,7 @@ def run_agent2_mvp(
                         flag_code=flag_code,
                         contract=contract,
                         deviation_threshold=deviation_threshold,
+                        temporal_days_threshold=temporal_days_threshold,
                         evidence=score.evidence,
                     ),
                     rule_version=RULE_VERSIONS[flag_code],
@@ -244,11 +257,11 @@ def run_agent2_mvp(
 
     pair_context = _build_contract_pair_context(contracts)
     for flag_code, threshold_check in [
-        (RF03_CODE, pair_context["pair_count"].fillna(0) >= RECURRENCE_THRESHOLD),
+        (RF03_CODE, pair_context["pair_count"].fillna(0) >= recurrence_threshold),
         (
             RF04_CODE,
-            (pair_context["pair_count"].fillna(0) >= RECURRENCE_THRESHOLD)
-            & (pair_context["pair_share"].fillna(0.0) >= CONCENTRATION_THRESHOLD),
+            (pair_context["pair_count"].fillna(0) >= recurrence_threshold)
+            & (pair_context["pair_share"].fillna(0.0) >= concentration_threshold),
         ),
     ]:
         affected = pair_context[threshold_check]
@@ -263,6 +276,29 @@ def run_agent2_mvp(
             snapshot_id=snapshot_id,
         )
         flag_records.extend(new_flag_records)
+
+    evaluability = _build_rule_evaluability(
+        contracts=contracts,
+        pair_context=pair_context,
+        rf05_evaluable_mask=rf05_evaluable_mask,
+    )
+    evaluable_count = sum(mask.astype("int64") for mask in evaluability.values())
+    scores["evaluable_rules_count"] = evaluable_count
+    scores["not_evaluable_rules"] = [
+        json.dumps(
+            [code for code, mask in evaluability.items() if not bool(mask.iloc[index])],
+            ensure_ascii=False,
+        )
+        for index in range(len(scores))
+    ]
+    scores["evaluation_status"] = [
+        "fully_evaluable"
+        if count == len(RULE_CODES)
+        else "partially_evaluable"
+        if count > 0
+        else "not_evaluable"
+        for count in evaluable_count.tolist()
+    ]
 
     flags = pd.DataFrame(
         flag_records,
@@ -306,12 +342,30 @@ def run_agent2_mvp(
         "input_path": str(input_path),
         "source_snapshot_id": snapshot_id,
         "rows": int(len(contracts)),
-        "evaluable_rows": int(rf05_evaluable_mask.sum()),
-        "not_evaluable_rows": int((~rf05_evaluable_mask).sum()),
+        "scored_rows": int(len(scores)),
+        "evaluable_rows": int((scores["evaluation_status"] == "fully_evaluable").sum()),
+        "fully_evaluable_rows": int(
+            (scores["evaluation_status"] == "fully_evaluable").sum()
+        ),
+        "partially_evaluable_rows": int(
+            (scores["evaluation_status"] == "partially_evaluable").sum()
+        ),
+        "not_evaluable_rows": int((scores["evaluation_status"] == "not_evaluable").sum()),
         "activated_flags": int(len(flags)),
         "activated_contract_rows": int((scores["flags_count"] > 0).sum()),
         "rules": {
             **RULE_METADATA,
+            RF03_CODE: {
+                **RULE_METADATA[RF03_CODE],
+                "recurrence_threshold": recurrence_threshold,
+                "rule_version": RULE_VERSIONS[RF03_CODE],
+            },
+            RF04_CODE: {
+                **RULE_METADATA[RF04_CODE],
+                "recurrence_threshold": recurrence_threshold,
+                "concentration_threshold": concentration_threshold,
+                "rule_version": RULE_VERSIONS[RF04_CODE],
+            },
             RF05_CODE: {
                 **RULE_METADATA[RF05_CODE],
                 "deviation_threshold": deviation_threshold,
@@ -319,9 +373,13 @@ def run_agent2_mvp(
             },
             RF06_CODE: {
                 **RULE_METADATA[RF06_CODE],
+                "temporal_days_threshold": temporal_days_threshold,
                 "rule_version": RULE_VERSIONS[RF06_CODE],
             },
         },
+        "thresholds": thresholds,
+        "rule_evaluability": _rule_evaluability_report(evaluability),
+        "missing_fields": _missing_field_report(contracts, pair_context),
         "score_version": SCORE_VERSION,
         "agent3_features_path": agent3_features_report["path"],
         "agent3_features_status": agent3_features_report["status"],
@@ -341,6 +399,71 @@ def run_agent2_mvp(
     )
     report["report_path"] = str(report_path)
     return report
+
+
+def _build_rule_evaluability(
+    *,
+    contracts: Any,
+    pair_context: Any,
+    rf05_evaluable_mask: Any,
+) -> dict[str, Any]:
+    rf01 = contracts["contract_key_canon"].notna()
+    rf02 = contracts["procedure"].ne("")
+    identified_pair = contracts["_buyer_key"].ne("") & contracts["_supplier_key"].ne("")
+    rf03 = identified_pair & pair_context["pair_count"].notna()
+    rf04 = (
+        identified_pair
+        & pair_context["pair_awarded"].notna()
+        & pair_context["buyer_total_awarded"].gt(0)
+        & pair_context["pair_share"].notna()
+    )
+    rf06 = contracts["resolution_days"].notna()
+    return {
+        RF01_CODE: rf01,
+        RF02_CODE: rf02,
+        RF03_CODE: rf03,
+        RF04_CODE: rf04,
+        RF05_CODE: rf05_evaluable_mask,
+        RF06_CODE: rf06,
+    }
+
+
+def _rule_evaluability_report(evaluability: dict[str, Any]) -> dict[str, dict[str, object]]:
+    required_fields = {
+        RF01_CODE: ["contract_key_canon", "supplier_name", "source_tender_id"],
+        RF02_CODE: ["procedure"],
+        RF03_CODE: ["buyer_name", "supplier_name"],
+        RF04_CODE: ["buyer_name", "supplier_name", "awarded_value_eur"],
+        RF05_CODE: ["estimated_value_eur", "awarded_value_eur"],
+        RF06_CODE: ["publication_date", "award_date"],
+    }
+    report: dict[str, dict[str, object]] = {}
+    for code, mask in evaluability.items():
+        rows = int(len(mask))
+        evaluable_rows = int(mask.sum())
+        report[code] = {
+            "evaluable_rows": evaluable_rows,
+            "not_evaluable_rows": rows - evaluable_rows,
+            "evaluable_ratio": evaluable_rows / rows if rows else None,
+            "required_fields": required_fields[code],
+        }
+    return report
+
+
+def _missing_field_report(contracts: Any, pair_context: Any) -> dict[str, int]:
+    return {
+        "buyer_name": int(contracts["buyer_name"].eq("").sum()),
+        "supplier_name": int(contracts["supplier_name"].eq("").sum()),
+        "procedure": int(contracts["procedure"].eq("").sum()),
+        "estimated_value_eur_missing_or_nonpositive": int(
+            (~contracts["estimated_value_eur"].gt(0)).sum()
+        ),
+        "awarded_value_eur": int(contracts["awarded_value_eur"].isna().sum()),
+        "publication_date_invalid": int(contracts["publication_date_parsed"].isna().sum()),
+        "award_date_invalid": int(contracts["award_date_parsed"].isna().sum()),
+        "pair_metric_unavailable": int(pair_context["pair_count"].isna().sum()),
+        "concentration_metric_unavailable": int(pair_context["pair_share"].isna().sum()),
+    }
 
 
 def _load_agent3_features(
@@ -717,6 +840,7 @@ def _evidence_text_for_row_local(
     flag_code: str,
     contract: Agent2Contract,
     deviation_threshold: float,
+    temporal_days_threshold: float,
     evidence: dict[str, object],
 ) -> str:
     if flag_code == RF01_CODE:
@@ -743,7 +867,7 @@ def _evidence_text_for_row_local(
     if flag_code == RF06_CODE:
         return (
             f"Resolución en {contract.resolution_days} días entre publicación y adjudicación, "
-            "fuera del patrón temporal esperado."
+            f"dentro del umbral de {temporal_days_threshold:g} días."
         )
     return "Señal determinista del MVP."
 

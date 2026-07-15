@@ -56,6 +56,35 @@ class CliTests(unittest.TestCase):
             Path("data/processed/agent3_agent2_features.parquet"),
         )
 
+    def test_evaluate_agent2_uses_reproducible_sample_defaults(self) -> None:
+        report = {
+            "input": {"rows": 3437},
+            "scenarios": {
+                "base": {
+                    "fully_evaluable_rows": 100,
+                    "partially_evaluable_rows": 3337,
+                }
+            },
+            "outputs": {
+                "json": "data/processed_sample/agent2_evaluation/report.json",
+                "markdown": "data/processed_sample/agent2_evaluation/report.md",
+            },
+        }
+        with mock.patch("procurewatch.agent2.run_agent2_evaluation") as evaluation_mock:
+            evaluation_mock.return_value = report
+            exit_code = main(["evaluate-agent2"])
+
+        self.assertEqual(exit_code, 0)
+        kwargs = evaluation_mock.call_args.kwargs
+        self.assertEqual(
+            kwargs["input_path"],
+            Path("data/processed_sample/agent2_contracts_canonical.parquet"),
+        )
+        self.assertEqual(
+            kwargs["output_dir"],
+            Path("data/processed_sample/agent2_evaluation"),
+        )
+
     def test_report_agent1_source_diagnostics_command_uses_processed_outputs(self) -> None:
         coverage = {
             "universe_contract_keys": 3,

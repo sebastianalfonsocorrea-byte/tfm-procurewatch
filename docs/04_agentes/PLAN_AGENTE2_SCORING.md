@@ -140,5 +140,28 @@ Validacion:
 
 - `python -m pytest tests\test_agent2.py tests\test_agent4.py`
 - `python -m ruff check scr\procurewatch\agent2 scr\procurewatch\agent4 tests\test_agent2.py tests\test_agent4.py scr\procurewatch\cli.py`
-- `python -m pytest tests`: 57 tests pasados y 5 fallos en Agent1/Batch por permisos de
-  `TemporaryDirectory` bajo `C:\Users\salfo\AppData\Local\Temp`; no afecta a Agent2.
+- `python -m pytest tests`: 117 pruebas superadas y 1 omitida por faltar el extra `db` para la
+  integracion PostgreSQL.
+- `python -m ruff check api scr tests frontend`: sin errores.
+
+## Evaluacion de sensibilidad 15/07/2026
+
+El comando `evaluate-agent2` ejecuta RF-01 a RF-06 sobre la muestra reproducible de 3.437
+contratos. Compara los umbrales numericos con factores 0,9, 1,0 y 1,1 y publica artefactos en
+`data/processed_sample/agent2_evaluation/`.
+
+Resultados del escenario base:
+
+- 3.437 contratos puntuados; 3.437 parcialmente evaluables y ninguno completamente evaluable.
+- 2.066 contratos con alguna senal y 2.420 flags.
+- Frecuencias: RF-01=1.104, RF-02=12, RF-03=730, RF-04=34, RF-05=540 y RF-06=0.
+- Cobertura de evaluabilidad: RF-01=100 %, RF-02=99,65 %, RF-03=67,88 %, RF-04=42,04 %,
+  RF-05=52,25 % y RF-06=0 %.
+- Distribucion: 1.371 contratos sin flags, 1.500 en riesgo bajo positivo, 553 en medio, 13 en alto
+  y ninguno en critico.
+- Score medio: 13,26 sobre 100.
+- Score sin cambios frente al escenario base: 99,80 % con factor 0,9 y 95,11 % con factor 1,1.
+
+RF-06 no es evaluable en la muestra porque ninguna fila conserva simultaneamente fecha de
+publicacion y fecha de adjudicacion validas. La evaluacion es proxy, no usa etiquetas de fraude y
+queda pendiente repetirla sobre el canonico completo de 51.720 contratos.
