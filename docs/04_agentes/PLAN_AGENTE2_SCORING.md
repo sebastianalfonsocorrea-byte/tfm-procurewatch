@@ -140,8 +140,9 @@ Validacion:
 
 - `python -m pytest tests\test_agent2.py tests\test_agent4.py`
 - `python -m ruff check scr\procurewatch\agent2 scr\procurewatch\agent4 tests\test_agent2.py tests\test_agent4.py scr\procurewatch\cli.py`
-- `python -m pytest tests`: 120 pruebas superadas y 1 omitida por faltar el extra `db` para la
-  integracion PostgreSQL.
+- `python -m pytest tests`: 122 pruebas superadas y 1 omitida en el entorno minimo por faltar
+  SQLAlchemy para la integracion PostgreSQL opcional; con SQLAlchemy disponible se observan
+  123 pruebas superadas sin omisiones.
 - `python -m ruff check api scr tests frontend`: sin errores.
 
 ## Evaluacion de sensibilidad 15/07/2026

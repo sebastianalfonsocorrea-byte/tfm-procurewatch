@@ -197,8 +197,9 @@ Estado final observado:
 - Reconstruccion completa disponible con `--force-rebuild`.
 - `agent1_data_quality_summary.json`: estado `ok`.
 - `agent2_contracts_canonical.parquet`: 51.720 filas.
-- Validacion actual de la rama integrada: `122 passed`, `1 skipped`; Ruff sin errores. La prueba
-  omitida corresponde a la integracion PostgreSQL cuando no esta instalado el extra `db`.
+- Validacion de la rama integrada en entorno minimo: `122 passed`, `1 skipped`; Ruff sin errores.
+  La prueba omitida corresponde a la integracion PostgreSQL cuando no esta instalado SQLAlchemy.
+- Validacion con SQLAlchemy disponible: `123 passed`, sin pruebas omitidas.
 
 Artefactos de continuidad:
 
@@ -243,6 +244,26 @@ Resultados versionados:
 Ambos valores superan el objetivo metodologico `Q > 0.30`. El benchmark lo comprueba mediante
 `agent3.modularity`. La modularidad cuantifica estructura comunitaria, pero no demuestra fraude ni
 calidad juridica de las comunidades detectadas.
+
+## Modos del benchmark
+
+El benchmark conserva el mismo conjunto de 34 metricas y cambia la evaluacion del dashboard segun
+se solicite expresamente:
+
+```powershell
+procurewatch run-benchmark
+procurewatch run-benchmark `
+  --include-dashboard `
+  --output-dir data/processed/benchmark_dashboard
+```
+
+- Sin `--include-dashboard`: 31 `pass`, 1 `warning`, 0 `fail` y 2 `not_applicable`.
+- Con `--include-dashboard`: 32 `pass`, 1 `warning`, 0 `fail` y 1 `not_applicable`.
+
+El estado global es `warning` en ambos modos por la ausencia de intersecciones exactas entre
+fuentes. La opcion de dashboard convierte `integrated.dashboard` de `not_applicable` a `pass`; no
+anade una metrica nueva. Los reportes quedan separados en `data/processed/benchmark/` y
+`data/processed/benchmark_dashboard/`.
 
 ## Evaluacion de diez fichas de caso
 
