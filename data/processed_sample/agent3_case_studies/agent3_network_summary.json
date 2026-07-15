@@ -3,6 +3,7 @@
   "edges": 16303,
   "component_count": 1,
   "community_count": 30,
+  "modularity": 0.6051129926,
   "largest_component_size": 7333,
   "largest_community_size": 1298,
   "largest_component_contract_count": 3437,

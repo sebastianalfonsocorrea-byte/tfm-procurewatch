@@ -63,6 +63,13 @@ class BenchmarkTests(unittest.TestCase):
                 if metric["metric_id"] == "integration.case_studies.traceable"
             )
             self.assertEqual(case_studies["status"], "pass")
+            modularity = next(
+                metric
+                for metric in report["agents"]["agent3"]["metrics"]
+                if metric["metric_id"] == "agent3.modularity"
+            )
+            self.assertEqual(modularity["status"], "pass")
+            self.assertGreater(modularity["value"], 0.30)
             self.assertTrue((output / "benchmark_report.json").exists())
             self.assertTrue((output / "benchmark_report.md").exists())
             payload = json.loads((output / "benchmark_report.json").read_text(encoding="utf-8"))
@@ -130,6 +137,7 @@ def _agent3_report() -> dict[str, object]:
         "nodes_rows": 11,
         "edges_rows": 13,
         "community_count": 2,
+        "modularity": 0.3165680473,
         "agent2_features_rows": 3,
         "contracts_without_supplier": 0,
         "contracts_without_cpv": 0,

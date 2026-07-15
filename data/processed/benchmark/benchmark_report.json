@@ -1,7 +1,7 @@
 {
   "dataset": "procurewatch_benchmark_report",
-  "schema_version": "0.4.0",
-  "generated_at_utc": "2026-07-15T10:21:10.465047+00:00",
+  "schema_version": "0.5.0",
+  "generated_at_utc": "2026-07-15T10:48:56.084583+00:00",
   "status": "warning",
   "inputs": {
     "processed_dir": "data\\processed_sample",
@@ -20,9 +20,9 @@
       "agent4": "pass",
       "integrated": "pass"
     },
-    "metrics_count": 33,
+    "metrics_count": 34,
     "status_counts": {
-      "pass": 30,
+      "pass": 31,
       "warning": 1,
       "fail": 0,
       "not_applicable": 2
@@ -55,8 +55,8 @@
         "component": "Agent3 - grafo y relaciones",
         "implemented": "si",
         "evaluated": "si",
-        "evidence": "nodos, aristas, comunidades y cobertura de features",
-        "current_boundary": "validado en demo local/sintetica",
+        "evidence": "nodos, aristas, comunidades, modularidad y cobertura de features",
+        "current_boundary": "validado en muestra reproducible y demo local, no en el canonico completo",
         "future_extension": "ejecucion sobre volumen completo y analisis longitudinal",
         "tfm_reading": "capa relacional para interpretar patrones, no prueba concluyente"
       },
@@ -230,6 +230,14 @@
           "evidence": "community_count"
         },
         {
+          "metric_id": "agent3.modularity",
+          "label": "Modularidad de la particion Louvain",
+          "value": 0.3165680473,
+          "threshold": "> 0.30",
+          "status": "pass",
+          "evidence": "Q sobre el grafo simple no ponderado de Agent3"
+        },
+        {
           "metric_id": "agent3.features.contract_coverage",
           "label": "Cobertura de features por contrato",
           "value": 1.0,
@@ -255,7 +263,7 @@
         }
       ],
       "limitations": [],
-      "metrics_count": 6,
+      "metrics_count": 7,
       "agent": "agent3"
     },
     "agent4": {

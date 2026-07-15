@@ -8,6 +8,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from procurewatch.agent3 import (
+    GraphNode,
+    GraphTables,
     build_agent2_feature_records,
     build_agent2_features_schema,
     build_demo_kpis,
@@ -165,6 +167,26 @@ class Agent3Tests(unittest.TestCase):
             3,
         )
 
+    def test_compute_network_metrics_exposes_reproducible_modularity_above_target(self) -> None:
+        graph = build_graph_tables(_contracts())
+
+        first = compute_network_metrics(graph)
+        second = compute_network_metrics(graph)
+
+        self.assertEqual(first.summary["modularity"], second.summary["modularity"])
+        self.assertAlmostEqual(first.summary["modularity"], 0.3016528926, places=10)
+        self.assertGreater(first.summary["modularity"], 0.30)
+
+    def test_compute_network_metrics_has_no_modularity_without_edges(self) -> None:
+        graph = GraphTables(
+            nodes=[GraphNode(node_id="buyer:B1", node_type="Buyer", label="Buyer 1")],
+            edges=[],
+        )
+
+        result = compute_network_metrics(graph)
+
+        self.assertIsNone(result.summary["modularity"])
+
     def test_build_agent2_features_projects_graph_metrics_by_contract(self) -> None:
         graph = build_graph_tables(_contracts())
         contract_metrics = compute_contract_graph_metrics(_contracts())
@@ -228,6 +250,7 @@ class Agent3Tests(unittest.TestCase):
         self.assertEqual(report["entity_metrics_rows"], 10)
         self.assertEqual(report["agent2_features_rows"], 3)
         self.assertGreaterEqual(report["community_count"], 1)
+        self.assertGreater(report["modularity"], 0.30)
         schema = json.loads((output_dir / "agent3_agent2_features_schema.json").read_text())
         self.assertEqual(schema["dataset"], "agent3_agent2_features")
 

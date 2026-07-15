@@ -29,6 +29,7 @@ def compute_network_metrics(graph_tables: GraphTables) -> NetworkMetricsResult:
                 "edges": 0,
                 "component_count": 0,
                 "community_count": 0,
+                "modularity": None,
                 "largest_component_size": 0,
                 "largest_community_size": 0,
                 "betweenness_mode": "empty",
@@ -37,7 +38,7 @@ def compute_network_metrics(graph_tables: GraphTables) -> NetworkMetricsResult:
         )
 
     component_by_node, component_sizes = _connected_components(graph)
-    community_by_node, community_sizes = _louvain_communities(graph)
+    community_by_node, community_sizes, modularity = _louvain_communities(graph)
     degree_centrality = _rounded_mapping(_degree_centrality(graph))
     betweenness, betweenness_mode, betweenness_sample_size = _betweenness_centrality(graph)
 
@@ -67,6 +68,7 @@ def compute_network_metrics(graph_tables: GraphTables) -> NetworkMetricsResult:
         "edges": graph.number_of_edges(),
         "component_count": len(component_sizes),
         "community_count": len(community_sizes),
+        "modularity": modularity,
         "largest_component_size": max(component_sizes.values(), default=0),
         "largest_community_size": max(community_sizes.values(), default=0),
         "largest_component_contract_count": _largest_group_contract_count(
@@ -132,9 +134,12 @@ def _connected_components(graph: Any) -> tuple[dict[str, int], dict[int, int]]:
     return component_by_node, component_sizes
 
 
-def _louvain_communities(graph: Any) -> tuple[dict[str, int], dict[int, int]]:
+def _louvain_communities(
+    graph: Any,
+) -> tuple[dict[str, int], dict[int, int], float | None]:
     if graph.number_of_edges() == 0:
         raw_partition = {node_id: index for index, node_id in enumerate(sorted(graph.nodes))}
+        modularity = None
     else:
         try:
             import community.community_louvain as community_louvain
@@ -146,8 +151,10 @@ def _louvain_communities(graph: Any) -> tuple[dict[str, int], dict[int, int]]:
             graph,
             random_state=NETWORK_RANDOM_SEED,
         )
+        modularity = round(float(community_louvain.modularity(raw_partition, graph)), 10)
 
-    return _stable_group_ids(raw_partition)
+    group_by_node, group_sizes = _stable_group_ids(raw_partition)
+    return group_by_node, group_sizes, modularity
 
 
 def _stable_group_ids(raw_partition: dict[str, int]) -> tuple[dict[str, int], dict[int, int]]:

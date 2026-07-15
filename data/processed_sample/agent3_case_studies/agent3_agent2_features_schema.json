@@ -2,7 +2,7 @@
   "dataset": "agent3_agent2_features",
   "schema_version": "0.1.0",
   "agent3_version": "0.1.0",
-  "generated_at_utc": "2026-07-15T10:19:55.122914+00:00",
+  "generated_at_utc": "2026-07-15T10:42:15.958420+00:00",
   "primary_key": [
     "contract_key_canon"
   ],

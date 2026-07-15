@@ -197,7 +197,7 @@ Estado final observado:
 - Reconstruccion completa disponible con `--force-rebuild`.
 - `agent1_data_quality_summary.json`: estado `ok`.
 - `agent2_contracts_canonical.parquet`: 51.720 filas.
-- Validacion actual de la rama integrada: `120 passed`, `1 skipped`; Ruff sin errores. La prueba
+- Validacion actual de la rama integrada: `122 passed`, `1 skipped`; Ruff sin errores. La prueba
   omitida corresponde a la integracion PostgreSQL cuando no esta instalado el extra `db`.
 
 Artefactos de continuidad:
@@ -228,6 +228,21 @@ con scores, flags y los reportes:
 La evaluacion registra cobertura por regla, campos ausentes, frecuencias, distribucion del score y
 estabilidad frente al escenario base. Es una evaluacion proxy sobre la muestra reproducible; no
 sustituye la ejecucion pendiente sobre el canonico completo de 51.720 contratos ni valida fraude.
+
+## Evaluacion de modularidad de Agent3
+
+Agent3 publica `modularity` en `agent3_network_summary.json` y
+`agent3_graph_report.json`. El valor se calcula sobre la particion Louvain reproducible del grafo
+simple no ponderado; queda como `null` cuando el grafo no contiene aristas.
+
+Resultados versionados:
+
+- muestra de 3.437 contratos: `Q=0.6051129926`;
+- demo integrada de 3 contratos: `Q=0.3165680473`.
+
+Ambos valores superan el objetivo metodologico `Q > 0.30`. El benchmark lo comprueba mediante
+`agent3.modularity`. La modularidad cuantifica estructura comunitaria, pero no demuestra fraude ni
+calidad juridica de las comunidades detectadas.
 
 ## Evaluacion de diez fichas de caso
 

@@ -1,7 +1,7 @@
 # Benchmark ProcureWatch
 
 - Estado global: **warning**
-- Metricas evaluadas: **33**
+- Metricas evaluadas: **34**
 
 ## Lectura en contexto de TFM
 
@@ -15,7 +15,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 |---|---|---|---|---|---|
 | Agent1 - ingesta y normalizacion | si | si | calidad de campos, duplicados y cobertura interfuente | cobertura canonica por fuente sin matching exacto transversal | validacion manual y politica auditable de matching |
 | Agent2 - scoring de riesgo | si | parcial en demo integrada | score y red flags trazables | sin benchmark estadistico amplio | validar con dataset mayor y casos etiquetados |
-| Agent3 - grafo y relaciones | si | si | nodos, aristas, comunidades y cobertura de features | validado en demo local/sintetica | ejecucion sobre volumen completo y analisis longitudinal |
+| Agent3 - grafo y relaciones | si | si | nodos, aristas, comunidades, modularidad y cobertura de features | validado en muestra reproducible y demo local, no en el canonico completo | ejecucion sobre volumen completo y analisis longitudinal |
 | Agent4 - capa documental | si | si | retrieval, citas, trazabilidad y prudencia del lenguaje | corpus local/sintetico y evaluacion RAGAS no representativa | corpus real ampliado y evaluacion comparativa de LLM local |
 | Integracion y dashboard | demo | demo integrada; dashboard opcional | flujo Agent2-Agent3-Agent4 y validaciones integradas | no equivale a despliegue productivo institucional | servicios persistentes, seguridad y operacion continua |
 
@@ -31,7 +31,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 |---|---|---:|
 | agent1 | warning | 9 |
 | agent2 | pass | 3 |
-| agent3 | pass | 6 |
+| agent3 | pass | 7 |
 | agent4 | pass | 8 |
 | integrated | pass | 7 |
 
@@ -70,6 +70,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 | Nodos del grafo | 11 | >= 1 | pass | nodes_rows |
 | Aristas del grafo | 13 | >= 1 | pass | edges_rows |
 | Comunidades detectadas | 2 | >= 1 | pass | community_count |
+| Modularidad de la particion Louvain | 0.3166 | > 0.30 | pass | Q sobre el grafo simple no ponderado de Agent3 |
 | Cobertura de features por contrato | 1.0000 | 100% | pass | agent2_features_rows / input_rows |
 | Contratos sin proveedor en grafo | 0 | informativo | pass | contracts_without_supplier |
 | Contratos sin CPV en grafo | 0 | informativo | pass | contracts_without_cpv |

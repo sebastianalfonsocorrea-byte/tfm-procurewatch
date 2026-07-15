@@ -10,7 +10,8 @@ DEFAULT_PROCESSED_DIR = Path("data/processed_sample")
 DEFAULT_DEMO_DIR = Path("data/processed/agent3_agent4_demo_2026_06_23")
 DEFAULT_AGENT4_EVALUATION_PATH = Path("data/processed/agent4_evaluation_report.json")
 DEFAULT_BENCHMARK_OUTPUT_DIR = Path("data/processed/benchmark")
-BENCHMARK_SCHEMA_VERSION = "0.4.0"
+BENCHMARK_SCHEMA_VERSION = "0.5.0"
+AGENT3_MODULARITY_TARGET = 0.30
 
 PASS = "pass"
 WARNING = "warning"
@@ -465,6 +466,27 @@ def _evaluate_agent3(demo_dir: Path) -> dict[str, Any]:
     metrics.append(_count_metric("agent3.edges", "Aristas del grafo", report, "edges_rows", 1))
     metrics.append(
         _count_metric("agent3.communities", "Comunidades detectadas", report, "community_count", 1)
+    )
+    edges_rows = int(report.get("edges_rows") or 0)
+    modularity = report.get("modularity")
+    if isinstance(modularity, (int, float)) and not isinstance(modularity, bool):
+        modularity_value = float(modularity)
+        modularity_status = PASS if modularity_value > AGENT3_MODULARITY_TARGET else FAIL
+    elif edges_rows == 0:
+        modularity_value = None
+        modularity_status = NOT_APPLICABLE
+    else:
+        modularity_value = None
+        modularity_status = FAIL
+    metrics.append(
+        _metric(
+            "agent3.modularity",
+            "Modularidad de la particion Louvain",
+            modularity_value,
+            "> 0.30",
+            modularity_status,
+            "Q sobre el grafo simple no ponderado de Agent3",
+        )
     )
     input_rows = int(report.get("input_rows") or 0)
     features_rows = int(report.get("agent2_features_rows") or 0)
@@ -935,8 +957,10 @@ def _build_tfm_context(agents: dict[str, dict[str, Any]]) -> dict[str, Any]:
                 "component": "Agent3 - grafo y relaciones",
                 "implemented": "si",
                 "evaluated": "si",
-                "evidence": "nodos, aristas, comunidades y cobertura de features",
-                "current_boundary": "validado en demo local/sintetica",
+                "evidence": "nodos, aristas, comunidades, modularidad y cobertura de features",
+                "current_boundary": (
+                    "validado en muestra reproducible y demo local, no en el canonico completo"
+                ),
                 "future_extension": "ejecucion sobre volumen completo y analisis longitudinal",
                 "tfm_reading": "capa relacional para interpretar patrones, no prueba concluyente",
             },

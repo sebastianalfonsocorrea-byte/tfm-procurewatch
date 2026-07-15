@@ -111,6 +111,8 @@ Estado:
   - numero de vecinos por entidad;
   - contratos por comunidad o componente.
 - Implementada deteccion de comunidades Louvain con semilla fija para reproducibilidad.
+- Implementado el calculo de modularidad Q sobre la particion Louvain del grafo simple no
+  ponderado; el valor es nulo cuando no existen aristas.
 - Exportacion anadida:
   - `agent3_entity_metrics.parquet`
   - `agent3_communities.parquet`
@@ -127,6 +129,16 @@ Criterio de cierre:
 Tecnologias:
 
 - NetworkX, python-louvain, pandas.
+
+Evaluacion cuantitativa 15/07/2026:
+
+- muestra reproducible de 3.437 contratos: `Q=0.6051129926`;
+- demo integrada de 3 contratos: `Q=0.3165680473`;
+- ambos escenarios superan el objetivo `Q > 0.30`;
+- el benchmark publica `agent3.modularity` en estado `pass`.
+
+Q evalua la separacion comunitaria de la particion obtenida; no constituye una senal autonoma de
+fraude ni una validacion juridica de los grupos.
 
 ## Hito 4 - Integracion con Agent2
 

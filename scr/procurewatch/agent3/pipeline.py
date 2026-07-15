@@ -91,6 +91,7 @@ def run_agent3(
         "agent2_features_rows": int(len(agent2_features_df)),
         "component_count": network_metrics.summary["component_count"],
         "community_count": network_metrics.summary["community_count"],
+        "modularity": network_metrics.summary["modularity"],
         "largest_component_size": network_metrics.summary["largest_component_size"],
         "largest_community_size": network_metrics.summary["largest_community_size"],
         "nodes_by_type": dict(_count_column(nodes_df, "node_type")),
