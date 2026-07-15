@@ -1,0 +1,47 @@
+{
+  "agent": "agent3",
+  "agent3_version": "0.1.0",
+  "generated_at_utc": "2026-07-15T10:19:55.122914+00:00",
+  "input_path": "data\\processed_sample\\agent2_contracts_canonical.parquet",
+  "output_dir": "data\\processed_sample\\agent3_case_studies",
+  "input_rows": 3437,
+  "nodes_rows": 7333,
+  "edges_rows": 16303,
+  "contract_metrics_rows": 2333,
+  "entity_metrics_rows": 7333,
+  "communities_rows": 30,
+  "agent2_features_rows": 3437,
+  "component_count": 1,
+  "community_count": 30,
+  "largest_component_size": 7333,
+  "largest_community_size": 1298,
+  "nodes_by_type": {
+    "Buyer": 1399,
+    "Contract": 3437,
+    "CPV": 1081,
+    "Source": 3,
+    "Supplier": 1413
+  },
+  "edges_by_type": {
+    "AWARDED_TO": 2333,
+    "FROM_SOURCE": 3437,
+    "HAS_CPV": 7096,
+    "PUBLISHED": 3437
+  },
+  "contracts_without_supplier": 1104,
+  "contracts_without_cpv": 0,
+  "warnings": [
+    "Contracts without supplier relation: 1104"
+  ],
+  "outputs": {
+    "nodes": "data\\processed_sample\\agent3_case_studies\\agent3_nodes.parquet",
+    "edges": "data\\processed_sample\\agent3_case_studies\\agent3_edges.parquet",
+    "contract_metrics": "data\\processed_sample\\agent3_case_studies\\agent3_contract_metrics.parquet",
+    "entity_metrics": "data\\processed_sample\\agent3_case_studies\\agent3_entity_metrics.parquet",
+    "communities": "data\\processed_sample\\agent3_case_studies\\agent3_communities.parquet",
+    "network_summary": "data\\processed_sample\\agent3_case_studies\\agent3_network_summary.json",
+    "agent2_features": "data\\processed_sample\\agent3_case_studies\\agent3_agent2_features.parquet",
+    "agent2_features_schema": "data\\processed_sample\\agent3_case_studies\\agent3_agent2_features_schema.json",
+    "report": "data\\processed_sample\\agent3_case_studies\\agent3_graph_report.json"
+  }
+}

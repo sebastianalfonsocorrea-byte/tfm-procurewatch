@@ -140,7 +140,7 @@ Validacion:
 
 - `python -m pytest tests\test_agent2.py tests\test_agent4.py`
 - `python -m ruff check scr\procurewatch\agent2 scr\procurewatch\agent4 tests\test_agent2.py tests\test_agent4.py scr\procurewatch\cli.py`
-- `python -m pytest tests`: 117 pruebas superadas y 1 omitida por faltar el extra `db` para la
+- `python -m pytest tests`: 120 pruebas superadas y 1 omitida por faltar el extra `db` para la
   integracion PostgreSQL.
 - `python -m ruff check api scr tests frontend`: sin errores.
 
@@ -165,3 +165,11 @@ Resultados del escenario base:
 RF-06 no es evaluable en la muestra porque ninguna fila conserva simultaneamente fecha de
 publicacion y fecha de adjudicacion validas. La evaluacion es proxy, no usa etiquetas de fraude y
 queda pendiente repetirla sobre el canonico completo de 51.720 contratos.
+
+## Diez fichas cualitativas 15/07/2026
+
+La evaluacion complementaria genera diez fichas desde el escenario base: cinco casos de score
+maximo, tres de riesgo medio y dos controles. Las 21 activaciones de reglas seleccionadas tienen
+evidencia trazable y los diez casos incorporan contexto relacional de Agent3. La falta de documentos
+asociados en el corpus actual se publica como limitacion y no se interpreta como fallo del scoring
+ni como ausencia de riesgo.

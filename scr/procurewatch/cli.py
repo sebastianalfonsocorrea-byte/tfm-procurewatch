@@ -474,6 +474,46 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="Valida artefactos existentes sin regenerar primero la demo integrada.",
     )
+    case_studies_parser = subparsers.add_parser(
+        "evaluate-case-studies",
+        help="Genera cinco casos prioritarios, tres medios y dos controles trazables.",
+    )
+    case_studies_parser.add_argument(
+        "--canonical",
+        type=Path,
+        default=Path("data/processed_sample/agent2_contracts_canonical.parquet"),
+    )
+    case_studies_parser.add_argument(
+        "--scores",
+        type=Path,
+        default=Path(
+            "data/processed_sample/agent2_evaluation/base/agent2_risk_scores.parquet"
+        ),
+    )
+    case_studies_parser.add_argument(
+        "--flags",
+        type=Path,
+        default=Path(
+            "data/processed_sample/agent2_evaluation/base/agent2_risk_flags.parquet"
+        ),
+    )
+    case_studies_parser.add_argument(
+        "--agent3-features",
+        type=Path,
+        default=Path(
+            "data/processed_sample/agent3_case_studies/agent3_agent2_features.parquet"
+        ),
+    )
+    case_studies_parser.add_argument(
+        "--corpus-index",
+        type=Path,
+        default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
+    )
+    case_studies_parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed_sample/case_studies"),
+    )
     benchmark_parser = subparsers.add_parser(
         "run-benchmark",
         help="Ejecuta benchmark objetivo de Agent1-Agent4 e integracion.",
@@ -1067,6 +1107,26 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Headless exceptions: {len(report['streamlit_headless']['exceptions'])}")
         print(f"- Reporte: {report['artifacts']['dashboard_validation_report']}")
         return 0 if report["status"] == "ready" else 1
+    if args.command == "evaluate-case-studies":
+        from .benchmark import run_case_study_evaluation
+
+        report = run_case_study_evaluation(
+            canonical_path=args.canonical,
+            scores_path=args.scores,
+            flags_path=args.flags,
+            agent3_features_path=args.agent3_features,
+            corpus_index_path=args.corpus_index,
+            output_dir=args.output_dir,
+        )
+        summary = report["summary"]
+        print("Evaluacion de fichas completada")
+        print(f"- Casos: {summary['cases_count']}")
+        print(f"- Composicion: {summary['selection_breakdown']}")
+        print(f"- Evidencia de reglas: {summary['rule_evidence_coverage_ratio']:.2%}")
+        print(f"- Evidencia documental: {summary['documentary_evidence_case_ratio']:.2%}")
+        print(f"- Reporte JSON: {report['outputs']['json']}")
+        print(f"- Reporte Markdown: {report['outputs']['markdown']}")
+        return 0 if summary["practical_validation_passed"] else 1
     if args.command == "run-benchmark":
         from .benchmark import run_benchmark
 

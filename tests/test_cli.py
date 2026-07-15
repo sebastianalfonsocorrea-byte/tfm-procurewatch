@@ -85,6 +85,45 @@ class CliTests(unittest.TestCase):
             Path("data/processed_sample/agent2_evaluation"),
         )
 
+    def test_evaluate_case_studies_uses_reproducible_defaults(self) -> None:
+        report = {
+            "summary": {
+                "cases_count": 10,
+                "selection_breakdown": {
+                    "high_score": 5,
+                    "medium_risk": 3,
+                    "control": 2,
+                },
+                "rule_evidence_coverage_ratio": 1.0,
+                "documentary_evidence_case_ratio": 0.0,
+                "practical_validation_passed": True,
+            },
+            "outputs": {
+                "json": "data/processed_sample/case_studies/case_studies_report.json",
+                "markdown": "data/processed_sample/case_studies/case_studies_report.md",
+            },
+        }
+        with mock.patch(
+            "procurewatch.benchmark.run_case_study_evaluation"
+        ) as evaluation_mock:
+            evaluation_mock.return_value = report
+            exit_code = main(["evaluate-case-studies"])
+
+        self.assertEqual(exit_code, 0)
+        kwargs = evaluation_mock.call_args.kwargs
+        self.assertEqual(
+            kwargs["canonical_path"],
+            Path("data/processed_sample/agent2_contracts_canonical.parquet"),
+        )
+        self.assertEqual(
+            kwargs["agent3_features_path"],
+            Path(
+                "data/processed_sample/agent3_case_studies/"
+                "agent3_agent2_features.parquet"
+            ),
+        )
+        self.assertEqual(kwargs["output_dir"], Path("data/processed_sample/case_studies"))
+
     def test_report_agent1_source_diagnostics_command_uses_processed_outputs(self) -> None:
         coverage = {
             "universe_contract_keys": 3,

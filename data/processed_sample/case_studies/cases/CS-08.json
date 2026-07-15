@@ -1,0 +1,130 @@
+{
+  "dataset": "procurewatch_case_study",
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "case_id": "CS-08",
+  "selection": {
+    "group": "medium_risk",
+    "group_rank": 3,
+    "rationale": "Nivel medio; mayor score disponible y diversidad de fuente."
+  },
+  "contract": {
+    "contract_key_canon": "1B575E5DE8344C4CB1E429FBB947ADE2DISTRITODECIUDADLINEAL20240730",
+    "source": "opentender",
+    "source_record_id": "1b575e5d-e834-4c4c-b1e4-29fbb947ade2",
+    "source_dataset": "data-es-ocds-2024.json",
+    "source_file": "data-es-ocds-2024.json",
+    "buyer_name": "Distrito de Ciudad Lineal",
+    "buyer_id": "ES_body_562eafc3b09de3e76ae8000f89c9b1902b8908fee2ef6bc9fcf3d8a53ea8760f",
+    "supplier_name": "INCO, ESTUDIO TÉCNICO, S.L.",
+    "supplier_id": "",
+    "contract_title": "Servicios de coordinación en materia de seguridad y saluden las obras en CO-03R CEIP GANDHI.",
+    "procedure": "1",
+    "publication_date": "2024-07-30T00:00:00.000Z",
+    "award_date": "2024-07-29T00:00:00.000Z",
+    "estimated_value_eur": 644.22,
+    "awarded_value_eur": 644.22,
+    "cpv_codes_raw": "71000000, 71310000",
+    "cpv_code_list": "['71000000' '71310000']"
+  },
+  "risk": {
+    "risk_score": 40.0,
+    "risk_level": "medio",
+    "flags_count": 2,
+    "active_rules": [
+      "RF-03",
+      "RF-04"
+    ],
+    "evaluation_status": "partially_evaluable",
+    "evaluable_rules_count": 5,
+    "not_evaluable_rules": [
+      "RF-06"
+    ],
+    "score_version": "2.0.0",
+    "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+  },
+  "rule_evidence": [
+    {
+      "flag_code": "RF-03",
+      "severity": "media",
+      "confidence": 1.0,
+      "evidence_fields": [
+        "buyer_name",
+        "supplier_name",
+        "pair_count",
+        "pair_share",
+        "buyer_total_awarded",
+        "pair_awarded",
+        "pair_metric_source"
+      ],
+      "evidence_text": "La pareja comprador-proveedor 'Distrito de Ciudad Lineal' / 'INCO, ESTUDIO TÉCNICO, S.L.' se repite 2 veces en el canonico.",
+      "rule_version": "1.0.0"
+    },
+    {
+      "flag_code": "RF-04",
+      "severity": "alta",
+      "confidence": 1.0,
+      "evidence_fields": [
+        "buyer_name",
+        "supplier_name",
+        "pair_count",
+        "pair_share",
+        "buyer_total_awarded",
+        "pair_awarded",
+        "pair_metric_source"
+      ],
+      "evidence_text": "La pareja comprador-proveedor 'Distrito de Ciudad Lineal' / 'INCO, ESTUDIO TÉCNICO, S.L.' concentra 821.38 EUR sobre 821.38 EUR del comprador (100.00%), en el canonico.",
+      "rule_version": "1.0.0"
+    }
+  ],
+  "relationships": {
+    "buyer_supplier_recurrence": 2,
+    "buyer_supplier_contract_share": 1.0,
+    "buyer_degree": 1.0,
+    "supplier_degree": 5.0,
+    "supplier_contracts_count": 8.0,
+    "contract_neighbor_count": 5,
+    "contract_degree_centrality": 0.0006819422,
+    "contract_betweenness_centrality": 0.0007148368,
+    "component_id": 0,
+    "component_size": 7333,
+    "community_id": 14,
+    "community_size": 171,
+    "cpv_count": 2,
+    "has_supplier": true,
+    "agent3_version": "0.1.0"
+  },
+  "documentary_evidence": {
+    "evidences": [],
+    "citations": [],
+    "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 1B575E5DE8344C4CB1E429FBB947ADE2DISTRITODECIUDADLINEAL20240730. No se declara fraude.",
+    "generation": {
+      "mode": "deterministic_fallback",
+      "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+      "llm_model": null,
+      "fallback_reason": "no_evidence"
+    }
+  },
+  "warnings": [
+    "RF-06 no fue evaluable por falta de los campos requeridos.",
+    "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
+    "No se han encontrado documentos para el contrato solicitado.",
+    "No se han generado chunks documentales.",
+    "No hay evidencia documental recuperada para responder con trazabilidad."
+  ],
+  "assessment": {
+    "prioritization_criterion_met": true,
+    "active_rules_with_evidence": 2,
+    "active_rules_count": 2,
+    "rule_evidence_complete": true,
+    "relationships_available": true,
+    "documentary_evidence_available": false,
+    "explanation_complete": true,
+    "unsupported_fraud_claim": false
+  },
+  "decision_boundary": "El score prioriza este contrato para revision humana. No se declara fraude.",
+  "outputs": {
+    "json": "data\\processed_sample\\case_studies\\cases\\CS-08.json",
+    "markdown": "data\\processed_sample\\case_studies\\cases\\CS-08.md"
+  }
+}

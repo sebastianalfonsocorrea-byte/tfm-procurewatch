@@ -1,7 +1,7 @@
 # Benchmark ProcureWatch
 
 - Estado global: **warning**
-- Metricas evaluadas: **32**
+- Metricas evaluadas: **33**
 
 ## Lectura en contexto de TFM
 
@@ -33,7 +33,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 | agent2 | pass | 3 |
 | agent3 | pass | 6 |
 | agent4 | pass | 8 |
-| integrated | pass | 6 |
+| integrated | pass | 7 |
 
 ## Metricas
 
@@ -98,6 +98,7 @@ El sistema es defendible para priorizacion, trazabilidad y discusion metodologic
 | Score Agent2 integrado | 0.5000 | no nulo | pass | summary.agent2_risk_score |
 | Features Agent3 integradas | 3 | > 0 | pass | summary.agent3_features |
 | Evidencias y citas Agent4 integradas | 2/2 | > 0/> 0 | pass | summary.agent4_evidences / summary.agent4_citations |
+| Diez fichas de caso trazables | {'cases': 10, 'selection': {'high_score': 5, 'medium_risk': 3, 'control': 2}, 'rule_evidence_coverage': 1.0, 'relationships_coverage': 1.0} | 10 casos; composicion 5/3/2; trazabilidad completa | pass | data\processed_sample\case_studies\case_studies_report.json |
 | Validacion dashboard | not_requested | opcional | not_applicable | --include-dashboard no activado |
 
 - Demo sintetica y offline: no usa raw completos ni descarga datos en vivo.

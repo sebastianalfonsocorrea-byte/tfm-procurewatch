@@ -10,7 +10,7 @@ DEFAULT_PROCESSED_DIR = Path("data/processed_sample")
 DEFAULT_DEMO_DIR = Path("data/processed/agent3_agent4_demo_2026_06_23")
 DEFAULT_AGENT4_EVALUATION_PATH = Path("data/processed/agent4_evaluation_report.json")
 DEFAULT_BENCHMARK_OUTPUT_DIR = Path("data/processed/benchmark")
-BENCHMARK_SCHEMA_VERSION = "0.3.0"
+BENCHMARK_SCHEMA_VERSION = "0.4.0"
 
 PASS = "pass"
 WARNING = "warning"
@@ -56,7 +56,11 @@ def run_benchmark(
         "agent2": _evaluate_agent2(paths.processed_dir, paths.demo_dir),
         "agent3": _evaluate_agent3(paths.demo_dir),
         "agent4": _evaluate_agent4(paths.agent4_evaluation_path),
-        "integrated": _evaluate_integrated(paths.demo_dir, include_dashboard=include_dashboard),
+        "integrated": _evaluate_integrated(
+            paths.demo_dir,
+            paths.processed_dir,
+            include_dashboard=include_dashboard,
+        ),
     }
     tfm_context = _build_tfm_context(agents)
     report = {
@@ -590,7 +594,12 @@ def _evaluate_agent4(agent4_evaluation_path: Path) -> dict[str, Any]:
     return _agent_result("agent4", metrics, limitations)
 
 
-def _evaluate_integrated(demo_dir: Path, *, include_dashboard: bool) -> dict[str, Any]:
+def _evaluate_integrated(
+    demo_dir: Path,
+    processed_dir: Path,
+    *,
+    include_dashboard: bool,
+) -> dict[str, Any]:
     integrated_path = demo_dir / "agent2_agent3_agent4_demo_report.json"
     integrated = _read_json(integrated_path)
     metrics: list[dict[str, Any]] = []
@@ -664,8 +673,50 @@ def _evaluate_integrated(demo_dir: Path, *, include_dashboard: bool) -> dict[str
         )
     )
     limitations.extend(str(item) for item in integrated.get("limitations", []))
+    metrics.append(_case_studies_metric(processed_dir))
     metrics.extend(_dashboard_metrics(demo_dir, include_dashboard=include_dashboard))
     return _agent_result("integrated", metrics, limitations)
+
+
+def _case_studies_metric(processed_dir: Path) -> dict[str, Any]:
+    path = processed_dir / "case_studies" / "case_studies_report.json"
+    report = _read_json(path)
+    if report is None:
+        return _metric(
+            "integration.case_studies.traceable",
+            "Diez fichas de caso trazables",
+            "not_available",
+            "10 casos; composicion 5/3/2; trazabilidad completa",
+            NOT_APPLICABLE,
+            str(path),
+        )
+    summary = report.get("summary", {})
+    breakdown = summary.get("selection_breakdown", {})
+    complete = (
+        int(summary.get("cases_count") or 0) == 10
+        and int(summary.get("unique_contracts") or 0) == 10
+        and int(breakdown.get("high_score") or 0) == 5
+        and int(breakdown.get("medium_risk") or 0) == 3
+        and int(breakdown.get("control") or 0) == 2
+        and float(summary.get("rule_evidence_coverage_ratio") or 0.0) == 1.0
+        and float(summary.get("source_traceability_ratio") or 0.0) == 1.0
+        and float(summary.get("relationships_available_ratio") or 0.0) == 1.0
+        and int(summary.get("unsupported_fraud_claims") or 0) == 0
+        and bool(summary.get("practical_validation_passed"))
+    )
+    return _metric(
+        "integration.case_studies.traceable",
+        "Diez fichas de caso trazables",
+        {
+            "cases": summary.get("cases_count"),
+            "selection": breakdown,
+            "rule_evidence_coverage": summary.get("rule_evidence_coverage_ratio"),
+            "relationships_coverage": summary.get("relationships_available_ratio"),
+        },
+        "10 casos; composicion 5/3/2; trazabilidad completa",
+        PASS if complete else FAIL,
+        str(path),
+    )
 
 
 def _dashboard_metrics(demo_dir: Path, *, include_dashboard: bool) -> list[dict[str, Any]]:

@@ -35,6 +35,11 @@ class BenchmarkTests(unittest.TestCase):
                 processed / "agent2_evaluation" / "agent2_evaluation_report.json",
                 _agent2_evaluation(),
             )
+            (processed / "case_studies").mkdir()
+            _write_json(
+                processed / "case_studies" / "case_studies_report.json",
+                _case_studies_evaluation(),
+            )
 
             report = run_benchmark(
                 processed_dir=processed,
@@ -52,6 +57,12 @@ class BenchmarkTests(unittest.TestCase):
                 if metric["metric_id"] == "agent2.threshold_sensitivity.documented"
             )
             self.assertEqual(sensitivity["status"], "pass")
+            case_studies = next(
+                metric
+                for metric in report["agents"]["integrated"]["metrics"]
+                if metric["metric_id"] == "integration.case_studies.traceable"
+            )
+            self.assertEqual(case_studies["status"], "pass")
             self.assertTrue((output / "benchmark_report.json").exists())
             self.assertTrue((output / "benchmark_report.md").exists())
             payload = json.loads((output / "benchmark_report.json").read_text(encoding="utf-8"))
@@ -168,6 +179,25 @@ def _agent2_evaluation() -> dict[str, object]:
             "lower": {"score_unchanged_ratio": 0.9},
             "upper": {"score_unchanged_ratio": 0.95},
         },
+    }
+
+
+def _case_studies_evaluation() -> dict[str, object]:
+    return {
+        "summary": {
+            "cases_count": 10,
+            "unique_contracts": 10,
+            "selection_breakdown": {
+                "high_score": 5,
+                "medium_risk": 3,
+                "control": 2,
+            },
+            "rule_evidence_coverage_ratio": 1.0,
+            "source_traceability_ratio": 1.0,
+            "relationships_available_ratio": 1.0,
+            "unsupported_fraud_claims": 0,
+            "practical_validation_passed": True,
+        }
     }
 
 

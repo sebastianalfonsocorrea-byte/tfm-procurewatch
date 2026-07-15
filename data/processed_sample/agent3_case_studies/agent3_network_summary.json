@@ -1,0 +1,19 @@
+{
+  "nodes": 7333,
+  "edges": 16303,
+  "component_count": 1,
+  "community_count": 30,
+  "largest_component_size": 7333,
+  "largest_community_size": 1298,
+  "largest_component_contract_count": 3437,
+  "largest_community_contract_count": 964,
+  "betweenness_mode": "sampled",
+  "betweenness_sample_size": 500,
+  "node_types": {
+    "Buyer": 1399,
+    "Contract": 3437,
+    "CPV": 1081,
+    "Source": 3,
+    "Supplier": 1413
+  }
+}

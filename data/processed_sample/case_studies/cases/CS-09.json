@@ -1,0 +1,94 @@
+{
+  "dataset": "procurewatch_case_study",
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "case_id": "CS-09",
+  "selection": {
+    "group": "control",
+    "group_rank": 1,
+    "rationale": "Score cero, sin flags y maxima evaluabilidad disponible."
+  },
+  "contract": {
+    "contract_key_canon": "00000020M030E03111703",
+    "source": "place",
+    "source_record_id": "https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/6135016",
+    "source_dataset": "agent1_sample",
+    "source_file": "data\\synthetic\\agent1_sample\\licitacionesPerfilesContratanteCompleto3_2024_sample.zip",
+    "buyer_name": "Subdirección General de Gestión Económica y Patrimonial",
+    "buyer_id": "E03111703",
+    "supplier_name": "Restaura Capital Humano sl",
+    "supplier_id": "B88214911",
+    "contract_title": "Dirección de obra, dirección de ejecución y coordinación de seguridad y salud) de las obras de implantación de una zona de acceso restringido (Z.A.R) en el edificio sito en la calle Josefa Valcárcel nº 28 de Madrid,",
+    "procedure": "9",
+    "publication_date": "",
+    "award_date": "2020-09-25",
+    "estimated_value_eur": 826446.0,
+    "awarded_value_eur": 10000.0,
+    "cpv_codes_raw": "71000000",
+    "cpv_code_list": "['71000000']"
+  },
+  "risk": {
+    "risk_score": 0.0,
+    "risk_level": "bajo",
+    "flags_count": 0,
+    "active_rules": [],
+    "evaluation_status": "partially_evaluable",
+    "evaluable_rules_count": 5,
+    "not_evaluable_rules": [
+      "RF-06"
+    ],
+    "score_version": "2.0.0",
+    "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+  },
+  "rule_evidence": [],
+  "relationships": {
+    "buyer_supplier_recurrence": 1,
+    "buyer_supplier_contract_share": 1.0,
+    "buyer_degree": 1.0,
+    "supplier_degree": 3.0,
+    "supplier_contracts_count": 3.0,
+    "contract_neighbor_count": 4,
+    "contract_degree_centrality": 0.0005455537,
+    "contract_betweenness_centrality": 0.0006621567,
+    "component_id": 0,
+    "component_size": 7333,
+    "community_id": 1,
+    "community_size": 1121,
+    "cpv_count": 1,
+    "has_supplier": true,
+    "agent3_version": "0.1.0"
+  },
+  "documentary_evidence": {
+    "evidences": [],
+    "citations": [],
+    "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 00000020M030E03111703. No se declara fraude.",
+    "generation": {
+      "mode": "deterministic_fallback",
+      "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+      "llm_model": null,
+      "fallback_reason": "no_evidence"
+    }
+  },
+  "warnings": [
+    "RF-06 no fue evaluable por falta de los campos requeridos.",
+    "Score cero significa ausencia de senales con los datos evaluables, no ausencia de riesgo.",
+    "No se han encontrado documentos para el contrato solicitado.",
+    "No se han generado chunks documentales.",
+    "No hay evidencia documental recuperada para responder con trazabilidad."
+  ],
+  "assessment": {
+    "prioritization_criterion_met": true,
+    "active_rules_with_evidence": 0,
+    "active_rules_count": 0,
+    "rule_evidence_complete": true,
+    "relationships_available": true,
+    "documentary_evidence_available": false,
+    "explanation_complete": true,
+    "unsupported_fraud_claim": false
+  },
+  "decision_boundary": "Este contrato se usa como control comparativo por no activar senales con los datos evaluables. No se declara ausencia de riesgo ni fraude.",
+  "outputs": {
+    "json": "data\\processed_sample\\case_studies\\cases\\CS-09.json",
+    "markdown": "data\\processed_sample\\case_studies\\cases\\CS-09.md"
+  }
+}

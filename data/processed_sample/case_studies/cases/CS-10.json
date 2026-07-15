@@ -1,0 +1,94 @@
+{
+  "dataset": "procurewatch_case_study",
+  "schema_version": "1.0.0",
+  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "case_id": "CS-10",
+  "selection": {
+    "group": "control",
+    "group_rank": 2,
+    "rationale": "Score cero, sin flags y maxima evaluabilidad disponible."
+  },
+  "contract": {
+    "contract_key_canon": "001/13/RL/05DIVISIONECONOMICAYTECNICACUERPONACIONALDEPOLICIA20140307",
+    "source": "boe",
+    "source_record_id": "BOE-B-2014-8275",
+    "source_dataset": "boe_2014_2024",
+    "source_file": "boe_sample.csv",
+    "buyer_name": "División Económica y Técnica (Cuerpo Nacional de Policía)",
+    "buyer_id": "MINISTERIO DEL INTERIOR",
+    "supplier_name": "GRUPO MGO, S.A.",
+    "supplier_id": "",
+    "contract_title": "Asistencia técnica para el desarrollo y planificación de la actividad preventiva de revisión y actualización de la evaluación inicial de riesgos, dentro del plan de prevención de riesgos laborales, de la Dirección General de la Policía.",
+    "procedure": "Abierto",
+    "publication_date": "2014-03-07 00:00:00",
+    "award_date": "",
+    "estimated_value_eur": 495867.77,
+    "awarded_value_eur": 432817.0,
+    "cpv_codes_raw": "71317000 (Servicios de consultoría en protección y control de riesgos).",
+    "cpv_code_list": "['71000000' '71317000']"
+  },
+  "risk": {
+    "risk_score": 0.0,
+    "risk_level": "bajo",
+    "flags_count": 0,
+    "active_rules": [],
+    "evaluation_status": "partially_evaluable",
+    "evaluable_rules_count": 5,
+    "not_evaluable_rules": [
+      "RF-06"
+    ],
+    "score_version": "2.0.0",
+    "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
+  },
+  "rule_evidence": [],
+  "relationships": {
+    "buyer_supplier_recurrence": 1,
+    "buyer_supplier_contract_share": 0.033333,
+    "buyer_degree": 14.0,
+    "supplier_degree": 1.0,
+    "supplier_contracts_count": 1.0,
+    "contract_neighbor_count": 5,
+    "contract_degree_centrality": 0.0006819422,
+    "contract_betweenness_centrality": 0.0001903376,
+    "component_id": 0,
+    "component_size": 7333,
+    "community_id": 0,
+    "community_size": 1298,
+    "cpv_count": 2,
+    "has_supplier": true,
+    "agent3_version": "0.1.0"
+  },
+  "documentary_evidence": {
+    "evidences": [],
+    "citations": [],
+    "summary": "No hay evidencia documental suficiente para generar una ficha trazable de 001/13/RL/05DIVISIONECONOMICAYTECNICACUERPONACIONALDEPOLICIA20140307. No se declara fraude.",
+    "generation": {
+      "mode": "deterministic_fallback",
+      "prompt_policy": "Responde solo con evidencia recuperada.\nSi no hay evidencia suficiente, indicalo explicitamente.\nNo declares fraude; describe senales documentales para revision humana.",
+      "llm_model": null,
+      "fallback_reason": "no_evidence"
+    }
+  },
+  "warnings": [
+    "RF-06 no fue evaluable por falta de los campos requeridos.",
+    "Score cero significa ausencia de senales con los datos evaluables, no ausencia de riesgo.",
+    "No se han encontrado documentos para el contrato solicitado.",
+    "No se han generado chunks documentales.",
+    "No hay evidencia documental recuperada para responder con trazabilidad."
+  ],
+  "assessment": {
+    "prioritization_criterion_met": true,
+    "active_rules_with_evidence": 0,
+    "active_rules_count": 0,
+    "rule_evidence_complete": true,
+    "relationships_available": true,
+    "documentary_evidence_available": false,
+    "explanation_complete": true,
+    "unsupported_fraud_claim": false
+  },
+  "decision_boundary": "Este contrato se usa como control comparativo por no activar senales con los datos evaluables. No se declara ausencia de riesgo ni fraude.",
+  "outputs": {
+    "json": "data\\processed_sample\\case_studies\\cases\\CS-10.json",
+    "markdown": "data\\processed_sample\\case_studies\\cases\\CS-10.md"
+  }
+}

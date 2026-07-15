@@ -197,7 +197,7 @@ Estado final observado:
 - Reconstruccion completa disponible con `--force-rebuild`.
 - `agent1_data_quality_summary.json`: estado `ok`.
 - `agent2_contracts_canonical.parquet`: 51.720 filas.
-- Validacion actual de la rama integrada: `117 passed`, `1 skipped`; Ruff sin errores. La prueba
+- Validacion actual de la rama integrada: `120 passed`, `1 skipped`; Ruff sin errores. La prueba
   omitida corresponde a la integracion PostgreSQL cuando no esta instalado el extra `db`.
 
 Artefactos de continuidad:
@@ -228,3 +228,27 @@ con scores, flags y los reportes:
 La evaluacion registra cobertura por regla, campos ausentes, frecuencias, distribucion del score y
 estabilidad frente al escenario base. Es una evaluacion proxy sobre la muestra reproducible; no
 sustituye la ejecucion pendiente sobre el canonico completo de 51.720 contratos ni valida fraude.
+
+## Evaluacion de diez fichas de caso
+
+Las fichas cualitativas reutilizan el escenario base de Agent2 y las relaciones calculadas por
+Agent3 sobre la misma muestra. Primero se generan las features relacionales y despues las fichas:
+
+```powershell
+procurewatch run-agent3 `
+  --input data/processed_sample/agent2_contracts_canonical.parquet `
+  --output-dir data/processed_sample/agent3_case_studies
+procurewatch evaluate-case-studies
+```
+
+La seleccion reproducible incluye cinco contratos con score maximo, tres de riesgo medio y dos
+controles sin flags. Cada ficha JSON/Markdown conserva fuente, importes, procedimiento, reglas,
+evidencias, relaciones y advertencias. El corpus actual no contiene documentos asociados a esos
+diez contratos, por lo que la ausencia documental queda registrada y no se sustituye por contenido
+sintetico. Los artefactos agregados son:
+
+- `data/processed_sample/case_studies/case_studies_report.json`
+- `data/processed_sample/case_studies/case_studies_report.md`
+
+El benchmark incorpora `integration.case_studies.traceable`; las fichas evaluan priorizacion y
+explicacion para revision humana y no declaran fraude.
