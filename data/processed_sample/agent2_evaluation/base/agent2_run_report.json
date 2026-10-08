@@ -5,13 +5,14 @@
   "scored_rows": 3437,
   "evaluable_rows": 0,
   "fully_evaluable_rows": 0,
-  "partially_evaluable_rows": 3437,
-  "not_evaluable_rows": 0,
-  "activated_flags": 2420,
-  "activated_contract_rows": 2066,
+  "partially_evaluable_rows": 3425,
+  "not_evaluable_rows": 12,
+  "activated_flags": 1316,
+  "activated_contract_rows": 1250,
+  "data_quality_flags": 1104,
   "rules": {
     "RF-01": {
-      "description": "Falta adjudicatario o identificador equivalente.",
+      "description": "Expediente con un único adjudicatario en los registros disponibles.",
       "weight": 15.0
     },
     "RF-02": {
@@ -19,7 +20,7 @@
       "weight": 20.0
     },
     "RF-03": {
-      "description": "Recurrencia comprador-proveedor observada en el canonico.",
+      "description": "Recurrencia comprador-proveedor observada en el canónico.",
       "weight": 20.0,
       "recurrence_threshold": 2.0,
       "rule_version": "1.0.0"
@@ -44,6 +45,12 @@
       "rule_version": "1.0.0"
     }
   },
+  "data_quality_rules": {
+    "DQ-01": {
+      "description": "Falta adjudicatario o identificador equivalente (calidad del dato).",
+      "weight": 0.0
+    }
+  },
   "thresholds": {
     "deviation_threshold": 0.1,
     "recurrence_threshold": 2.0,
@@ -52,9 +59,9 @@
   },
   "rule_evaluability": {
     "RF-01": {
-      "evaluable_rows": 3437,
-      "not_evaluable_rows": 0,
-      "evaluable_ratio": 1.0,
+      "evaluable_rows": 0,
+      "not_evaluable_rows": 3437,
+      "evaluable_ratio": 0.0,
       "required_fields": [
         "contract_key_canon",
         "supplier_name",
@@ -118,14 +125,14 @@
     "pair_metric_unavailable": 1104,
     "concentration_metric_unavailable": 1992
   },
-  "score_version": "2.0.0",
+  "score_version": "3.0.0",
   "agent3_features_path": null,
   "agent3_features_status": "ignored",
   "agent3_features_rows": 0,
   "agent3_features_matched_rows": 0,
   "agent3_features_warnings": [],
   "flag_breakdown": {
-    "RF-01": 1104,
+    "DQ-01": 1104,
     "RF-02": 12,
     "RF-03": 730,
     "RF-04": 34,

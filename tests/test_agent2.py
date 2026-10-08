@@ -11,14 +11,13 @@ from procurewatch.agent2 import (
     Agent2Contract,
     run_agent2,
     run_agent2_evaluation,
-    run_agent2_mvp,
     score_contract,
 )
 from procurewatch.cli import main
 
 
 class Agent2Tests(unittest.TestCase):
-    def test_score_contract_keeps_compatible_red_flags_and_risk_level(self) -> None:
+    def test_score_contract_separates_data_quality_from_risk(self) -> None:
         contract = Agent2Contract(
             contract_key_canon="C-001",
             source="boe",
@@ -30,11 +29,20 @@ class Agent2Tests(unittest.TestCase):
 
         score = score_contract(contract)
 
-        self.assertEqual(score.red_flags, ["missing_supplier", "awarded_above_estimate"])
-        self.assertEqual(score.risk_score, 0.5)
-        self.assertEqual(score.risk_level, "medium")
-        self.assertEqual(score.flags_count, 2)
-        self.assertEqual(score.top_flags, ["missing_supplier", "awarded_above_estimate"])
+        self.assertEqual(score.red_flags, ["RF-05"])
+        self.assertEqual(score.data_quality_flags, ["DQ-01"])
+        self.assertEqual(score.risk_score, 25.0)
+        self.assertEqual(score.risk_level, "medio")
+        self.assertEqual(score.flags_count, 1)
+        self.assertEqual(score.score_version, "3.0.0")
+
+    def test_score_contract_missing_supplier_alone_has_no_risk(self) -> None:
+        score = score_contract(Agent2Contract(contract_key_canon="C-000", source="boe"))
+
+        self.assertEqual(score.red_flags, [])
+        self.assertEqual(score.data_quality_flags, ["DQ-01"])
+        self.assertEqual(score.risk_score, 0.0)
+        self.assertEqual(score.risk_level, "bajo")
 
     def test_score_contract_detects_risky_procedure(self) -> None:
         contract = Agent2Contract(
@@ -46,38 +54,10 @@ class Agent2Tests(unittest.TestCase):
 
         score = score_contract(contract)
 
-        self.assertEqual(score.red_flags, ["risky_procedure"])
-        self.assertEqual(score.risk_score, 0.25)
-        self.assertEqual(score.risk_level, "low")
+        self.assertEqual(score.red_flags, ["RF-02"])
+        self.assertEqual(score.risk_score, 20.0)
+        self.assertEqual(score.risk_level, "bajo")
         self.assertEqual(score.evidence["procedure"], "Procedimiento negociado sin publicidad")
-
-    def test_run_agent2_writes_scores_flags_and_report(self) -> None:
-        import pandas as pd
-
-        workspace = _test_workspace("pipeline")
-        input_path = workspace / "canonical.parquet"
-        output_dir = workspace / "processed"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame(_contracts()).to_parquet(input_path, index=False)
-
-        report = run_agent2(
-            input_path=input_path,
-            output_dir=output_dir,
-            source_snapshot_id="snapshot-test",
-        )
-        scores = pd.read_parquet(output_dir / "agent2_risk_scores.parquet")
-        flags = pd.read_parquet(output_dir / "agent2_risk_flags.parquet")
-        report_payload = json.loads((output_dir / "agent2_scoring_report.json").read_text())
-
-        self.assertEqual(report["input_rows"], 3)
-        self.assertEqual(report["scores_rows"], 3)
-        self.assertEqual(report["flags_rows"], 3)
-        self.assertTrue((output_dir / "agent2_risk_scores_schema.json").exists())
-        self.assertTrue((output_dir / "agent2_risk_flags_schema.json").exists())
-        self.assertEqual(set(scores["risk_level"].tolist()), {"medium", "low", "none"})
-        self.assertEqual(set(flags["flag_code"].tolist()), {"DQ-01", "RF-02", "RF-05"})
-        self.assertEqual(report_payload["source_snapshot_id"], "snapshot-test")
-        self.assertEqual(report_payload["flag_code_counts"]["RF-05"], 1)
 
     def test_cli_run_agent2_command(self) -> None:
         import pandas as pd
@@ -97,14 +77,16 @@ class Agent2Tests(unittest.TestCase):
                     str(input_path),
                     "--output-dir",
                     str(output_dir),
+                    "--agent3-features-path",
+                    str(workspace / "missing.parquet"),
                 ]
             )
 
         self.assertEqual(exit_code, 0)
         self.assertIn("Agente 2 ejecutado", output.getvalue())
-        self.assertTrue((output_dir / "agent2_scoring_report.json").exists())
+        self.assertTrue((output_dir / "agent2_run_report.json").exists())
 
-    def test_run_agent2_mvp_generates_traceable_flags_and_scores(self) -> None:
+    def test_run_agent2_generates_traceable_flags_and_scores(self) -> None:
         import pandas as pd
 
         workspace = _test_workspace("mvp")
@@ -112,7 +94,7 @@ class Agent2Tests(unittest.TestCase):
         output_dir = workspace / "processed"
         pd.DataFrame(_mvp_contracts()).to_parquet(input_path, index=False)
 
-        report = run_agent2_mvp(input_path=input_path, output_dir=output_dir)
+        report = run_agent2(input_path=input_path, output_dir=output_dir)
         flags = pd.read_parquet(report["outputs"]["risk_flags"])
         scores = pd.read_parquet(report["outputs"]["risk_scores"])
         scores_by_contract = scores.set_index("contract_key_canon")
@@ -123,10 +105,11 @@ class Agent2Tests(unittest.TestCase):
         self.assertEqual(report["partially_evaluable_rows"], 1)
         self.assertEqual(report["not_evaluable_rows"], 0)
         self.assertEqual(report["activated_contract_rows"], 5)
-        self.assertEqual(report["activated_flags"], 14)
+        self.assertEqual(report["activated_flags"], 13)
+        self.assertEqual(report["data_quality_flags"], 1)
         self.assertEqual(
             set(report["flag_breakdown"].keys()),
-            {"RF-01", "RF-02", "RF-03", "RF-04", "RF-05", "RF-06"},
+            {"DQ-01", "RF-01", "RF-02", "RF-03", "RF-04", "RF-05", "RF-06"},
         )
         self.assertIn("RF-05", flags["flag_code"].tolist())
         self.assertIn("RF-06", flags["flag_code"].tolist())
@@ -136,10 +119,16 @@ class Agent2Tests(unittest.TestCase):
         self.assertEqual(rf05_row["risk_level"], "medio")
         self.assertCountEqual(json.loads(rf05_row["top_flags"]), ["RF-01", "RF-05"])
 
-        rf01_row = scores_by_contract.loc["contract-rf01-rf02"]
-        self.assertEqual(rf01_row["risk_score"], 50.0)
-        self.assertEqual(rf01_row["risk_level"], "alto")
-        self.assertCountEqual(json.loads(rf01_row["top_flags"]), ["RF-01", "RF-02", "RF-06"])
+        # Missing supplier is a data quality signal (DQ-01): it no longer adds risk.
+        missing_supplier_row = scores_by_contract.loc["contract-rf01-rf02"]
+        self.assertEqual(missing_supplier_row["risk_score"], 35.0)
+        self.assertEqual(missing_supplier_row["risk_level"], "medio")
+        self.assertCountEqual(json.loads(missing_supplier_row["top_flags"]), ["RF-02", "RF-06"])
+        self.assertEqual(json.loads(missing_supplier_row["data_quality_flags"]), ["DQ-01"])
+        self.assertEqual(
+            flags.loc[flags["flag_code"].eq("DQ-01"), "severity"].tolist(),
+            ["calidad_dato"],
+        )
 
         recurrent_row = scores_by_contract.loc["contract-rf02-rf03-rf04"]
         self.assertEqual(recurrent_row["risk_score"], 60.0)
@@ -168,7 +157,7 @@ class Agent2Tests(unittest.TestCase):
         self.assertIn("source_snapshot_id", report)
         self.assertTrue((output_dir / "agent2_run_report.json").exists())
 
-    def test_run_agent2_mvp_rf05_threshold_is_configurable(self) -> None:
+    def test_run_agent2_rf05_threshold_is_configurable(self) -> None:
         import pandas as pd
 
         workspace = _test_workspace("mvp-threshold")
@@ -190,7 +179,7 @@ class Agent2Tests(unittest.TestCase):
             ]
         ).to_parquet(input_path, index=False)
 
-        report = run_agent2_mvp(
+        report = run_agent2(
             input_path=input_path,
             output_dir=output_dir,
             deviation_threshold=0.20,
@@ -203,7 +192,7 @@ class Agent2Tests(unittest.TestCase):
         self.assertEqual(scores.loc[0, "risk_level"], "medio")
         self.assertCountEqual(json.loads(scores.loc[0, "top_flags"]), ["RF-01", "RF-06"])
 
-    def test_run_agent2_mvp_uses_agent3_features_for_rf03_rf04(self) -> None:
+    def test_run_agent2_uses_agent3_features_for_rf03_rf04(self) -> None:
         import pandas as pd
 
         workspace = _test_workspace("mvp-agent3-features")
@@ -222,7 +211,7 @@ class Agent2Tests(unittest.TestCase):
             ]
         ).to_parquet(features_path, index=False)
 
-        report = run_agent2_mvp(
+        report = run_agent2(
             input_path=input_path,
             output_dir=output_dir,
             agent3_features_path=features_path,
@@ -245,7 +234,7 @@ class Agent2Tests(unittest.TestCase):
         self.assertTrue(target_flags["evidence_text"].str.contains("Agent3").all())
         self.assertTrue(target_flags["evidence_fields"].str.contains("agent3").all())
 
-    def test_run_agent2_mvp_tolerates_missing_agent3_features_path(self) -> None:
+    def test_run_agent2_tolerates_missing_agent3_features_path(self) -> None:
         import pandas as pd
 
         workspace = _test_workspace("mvp-agent3-missing")
@@ -253,7 +242,7 @@ class Agent2Tests(unittest.TestCase):
         output_dir = workspace / "processed"
         pd.DataFrame(_mvp_agent3_feature_contracts()).to_parquet(input_path, index=False)
 
-        report = run_agent2_mvp(
+        report = run_agent2(
             input_path=input_path,
             output_dir=output_dir,
             agent3_features_path=workspace / "missing_agent3_features.parquet",

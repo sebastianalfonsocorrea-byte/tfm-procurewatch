@@ -871,15 +871,13 @@ class Agent4Tests(unittest.TestCase):
         )
         payload = json.loads(output_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(state["agent2_score"]["risk_score"], 0.5)
-        self.assertEqual(
-            state["agent2_score"]["red_flags"],
-            ["missing_supplier", "awarded_above_estimate"],
-        )
+        self.assertEqual(state["agent2_score"]["risk_score"], 25.0)
+        self.assertEqual(state["agent2_score"]["red_flags"], ["RF-05"])
+        self.assertEqual(state["agent2_score"]["data_quality_flags"], ["DQ-01"])
         self.assertEqual(state["agent3_metrics"]["supplier_degree"], 3)
         self.assertGreaterEqual(len(state["retrieved_context"]), 1)
-        self.assertEqual(payload["agent2_score"]["risk_score"], 0.5)
-        self.assertEqual(payload["case_context"]["agent2_score"]["risk_score"], 0.5)
+        self.assertEqual(payload["agent2_score"]["risk_score"], 25.0)
+        self.assertEqual(payload["case_context"]["agent2_score"]["risk_score"], 25.0)
         self.assertEqual(
             payload["case_context"]["contract_fields_used"]["buyer_name"],
             "Ayuntamiento Alfa",

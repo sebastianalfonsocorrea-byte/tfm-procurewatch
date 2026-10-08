@@ -57,27 +57,33 @@ EDGE_TYPE_LABELS = {
 }
 
 FLAG_LABELS = {
-    "risky_procedure": "Procedimiento con menor publicidad",
-    "awarded_above_estimate": "Adjudicación sobre el valor estimado",
-    "missing_supplier": "Proveedor no informado",
-    "single_bidder": "Baja concurrencia",
+    "RF-01": "Licitador único",
+    "RF-02": "Procedimiento con menor publicidad",
+    "RF-03": "Recurrencia comprador-proveedor",
+    "RF-04": "Concentración comprador-proveedor",
+    "RF-05": "Adjudicación sobre el valor estimado",
+    "RF-06": "Plazo de resolución anómalo",
+    "DQ-01": "Adjudicatario no informado (calidad del dato)",
 }
 
 FLAG_EXPLANATIONS = {
-    "risky_procedure": (
-        "El procedimiento reduce publicidad o competencia y eleva la prioridad de revisión."
+    "RF-01": "La concurrencia limitada puede elevar la prioridad de revisión.",
+    "RF-02": "El procedimiento reduce publicidad o competencia y eleva la prioridad de revisión.",
+    "RF-03": "El comprador adjudica de forma repetida al mismo proveedor.",
+    "RF-04": "Una parte relevante del importe del comprador se concentra en este proveedor.",
+    "RF-05": "El importe adjudicado supera el valor estimado registrado para el contrato.",
+    "RF-06": "El plazo entre publicación y adjudicación es anómalo para el procedimiento.",
+    "DQ-01": (
+        "Falta una entidad clave en el registro. Limita el análisis, pero no suma al score de "
+        "riesgo."
     ),
-    "awarded_above_estimate": (
-        "El importe adjudicado supera el valor estimado registrado para el contrato."
-    ),
-    "missing_supplier": "Falta una entidad clave para explicar la adjudicación.",
-    "single_bidder": "La concurrencia limitada puede elevar la prioridad de revisión.",
 }
 
 RISK_LEVEL_LABELS = {
-    "low": "Prioridad baja",
-    "medium": "Prioridad media",
-    "high": "Prioridad alta",
+    "bajo": "Prioridad baja",
+    "medio": "Prioridad media",
+    "alto": "Prioridad alta",
+    "critico": "Prioridad crítica",
 }
 
 DOCUMENT_TYPE_LABELS = {
@@ -356,7 +362,7 @@ def _render_header() -> None:
 
 def _render_decision_strip(case_view: dict[str, Any]) -> None:
     priority = _risk_level_label(case_view.get("risk_level"))
-    score = _format_score(case_view.get("risk_score"))
+    score = _format_risk_score(case_view.get("risk_score"))
     flags = len(case_view.get("red_flags", []))
     evidences = len(case_view.get("evidences", []))
 
@@ -726,7 +732,7 @@ def _render_case(case_view: dict[str, Any]) -> None:
 
     columns = st.columns(4)
     columns[0].metric("Prioridad Agent2", _risk_level_label(case_view.get("risk_level")))
-    columns[1].metric("Puntuacion", _format_score(case_view.get("risk_score")))
+    columns[1].metric("Puntuación", _format_risk_score(case_view.get("risk_score")))
     columns[2].metric("Red flags", str(len(case_view.get("red_flags", []))))
     columns[3].metric("Relaciones del contrato", _format_metric(case_view.get("contract_links")))
 
@@ -1240,7 +1246,7 @@ def _case_markdown_summary(case_view: dict[str, Any]) -> str:
         f"- Comprador: {case_view.get('buyer_name', 'n/a')}",
         f"- Adjudicatario: {case_view.get('supplier_name', 'n/a')}",
         f"- Prioridad Agent2: {_risk_level_label(case_view.get('risk_level'))}",
-        f"- Score Agent2: {_format_score(case_view.get('risk_score'))}",
+        f"- Score Agent2: {_format_risk_score(case_view.get('risk_score'))}",
         f"- Red flags: {flags}",
         "",
         "## Lectura Agent3",
@@ -1417,7 +1423,7 @@ def _display_contract_columns(contracts: pd.DataFrame) -> pd.DataFrame:
             "comprador": "Comprador",
             "adjudicatario": "Adjudicatario",
             "prioridad": "Prioridad",
-            "puntuacion": "Puntuacion",
+            "puntuacion": "Puntuación",
             "red_flags": "Red flags",
             "estado_ficha": "Cobertura demo",
             "motivo_revision": "Motivo principal",
@@ -1514,12 +1520,12 @@ def _agent2_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
     agent2_score = _dict_value(case_view.get("agent2_score"))
     evidence = _dict_value(agent2_score.get("evidence"))
     rows = []
-    for flag in case_view.get("red_flags", []):
+    for flag in [*case_view.get("red_flags", []), *agent2_score.get("data_quality_flags", [])]:
         rows.append(
             {
-                "Senal": FLAG_LABELS.get(str(flag), str(flag)),
+                "Señal": FLAG_LABELS.get(str(flag), str(flag)),
                 "Dato usado": _agent2_flag_value(str(flag), evidence),
-                "Lectura": FLAG_EXPLANATIONS.get(str(flag), "Senal para priorizar revisión."),
+                "Lectura": FLAG_EXPLANATIONS.get(str(flag), "Señal para priorizar revisión."),
             }
         )
     return rows
@@ -1568,9 +1574,15 @@ def _agent3_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def _agent2_flag_value(flag: str, evidence: dict[str, Any]) -> str:
-    if flag == "risky_procedure":
+    if flag == "RF-02":
         return str(evidence.get("procedure") or "Procedimiento no informado")
-    if flag == "awarded_above_estimate":
+    if flag == "RF-01":
+        return f"Expediente {evidence.get('source_tender_id') or 'n/a'}"
+    if flag == "RF-06":
+        return f"{evidence.get('resolution_days', 'n/a')} días de resolución"
+    if flag == "DQ-01":
+        return "Adjudicatario vacío en el canónico"
+    if flag == "RF-05":
         estimated = _format_money(evidence.get("estimated_value_eur"))
         awarded = _format_money(evidence.get("awarded_value_eur"))
         return f"Estimado {estimated}; adjudicado {awarded}"
@@ -1597,7 +1609,8 @@ def _ranking_score(
     value = 0.0
     if has_context:
         value += 2.0
-    value += float(score.get("risk_score") or 0) * 3
+    # risk_score is on a 0-100 scale; it stays the dominant ranking term.
+    value += float(score.get("risk_score") or 0) / 100 * 3
     value += min(float(recurrence or 0), 5) * 0.25
     value += float(share or 0) * 0.5
     value += float(centrality or 0)
@@ -1897,6 +1910,15 @@ def _format_score(value: object) -> str:
         return "No disponible"
     try:
         return f"{float(value):.2f}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _format_risk_score(value: object) -> str:
+    if _is_blank(value):
+        return "No disponible"
+    try:
+        return f"{float(value):.0f} / 100"
     except (TypeError, ValueError):
         return str(value)
 

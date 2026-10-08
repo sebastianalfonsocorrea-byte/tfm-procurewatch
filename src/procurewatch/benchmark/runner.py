@@ -339,8 +339,7 @@ def _agent2_from_score_tables(
         return metrics
 
     risk_scores = pd.to_numeric(scores.get("risk_score"), errors="coerce")
-    score_max = float(risk_scores.max()) if risk_scores.notna().any() else None
-    upper_bound = 100.0 if score_max is not None and score_max > 1.0 else 1.0
+    upper_bound = 100.0
     valid_scores = risk_scores.between(0, upper_bound, inclusive="both")
     metrics.append(
         _metric(

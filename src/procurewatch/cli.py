@@ -371,7 +371,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     mvp_parser.add_argument("--force-rebuild", action="store_true")
     agent2_parser = subparsers.add_parser(
         "run-agent2",
-        help="Ejecuta scoring determinista v1 del agente 2 sobre el canonico.",
+        aliases=["run-agent2-mvp"],
+        help="Ejecuta el scoring RF-01..RF-06 (y calidad del dato DQ-01) de Agent2.",
     )
     agent2_parser.add_argument(
         "--input",
@@ -379,23 +380,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=Path("data/processed/agent2_contracts_canonical.parquet"),
     )
     agent2_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
-    agent2_parser.add_argument("--limit", type=int, default=None)
-    agent2_parser.add_argument("--source-snapshot-id", default=None)
-    agent2_mvp_parser = subparsers.add_parser(
-        "run-agent2-mvp",
-        help="Ejecuta el MVP RF-01..RF-06 de Agent2 sobre el canonico.",
-    )
-    agent2_mvp_parser.add_argument(
-        "--input",
-        type=Path,
-        default=Path("data/processed/agent2_contracts_canonical.parquet"),
-    )
-    agent2_mvp_parser.add_argument("--output-dir", type=Path, default=Path("data/processed"))
-    agent2_mvp_parser.add_argument("--deviation-threshold", type=float, default=0.10)
-    agent2_mvp_parser.add_argument("--recurrence-threshold", type=float, default=2.0)
-    agent2_mvp_parser.add_argument("--concentration-threshold", type=float, default=0.50)
-    agent2_mvp_parser.add_argument("--temporal-days-threshold", type=float, default=2.0)
-    agent2_mvp_parser.add_argument(
+    agent2_parser.add_argument("--deviation-threshold", type=float, default=0.10)
+    agent2_parser.add_argument("--recurrence-threshold", type=float, default=2.0)
+    agent2_parser.add_argument("--concentration-threshold", type=float, default=0.50)
+    agent2_parser.add_argument("--temporal-days-threshold", type=float, default=2.0)
+    agent2_parser.add_argument(
         "--agent3-features-path",
         type=Path,
         default=Path("data/processed/agent3_agent2_features.parquet"),
@@ -996,26 +985,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"- Matching JSON: {coverage['matching_diagnostics_path']}")
         print(f"- Analisis Markdown: {coverage['source_coverage_analysis_markdown_path']}")
         return 0
-    if args.command == "run-agent2":
+    if args.command in {"run-agent2", "run-agent2-mvp"}:
         from .agent2 import run_agent2
 
         report = run_agent2(
-            input_path=args.input,
-            output_dir=args.output_dir,
-            limit=args.limit,
-            source_snapshot_id=args.source_snapshot_id,
-        )
-        print("Agente 2 ejecutado")
-        print(f"- Contratos evaluados: {report['input_rows']}")
-        print(f"- Scores: {report['scores_rows']}")
-        print(f"- Flags: {report['flags_rows']}")
-        print(f"- Niveles riesgo: {report['risk_level_counts']}")
-        print(f"- Reporte agente: {report['outputs']['report']}")
-        return 0
-    if args.command == "run-agent2-mvp":
-        from .agent2 import run_agent2_mvp
-
-        report = run_agent2_mvp(
             input_path=args.input,
             output_dir=args.output_dir,
             deviation_threshold=args.deviation_threshold,
@@ -1024,10 +997,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             temporal_days_threshold=args.temporal_days_threshold,
             agent3_features_path=args.agent3_features_path,
         )
-        print("Agente 2 MVP ejecutado")
+        print("Agente 2 ejecutado")
         print(f"- Contratos evaluados: {report['rows']}")
-        print(f"- Contratos con flags: {report['activated_contract_rows']}")
-        print(f"- Flags activadas: {report['activated_flags']}")
+        print(f"- Contratos con flags de riesgo: {report['activated_contract_rows']}")
+        print(f"- Flags de riesgo activadas: {report['activated_flags']}")
+        print(f"- Señales de calidad del dato: {report['data_quality_flags']}")
+        print(f"- Niveles de riesgo: {report['risk_level_breakdown']}")
         print(f"- Reporte agente: {report['report_path']}")
         return 0
     if args.command == "evaluate-agent2":

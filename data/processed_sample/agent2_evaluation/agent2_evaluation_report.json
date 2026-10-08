@@ -1,7 +1,7 @@
 {
   "dataset": "agent2_threshold_sensitivity_evaluation",
   "schema_version": "1.0.0",
-  "generated_at_utc": "2026-07-15T09:16:46.487509+00:00",
+  "generated_at_utc": "2026-10-08T22:59:41.051276+00:00",
   "input": {
     "path": "data\\processed_sample\\agent2_contracts_canonical.parquet",
     "rows": 3437,
@@ -36,14 +36,14 @@
       },
       "rows": 3437,
       "fully_evaluable_rows": 0,
-      "partially_evaluable_rows": 3437,
-      "not_evaluable_rows": 0,
-      "activated_contract_rows": 2069,
-      "activated_flags": 2427,
+      "partially_evaluable_rows": 3425,
+      "not_evaluable_rows": 12,
+      "activated_contract_rows": 1255,
+      "activated_flags": 1323,
       "flag_frequency": {
         "RF-01": {
-          "count": 1104,
-          "contract_ratio": 0.32121035787023566
+          "count": 0,
+          "contract_ratio": 0.0
         },
         "RF-02": {
           "count": 12,
@@ -72,8 +72,8 @@
         "medio": 560
       },
       "risk_band_distribution": {
-        "no_flags": 1368,
-        "low_positive": 1496,
+        "no_flags": 2182,
+        "low_positive": 682,
         "medium": 560,
         "high": 13,
         "critical": 0
@@ -82,17 +82,17 @@
         "count": 3437,
         "min": 0.0,
         "q1": 0.0,
-        "median": 15.0,
-        "mean": 13.309572301425662,
+        "median": 0.0,
+        "mean": 8.491416933372127,
         "q3": 20.0,
         "max": 65.0,
-        "std": 13.00923571429264
+        "std": 11.778221629022461
       },
       "rule_evaluability": {
         "RF-01": {
-          "evaluable_rows": 3437,
-          "not_evaluable_rows": 0,
-          "evaluable_ratio": 1.0,
+          "evaluable_rows": 0,
+          "not_evaluable_rows": 3437,
+          "evaluable_ratio": 0.0,
           "required_fields": [
             "contract_key_canon",
             "supplier_name",
@@ -173,14 +173,14 @@
       },
       "rows": 3437,
       "fully_evaluable_rows": 0,
-      "partially_evaluable_rows": 3437,
-      "not_evaluable_rows": 0,
-      "activated_contract_rows": 2066,
-      "activated_flags": 2420,
+      "partially_evaluable_rows": 3425,
+      "not_evaluable_rows": 12,
+      "activated_contract_rows": 1250,
+      "activated_flags": 1316,
       "flag_frequency": {
         "RF-01": {
-          "count": 1104,
-          "contract_ratio": 0.32121035787023566
+          "count": 0,
+          "contract_ratio": 0.0
         },
         "RF-02": {
           "count": 12,
@@ -209,8 +209,8 @@
         "medio": 553
       },
       "risk_band_distribution": {
-        "no_flags": 1371,
-        "low_positive": 1500,
+        "no_flags": 2187,
+        "low_positive": 684,
         "medium": 553,
         "high": 13,
         "critical": 0
@@ -219,17 +219,17 @@
         "count": 3437,
         "min": 0.0,
         "q1": 0.0,
-        "median": 15.0,
-        "mean": 13.261565318591796,
+        "median": 0.0,
+        "mean": 8.44340995053826,
         "q3": 20.0,
         "max": 65.0,
-        "std": 12.979671812282055
+        "std": 11.744444990695651
       },
       "rule_evaluability": {
         "RF-01": {
-          "evaluable_rows": 3437,
-          "not_evaluable_rows": 0,
-          "evaluable_ratio": 1.0,
+          "evaluable_rows": 0,
+          "not_evaluable_rows": 3437,
+          "evaluable_ratio": 0.0,
           "required_fields": [
             "contract_key_canon",
             "supplier_name",
@@ -310,14 +310,14 @@
       },
       "rows": 3437,
       "fully_evaluable_rows": 0,
-      "partially_evaluable_rows": 3437,
-      "not_evaluable_rows": 0,
-      "activated_contract_rows": 1921,
-      "activated_flags": 2224,
+      "partially_evaluable_rows": 3425,
+      "not_evaluable_rows": 12,
+      "activated_contract_rows": 1105,
+      "activated_flags": 1120,
       "flag_frequency": {
         "RF-01": {
-          "count": 1104,
-          "contract_ratio": 0.32121035787023566
+          "count": 0,
+          "contract_ratio": 0.0
         },
         "RF-02": {
           "count": 12,
@@ -345,8 +345,8 @@
         "medio": 546
       },
       "risk_band_distribution": {
-        "no_flags": 1516,
-        "low_positive": 1375,
+        "no_flags": 2332,
+        "low_positive": 559,
         "medium": 546,
         "high": 0,
         "critical": 0
@@ -355,17 +355,17 @@
         "count": 3437,
         "min": 0.0,
         "q1": 0.0,
-        "median": 15.0,
-        "mean": 12.119581029967994,
+        "median": 0.0,
+        "mean": 7.30142566191446,
         "q3": 20.0,
         "max": 45.0,
-        "std": 12.562718445177955
+        "std": 10.78320393282118
       },
       "rule_evaluability": {
         "RF-01": {
-          "evaluable_rows": 3437,
-          "not_evaluable_rows": 0,
-          "evaluable_ratio": 1.0,
+          "evaluable_rows": 0,
+          "not_evaluable_rows": 3437,
+          "evaluable_ratio": 0.0,
           "required_fields": [
             "contract_key_canon",
             "supplier_name",

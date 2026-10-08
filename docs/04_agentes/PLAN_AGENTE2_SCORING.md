@@ -34,7 +34,20 @@ procurewatch run-agent2 --input data/processed/agent2_contracts_canonical.parque
   - `data/processed/agent2_scoring_report.json`
   - schemas JSON y previews CSV asociados.
 
-Integracion `integration/multiagent`:
+Unificacion del scoring (v3.0.0, 09/10/2026):
+
+- Agent2 tiene un unico modelo: `run-agent2` (alias `run-agent2-mvp`) ejecuta RF-01..RF-06 con
+  score 0-100 (pesos RF-01=15, RF-02=20, RF-03=20, RF-04=20, RF-05=25, RF-06=15; suma 115,
+  recortada a 100) y niveles `bajo` (<25), `medio` (25-49), `alto` (50-74) y `critico` (>=75).
+- Se elimina el scoring v1 (0-1, `missing_supplier`/`risky_procedure`/`awarded_above_estimate`).
+  Agent4 usa la misma funcion `score_contract`, que evalua las reglas locales del contrato
+  (RF-01, RF-02, RF-05, RF-06); RF-03/RF-04 requieren el lote completo.
+- DQ-01 (adjudicatario ausente) se separa del riesgo: se publica en `agent2_risk_flags` con
+  severidad `calidad_dato` y en la columna `data_quality_flags`, pero no suma al score.
+  RF-01 queda reservado a expedientes con un unico adjudicatario.
+- Salidas: `agent2_risk_scores.parquet`, `agent2_risk_flags.parquet` y `agent2_run_report.json`.
+
+Integracion `integration/multiagent` (historico):
 
 - Se conserva `run-agent2` como contrato estable de `sebas`, usado por Agent4 para scoring
   determinista compatible.
@@ -69,18 +82,16 @@ Entregables minimos:
 Prioridad inicial:
 
 - RF-01: concurrencia baja o adjudicatario unico cuando exista dato.
-- RF-02: procedimiento restringido, negociado o menor recurrente. Implementado como
-  `risky_procedure`.
+- RF-02: procedimiento negociado, menor o de emergencia recurrente para el comprador.
 - RF-03: recurrencia comprador-proveedor.
 - RF-04: concentracion de importe por proveedor y comprador.
-- RF-05: desviacion entre importe estimado y adjudicado. Implementado como
-  `awarded_above_estimate`.
+- RF-05: importe adjudicado superior al estimado en mas del umbral (10 % por defecto).
 - RF-06: patrones temporales anomalos.
 - RF-07: repeticion de CPV, titulos o importes entre contratos cercanos.
 
 Senal de calidad adicional:
 
-- DQ-01: proveedor/adjudicatario ausente. Implementado como `missing_supplier`.
+- DQ-01: proveedor/adjudicatario ausente. Se informa como calidad del dato y no suma al score.
 
 Cada red flag debe producir:
 
@@ -151,16 +162,20 @@ El comando `evaluate-agent2` ejecuta RF-01 a RF-06 sobre la muestra reproducible
 contratos. Compara los umbrales numericos con factores 0,9, 1,0 y 1,1 y publica artefactos en
 `data/processed_sample/agent2_evaluation/`.
 
-Resultados del escenario base:
+Resultados del escenario base (regenerados con el scoring unificado v3.0.0, 09/10/2026):
 
-- 3.437 contratos puntuados; 3.437 parcialmente evaluables y ninguno completamente evaluable.
-- 2.066 contratos con alguna senal y 2.420 flags.
-- Frecuencias: RF-01=1.104, RF-02=12, RF-03=730, RF-04=34, RF-05=540 y RF-06=0.
-- Cobertura de evaluabilidad: RF-01=100 %, RF-02=99,65 %, RF-03=67,88 %, RF-04=42,04 %,
-  RF-05=52,25 % y RF-06=0 %.
-- Distribucion: 1.371 contratos sin flags, 1.500 en riesgo bajo positivo, 553 en medio, 13 en alto
-  y ninguno en critico.
-- Score medio: 13,26 sobre 100.
+- 3.437 contratos puntuados; 3.425 parcialmente evaluables, 12 no evaluables y ninguno
+  completamente evaluable.
+- 1.250 contratos con alguna senal de riesgo y 1.316 flags de riesgo, mas 1.104 senales DQ-01 de
+  calidad del dato (adjudicatario ausente) que no puntuan.
+- Frecuencias: RF-01=0, RF-02=12, RF-03=730, RF-04=34, RF-05=540 y RF-06=0.
+- Cobertura de evaluabilidad: RF-01=0 % (la muestra no conserva `source_tender_id`), RF-02=99,65 %,
+  RF-03=67,88 %, RF-04=42,04 %, RF-05=52,25 % y RF-06=0 %.
+- Distribucion: 2.187 contratos sin flags de riesgo, 684 en riesgo bajo positivo, 553 en medio,
+  13 en alto y ninguno en critico.
+- Score medio: 8,44 sobre 100.
+- Frente a la version 2.0.0, los niveles de riesgo no cambian: las 1.104 activaciones de RF-01
+  eran todas por adjudicatario ausente y ahora se reportan como DQ-01.
 - Score sin cambios frente al escenario base: 99,80 % con factor 0,9 y 95,11 % con factor 1,1.
 
 RF-06 no es evaluable en la muestra porque ninguna fila conserva simultaneamente fecha de

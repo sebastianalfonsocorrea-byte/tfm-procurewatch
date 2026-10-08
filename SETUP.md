@@ -186,11 +186,11 @@ Si quieres un guion de demo muy corto para la defensa, mira `docs/DEMO_MVP.md`.
 Para Agent 2, el equivalente mínimo es:
 
 ```powershell
-procurewatch run-agent2-mvp
+procurewatch run-agent2
 ```
 
 Ese comando lee `data/processed/agent2_contracts_canonical.parquet` y genera las señales
-deterministas del MVP de red flags y scoring.
+deterministas de red flags (RF-01..RF-06), la calidad del dato (DQ-01) y el score 0-100.
 
 ## 10. Siguiente foco: Agent2 y Agent4
 

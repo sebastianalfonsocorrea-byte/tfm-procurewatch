@@ -1,7 +1,7 @@
 {
   "dataset": "procurewatch_case_study",
   "schema_version": "1.0.0",
-  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
   "case_id": "CS-02",
   "selection": {
     "group": "high_score",
@@ -37,11 +37,12 @@
       "RF-04"
     ],
     "evaluation_status": "partially_evaluable",
-    "evaluable_rules_count": 5,
+    "evaluable_rules_count": 4,
     "not_evaluable_rules": [
+      "RF-01",
       "RF-06"
     ],
-    "score_version": "2.0.0",
+    "score_version": "3.0.0",
     "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
   },
   "rule_evidence": [
@@ -119,6 +120,7 @@
     }
   },
   "warnings": [
+    "RF-01 no fue evaluable por falta de los campos requeridos.",
     "RF-06 no fue evaluable por falta de los campos requeridos.",
     "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
     "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",

@@ -5,14 +5,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .mvp_pipeline import (
+from .pipeline import (
     DEFAULT_CONCENTRATION_THRESHOLD,
     DEFAULT_DEVIATION_THRESHOLD,
     DEFAULT_RECURRENCE_THRESHOLD,
     DEFAULT_TEMPORAL_DAYS_THRESHOLD,
-    RULE_CODES,
-    run_agent2_mvp,
+    run_agent2,
 )
+from .scoring import RULE_CODES
 
 EVALUATION_SCHEMA_VERSION = "1.0.0"
 SCENARIO_FACTORS = {"lower": 0.9, "base": 1.0, "upper": 1.1}
@@ -37,7 +37,7 @@ def run_agent2_evaluation(
     for scenario, factor in SCENARIO_FACTORS.items():
         scenario_dir = output_dir / scenario
         thresholds = _thresholds(factor)
-        run_report = run_agent2_mvp(
+        run_report = run_agent2(
             input_path=input_path,
             output_dir=scenario_dir,
             agent3_features_path=agent3_features_path,

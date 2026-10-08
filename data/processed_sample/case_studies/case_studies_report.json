@@ -1,7 +1,7 @@
 {
   "dataset": "procurewatch_case_studies",
   "schema_version": "1.0.0",
-  "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+  "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
   "inputs": {
     "canonical": {
       "path": "data\\processed_sample\\agent2_contracts_canonical.parquet",
@@ -11,22 +11,22 @@
     "scores": {
       "path": "data\\processed_sample\\agent2_evaluation\\base\\agent2_risk_scores.parquet",
       "rows": 3437,
-      "sha256": "d05946e9c4b56d383c67d7ae9753a8a6283c3b297326d5611d3324371872fd69"
+      "sha256": "d09ffcdf83befcaa560ab58ac606340c9d1368e4550fbc2e356d9f31e4d8e3ff"
     },
     "flags": {
       "path": "data\\processed_sample\\agent2_evaluation\\base\\agent2_risk_flags.parquet",
       "rows": 2420,
-      "sha256": "d2be21a26f9ac43591cf3aa86bd25b2eac72ed596ba078b441a26568c1e50fa5"
+      "sha256": "897b73658420aad72df333760ed0b5d74ee6229243c8b0c24ee164f642db37df"
     },
     "agent3_features": {
       "path": "data\\processed_sample\\agent3_case_studies\\agent3_agent2_features.parquet",
       "rows": 3437,
-      "sha256": "a3f5ae5afc797d4756738b1a2e0cd07dba891189d91c889dacd357f47ef7ac20"
+      "sha256": "fe17233f56dc10260d8ea99a251a3d42280378bb9bbba95a0ac3c2e8d125e585"
     },
     "corpus_index": {
       "path": "data\\synthetic\\agent4_corpus\\agent4_corpus_index.json",
       "rows": null,
-      "sha256": "b4a8fa44bdcef2b7249571530429834f21363055cbef415b9de4dedb47ed12f9"
+      "sha256": "9c3834ce45ee497e5464344f3d8e013726e60aabb0179bfb9b698fa1d8e7b550"
     }
   },
   "selection_policy": {
@@ -56,14 +56,14 @@
     "explanation_complete_ratio": 1.0,
     "prioritization_criteria_ratio": 1.0,
     "unsupported_fraud_claims": 0,
-    "warnings_count": 56,
+    "warnings_count": 66,
     "practical_validation_passed": true
   },
   "cases": [
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-01",
       "selection": {
         "group": "high_score",
@@ -99,11 +99,12 @@
           "RF-04"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -181,6 +182,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
@@ -207,7 +209,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-02",
       "selection": {
         "group": "high_score",
@@ -243,11 +245,12 @@
           "RF-04"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -325,6 +328,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
@@ -351,7 +355,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-03",
       "selection": {
         "group": "high_score",
@@ -387,11 +391,12 @@
           "RF-04"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -469,6 +474,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
@@ -495,7 +501,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-04",
       "selection": {
         "group": "high_score",
@@ -531,11 +537,12 @@
           "RF-04"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -613,6 +620,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
@@ -639,7 +647,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-05",
       "selection": {
         "group": "high_score",
@@ -675,11 +683,12 @@
           "RF-04"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -757,6 +766,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
@@ -783,7 +793,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-06",
       "selection": {
         "group": "medium_risk",
@@ -818,11 +828,12 @@
           "RF-03"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -884,6 +895,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
@@ -910,7 +922,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-07",
       "selection": {
         "group": "medium_risk",
@@ -945,11 +957,12 @@
           "RF-05"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -1011,6 +1024,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "La comparabilidad entre importe estimado y adjudicado debe verificarse en origen por posibles lotes, unidades o agregaciones.",
         "No se han encontrado documentos para el contrato solicitado.",
@@ -1036,7 +1050,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-08",
       "selection": {
         "group": "medium_risk",
@@ -1071,11 +1085,12 @@
           "RF-04"
         ],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [
@@ -1141,6 +1156,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "Agent2 calcula las senales relacionales con nombres normalizados y cuota de importe; Agent3 usa IDs del grafo y cuota de contratos, por lo que sus valores son contexto complementario y no tienen que coincidir.",
         "No se han encontrado documentos para el contrato solicitado.",
@@ -1166,7 +1182,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-09",
       "selection": {
         "group": "control",
@@ -1198,11 +1214,12 @@
         "flags_count": 0,
         "active_rules": [],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [],
@@ -1235,6 +1252,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "Score cero significa ausencia de senales con los datos evaluables, no ausencia de riesgo.",
         "No se han encontrado documentos para el contrato solicitado.",
@@ -1260,7 +1278,7 @@
     {
       "dataset": "procurewatch_case_study",
       "schema_version": "1.0.0",
-      "generated_at_utc": "2026-07-15T10:21:06.592029+00:00",
+      "generated_at_utc": "2026-10-08T22:59:42.002630+00:00",
       "case_id": "CS-10",
       "selection": {
         "group": "control",
@@ -1292,11 +1310,12 @@
         "flags_count": 0,
         "active_rules": [],
         "evaluation_status": "partially_evaluable",
-        "evaluable_rules_count": 5,
+        "evaluable_rules_count": 4,
         "not_evaluable_rules": [
+          "RF-01",
           "RF-06"
         ],
-        "score_version": "2.0.0",
+        "score_version": "3.0.0",
         "source_snapshot_id": "9e983848aad0a1af35f7230f820da982ab04d8d9172648d0d615d6b0d655e377"
       },
       "rule_evidence": [],
@@ -1329,6 +1348,7 @@
         }
       },
       "warnings": [
+        "RF-01 no fue evaluable por falta de los campos requeridos.",
         "RF-06 no fue evaluable por falta de los campos requeridos.",
         "Score cero significa ausencia de senales con los datos evaluables, no ausencia de riesgo.",
         "No se han encontrado documentos para el contrato solicitado.",
