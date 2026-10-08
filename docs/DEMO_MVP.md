@@ -13,7 +13,7 @@ descargar datos nuevos.
 
 ```bash
 cd /ruta/al/repo/tfm-procurewatch
-PYTHONPATH=scr PROCUREWATCH_POSTGRES_DSN=postgresql://procurewatch:procurewatch@localhost:5432/procurewatch \
+PYTHONPATH=src PROCUREWATCH_POSTGRES_DSN=postgresql://procurewatch:procurewatch@localhost:5432/procurewatch \
   python -m procurewatch run-mvp --year 2024 --cpv-prefix 71
 ```
 
@@ -29,7 +29,7 @@ PYTHONPATH=scr PROCUREWATCH_POSTGRES_DSN=postgresql://procurewatch:procurewatch@
 ## Verificación rápida
 
 ```bash
-PYTHONPATH=scr python - <<'PY'
+PYTHONPATH=src python - <<'PY'
 from sqlalchemy import create_engine, text
 
 engine = create_engine(

@@ -44,9 +44,9 @@ Este documento sirve como punto de arranque para cualquier nueva conversacion te
    - Seleccion de fuentes y criterio de prioridad.
 10. [ESTRATEGIA_PLACE_HACIENDA](docs/02_fuentes/ESTRATEGIA_PLACE_HACIENDA.md)
    - Encaje de PLACE en la metodologia y orden tecnico.
-11. [SEGUIMIENTO_AGENTES](docs/04_agentes/SEGUIMIENTO_AGENTES.md)
+11. [SEGUIMIENTO_AGENTES](docs/archivo/SEGUIMIENTO_AGENTES.md)
    - Estado transversal de Agent1-Agent4.
-12. [SEGUIMIENTO_AGENT1](docs/03_agent1_ingesta/SEGUIMIENTO_AGENT1.md)
+12. [SEGUIMIENTO_AGENT1](docs/archivo/SEGUIMIENTO_AGENT1.md)
    - Log de riesgos y decisiones del bloque activo.
 13. [STACK_TECNICO_PROYECTO](docs/00_vision/STACK_TECNICO_PROYECTO.md)
     - Stack actual y objetivo del proyecto.
@@ -85,8 +85,8 @@ Comandos base:
 ```powershell
 python -m procurewatch doctor
 python -m pytest tests
-python -m ruff check api scr tests
-python -m ruff format api scr tests
+python -m ruff check api src tests
+python -m ruff format api src tests
 ```
 
 Comandos de pipeline:
@@ -98,12 +98,12 @@ procurewatch place-sources --year 2024 --datasets place_profiles place_aggregati
 
 ## Estructura operativa minima
 
-- `scr/procurewatch/`: codigo Python importable.
-- `scr/procurewatch/agent1/`: ingesta, canonizacion y cobertura.
-- `scr/procurewatch/agent2/`: red flags, scoring y estado de riesgo.
-- `scr/procurewatch/agent3/`: futuro modulo de grafos y relaciones.
-- `scr/procurewatch/agent4/`: NLP, RAG y LangGraph.
-- `scr/procurewatch/data_sources/`: conectores/parsers de BOE, PLACE y OpenTender.
+- `src/procurewatch/`: codigo Python importable.
+- `src/procurewatch/agent1/`: ingesta, canonizacion y cobertura.
+- `src/procurewatch/agent2/`: red flags, scoring y estado de riesgo.
+- `src/procurewatch/agent3/`: futuro modulo de grafos y relaciones.
+- `src/procurewatch/agent4/`: NLP, RAG y LangGraph.
+- `src/procurewatch/data_sources/`: conectores/parsers de BOE, PLACE y OpenTender.
 - `data/raw/`: origen sin tocar.
 - `data/processed/`: parquet/csv preview, schema estable.
 - `data/processed_sample/`: salidas de prueba separadas.
@@ -111,12 +111,12 @@ procurewatch place-sources --year 2024 --datasets place_profiles place_aggregati
 - `docs/`: memoria tecnica y trazabilidad.
 - `tests/`: regresion de parsing y reglas.
 
-Regla fija: `data/` guarda datasets y artefactos generados; `scr/procurewatch/data_sources/`
-guarda codigo de fuentes externas; `scr/procurewatch/agentN/` guarda logica de agente.
+Regla fija: `data/` guarda datasets y artefactos generados; `src/procurewatch/data_sources/`
+guarda codigo de fuentes externas; `src/procurewatch/agentN/` guarda logica de agente.
 
 ## Preguntas de continuidad para la proxima conversacion
 
-- "Que fecha y fuente cambio hoy?" -> revisar `docs/03_agent1_ingesta/SEGUIMIENTO_AGENT1.md`.
+- "Que fecha y fuente cambio hoy?" -> revisar `docs/archivo/SEGUIMIENTO_AGENT1.md`.
 - "Que ejecucion fue la ultima valida?" -> revisar `data/processed/agent1_run_report.json`.
 - "Que hay que hacer despues de datos nuevos?" -> revisar `docs/03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md`.
 
@@ -161,9 +161,9 @@ guarda codigo de fuentes externas; `scr/procurewatch/agentN/` guarda logica de a
 
 El foco pasa de cerrar Agent1 a activar la capa superior:
 
-- Agent2: usar `scr/procurewatch/agent2/` para red flags v1 sobre `agent2_contracts_canonical.parquet`.
+- Agent2: usar `src/procurewatch/agent2/` para red flags v1 sobre `agent2_contracts_canonical.parquet`.
 - Agent3: crear la capa de grafos y relaciones desde el canonico o PostgreSQL.
-- Agent4: mantener estructura importable bajo `scr/procurewatch/agent4/` con estado LangGraph,
+- Agent4: mantener estructura importable bajo `src/procurewatch/agent4/` con estado LangGraph,
   carga documental, chunking, embeddings, Qdrant y recuperacion.
 - Datos: PostgreSQL como canonico estructurado, Neo4j como derivado relacional y Qdrant como
   indice vectorial.

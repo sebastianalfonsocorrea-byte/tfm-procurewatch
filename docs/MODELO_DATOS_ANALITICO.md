@@ -3,7 +3,7 @@
 Fuente de requisitos: apartado 5.4 de `Propuesta Técnica_SASM.pdf`.
 
 La definición ejecutable y versionada se encuentra en
-`scr/procurewatch/agent1/analytical_schema.py`. El esquema declara todos los campos mínimos de
+`src/procurewatch/agent1/analytical_schema.py`. El esquema declara todos los campos mínimos de
 las entidades `CONTRATO` y `ADJUDICATARIO`.
 
 ## Responsabilidad por agente

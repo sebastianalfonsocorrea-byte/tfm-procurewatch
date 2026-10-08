@@ -30,7 +30,7 @@ Agent4 no calcula el score principal. Su funcion es:
 Ruta actual/recomendada:
 
 ```text
-scr/procurewatch/agent4/
+src/procurewatch/agent4/
   __init__.py
   state.py
   graph.py
@@ -44,8 +44,8 @@ scr/procurewatch/agent4/
   schemas.py
 ```
 
-Regla de estructura: `data/` guarda datasets y artefactos generados; `scr/procurewatch/data_sources/`
-guarda conectores/parsers de fuentes externas; `scr/procurewatch/agent4/` guarda NLP, RAG y
+Regla de estructura: `data/` guarda datasets y artefactos generados; `src/procurewatch/data_sources/`
+guarda conectores/parsers de fuentes externas; `src/procurewatch/agent4/` guarda NLP, RAG y
 orquestacion documental.
 
 ## Estado LangGraph v1

@@ -6,12 +6,12 @@ Objetivo: completar Agent3 como capa de grafos derivada del canonico, capaz de g
 
 Estado:
 
-- Existe `scr/procurewatch/agent3/` con schemas, loader, generacion de nodos/aristas y metricas basicas.
+- Existe `src/procurewatch/agent3/` con schemas, loader, generacion de nodos/aristas y metricas basicas.
 - Existe `tests/test_agent3.py`.
 - Trabajo base commiteado en `86239c9 feat(agent3): add graph foundation and organize docs`.
 - Validacion actual:
   - `python -m pytest -p no:cacheprovider tests\test_agent3.py`
-  - `python -m ruff check --no-cache scr\procurewatch\agent3 tests\test_agent3.py`
+  - `python -m ruff check --no-cache src\procurewatch\agent3 tests\test_agent3.py`
 
 Pendiente:
 
@@ -47,7 +47,7 @@ Estado:
 Validacion:
 
 - `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_cli.py`
-- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\cli.py tests\test_agent3.py tests\test_cli.py`
+- `python -m ruff check --no-cache src\procurewatch\agent3 src\procurewatch\cli.py tests\test_agent3.py tests\test_cli.py`
 
 Criterio de cierre:
 
@@ -217,7 +217,7 @@ Validacion:
 
 - `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py`
   - Resultado: 52 passed.
-- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
+- `python -m ruff check --no-cache src\procurewatch\agent3 src\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
   - Resultado: All checks passed.
 
 Siguiente foco:

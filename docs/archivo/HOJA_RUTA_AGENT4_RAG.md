@@ -6,7 +6,7 @@ Objetivo: completar Agent4 como capa documental capaz de cargar documentos, crea
 
 Estado:
 
-- Existe scaffold en `scr/procurewatch/agent4/`.
+- Existe scaffold en `src/procurewatch/agent4/`.
 - Ya hay:
   - `document_loader.py`
   - `chunking.py`
@@ -359,7 +359,7 @@ Validacion:
 
 - `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py`
   - Resultado: 52 passed.
-- `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
+- `python -m ruff check --no-cache src\procurewatch\agent3 src\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
   - Resultado: All checks passed.
 
 Siguiente foco:

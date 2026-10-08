@@ -19,12 +19,12 @@ Fuentes abiertas
 
 ## Modulos del repositorio
 
-- `scr/procurewatch/`: paquete Python comun, configuracion y utilidades compartidas.
-- `scr/procurewatch/agent1/`: pipeline de ingesta, canonizacion, cobertura y entrega a Agent2.
-- `scr/procurewatch/agent2/`: reglas de riesgo, scoring y estado de red flags.
-- `scr/procurewatch/agent3/` (previsto): grafos, relaciones, metricas de red y carga a Neo4j.
-- `scr/procurewatch/agent4/`: NLP, RAG documental y orquestacion LangGraph.
-- `scr/procurewatch/data_sources/`: conectores, descargas y parsers de BOE, PLACE y OpenTender.
+- `src/procurewatch/`: paquete Python comun, configuracion y utilidades compartidas.
+- `src/procurewatch/agent1/`: pipeline de ingesta, canonizacion, cobertura y entrega a Agent2.
+- `src/procurewatch/agent2/`: reglas de riesgo, scoring y estado de red flags.
+- `src/procurewatch/agent3/` (previsto): grafos, relaciones, metricas de red y carga a Neo4j.
+- `src/procurewatch/agent4/`: NLP, RAG documental y orquestacion LangGraph.
+- `src/procurewatch/data_sources/`: conectores, descargas y parsers de BOE, PLACE y OpenTender.
 - `api/`: futura capa de consulta para dashboard o agentes.
 - `frontend/`: dashboard Streamlit y visualizaciones.
 - `tests/`: pruebas unitarias e integracion ligera.
@@ -32,12 +32,12 @@ Fuentes abiertas
 Regla de separacion:
 
 - `data/` guarda datasets reales, muestras y artefactos generados.
-- `scr/procurewatch/data_sources/` guarda codigo para leer fuentes externas.
-- `scr/procurewatch/agentN/` guarda la logica propia de cada agente.
+- `src/procurewatch/data_sources/` guarda codigo para leer fuentes externas.
+- `src/procurewatch/agentN/` guarda la logica propia de cada agente.
 
 ## Decisiones de arranque
 
-1. El codigo compartido vive en el paquete `procurewatch`, dentro de `scr/`, para respetar la
+1. El codigo compartido vive en el paquete `procurewatch`, dentro de `src/`, para respetar la
    estructura ya documentada en el TFM.
 2. El primer comando ejecutable es `procurewatch doctor`; sirve para verificar entorno antes de
    descargar datos o levantar servicios.

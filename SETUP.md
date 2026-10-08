@@ -52,8 +52,8 @@ Los extras tienen esta intencion:
 Estructura relevante:
 
 - `data/`: datasets reales, muestras y artefactos generados.
-- `scr/procurewatch/data_sources/`: codigo para leer BOE, PLACE, OpenTender y fuentes externas.
-- `scr/procurewatch/agent1/`, `agent2/`, `agent4/`: logica propia de cada agente.
+- `src/procurewatch/data_sources/`: codigo para leer BOE, PLACE, OpenTender y fuentes externas.
+- `src/procurewatch/agent1/`, `agent2/`, `agent4/`: logica propia de cada agente.
 
 ## 4. Configurar entorno local
 
@@ -87,8 +87,8 @@ El comando genera datasets Parquet en `data/processed` y un reporte JSON de cali
 
 ```powershell
 python -m pytest tests
-python -m ruff check api scr tests
-python -m ruff format api scr tests
+python -m ruff check api src tests
+python -m ruff format api src tests
 ```
 
 ## 8. Servicios locales pendientes
@@ -205,5 +205,5 @@ Continuar con:
 - cargar el canonico en PostgreSQL;
 - derivar nodos y relaciones para Neo4j;
 - preparar coleccion Qdrant `procurement_documents`;
-- mantener `scr/procurewatch/agent4/` para LangGraph/RAG;
+- mantener `src/procurewatch/agent4/` para LangGraph/RAG;
 - plantear Agent2 con red flags v1.

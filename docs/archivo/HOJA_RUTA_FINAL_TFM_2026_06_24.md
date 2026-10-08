@@ -82,7 +82,7 @@ Estado esperado:
 Comandos base:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 python -m procurewatch doctor
 python -m procurewatch run-agent2 --input data/processed/agent2_contracts_canonical.parquet --output-dir data/processed
 ```
@@ -124,14 +124,14 @@ Artefactos esperados:
 Regeneracion Agent3:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 python -c "from procurewatch.cli import main; raise SystemExit(main(['run-agent3','--input','data/processed/agent3_agent4_demo_2026_06_23/agent2_contracts_canonical_demo.parquet','--output-dir','data/processed/agent3_agent4_demo_2026_06_23']))"
 ```
 
 Regeneracion Agent4:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 python -c "from procurewatch.cli import main; raise SystemExit(main(['agent4-case-context','--contract-key','PW-2024-0001','--question','evidencia documental y riesgos explicables','--canonical-path','data/processed/agent3_agent4_demo_2026_06_23/agent2_contracts_canonical_demo.parquet','--agent3-features-path','data/processed/agent3_agent4_demo_2026_06_23/agent3_agent2_features.parquet','--output','data/processed/agent3_agent4_demo_2026_06_23/agent4_case_context_integrated_demo.json']))"
 ```
 
@@ -157,7 +157,7 @@ frontend/agent3_demo.py
 Ejecucion:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 $env:PROCUREWATCH_AGENT3_DEMO_DIR="data/processed/agent3_agent4_demo_2026_06_23"
 $env:PROCUREWATCH_AGENT4_CASE_CONTEXT="data/processed/agent3_agent4_demo_2026_06_23/agent4_case_context_integrated_demo.json"
 streamlit run frontend/agent3_demo.py
@@ -189,18 +189,18 @@ la rama principal.
 Validacion completa:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 python -m procurewatch doctor
 python -m pytest tests
-python -m ruff check api scr tests frontend
+python -m ruff check api src tests frontend
 ```
 
 Validacion enfocada si el tiempo aprieta:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 python -m pytest tests\test_agent1.py tests\test_agent2.py tests\test_agent3.py tests\test_agent4.py tests\test_cli.py
-python -m ruff check scr\procurewatch frontend tests\test_agent3.py tests\test_agent4.py
+python -m ruff check src\procurewatch frontend tests\test_agent3.py tests\test_agent4.py
 ```
 
 Criterio de cierre:

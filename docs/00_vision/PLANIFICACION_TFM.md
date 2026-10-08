@@ -95,11 +95,11 @@ La arquitectura logica se divide en los siguientes modulos:
 - `data/processed/`: datasets limpios, normalizados y versionables.
 - `data/processed_sample/`: salidas de prueba, separadas de resultados finales.
 - `data/synthetic/`: muestras reproducibles para desarrollo.
-- `scr/procurewatch/agent1/`: ingesta, validacion, normalizacion OCDS y entrega canonica.
-- `scr/procurewatch/agent2/`: reglas, scoring y modelos de anomalias.
-- `scr/procurewatch/agent3/`: futuro modulo de grafos y relaciones.
-- `scr/procurewatch/agent4/`: web scraping/parsing HTML, NLP, embeddings, Qdrant y RAG documental.
-- `scr/procurewatch/data_sources/`: conectores/parsers de fuentes externas.
+- `src/procurewatch/agent1/`: ingesta, validacion, normalizacion OCDS y entrega canonica.
+- `src/procurewatch/agent2/`: reglas, scoring y modelos de anomalias.
+- `src/procurewatch/agent3/`: futuro modulo de grafos y relaciones.
+- `src/procurewatch/agent4/`: web scraping/parsing HTML, NLP, embeddings, Qdrant y RAG documental.
+- `src/procurewatch/data_sources/`: conectores/parsers de fuentes externas.
 - `models/`: configuracion de modelos locales o artefactos entrenados.
 - `api/`: servicios de consulta para dashboard o agentes.
 - `frontend/`: Streamlit/dashboard, Plotly y visualizacion de grafo.
@@ -108,8 +108,8 @@ La arquitectura logica se divide en los siguientes modulos:
 - `tests/`: pruebas unitarias, integracion y regresion.
 
 Regla de responsabilidad: `data/` almacena datasets y artefactos generados;
-`scr/procurewatch/data_sources/` almacena codigo para leer fuentes externas;
-`scr/procurewatch/agentN/` almacena la logica de cada agente.
+`src/procurewatch/data_sources/` almacena codigo para leer fuentes externas;
+`src/procurewatch/agentN/` almacena la logica de cada agente.
 
 ## Herramientas previstas
 
@@ -439,7 +439,7 @@ Prioridad de ejecucion:
 2. Crear esquema minimo PostgreSQL.
 3. Definir red flags v1 de Agent2.
 4. Generar nodos/edges para Neo4j desde el canonico.
-5. Mantener y ampliar `scr/procurewatch/agent4/`.
+5. Mantener y ampliar `src/procurewatch/agent4/`.
 6. Preparar coleccion Qdrant `procurement_documents`.
 7. Ejecutar primera PoC de recuperacion documental.
 ## Cierre de sesion 31/05/2026

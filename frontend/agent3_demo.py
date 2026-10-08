@@ -16,9 +16,9 @@ import streamlit as st
 from plotly.subplots import make_subplots
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCR_DIR = PROJECT_ROOT / "scr"
-if str(SCR_DIR) not in sys.path:
-    sys.path.insert(0, str(SCR_DIR))
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 from procurewatch.agent3.demo import (  # noqa: E402
     build_demo_kpis,

@@ -14,7 +14,7 @@ Regla de decision: los `.md` del repositorio mandan. SASM y maqueta solo corrige
 
 ## Alcance tecnico de hoy
 
-- Crear `scr/procurewatch/agent3/` como modulo importable.
+- Crear `src/procurewatch/agent3/` como modulo importable.
 - Leer solo `data/processed/agent2_contracts_canonical.parquet` o estructuras equivalentes en tests.
 - Generar nodos `Buyer`, `Supplier`, `Contract`, `CPV` y `Source`.
 - Generar aristas `PUBLISHED`, `AWARDED_TO`, `HAS_CPV` y `FROM_SOURCE`.

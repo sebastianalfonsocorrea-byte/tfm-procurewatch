@@ -80,11 +80,11 @@ python -m pip install -e ".[dev,data,db,graph,rag,frontend]"
   - `requests` para descarga HTTP de fuentes PLACE.
   - `beautifulsoup4` / `lxml` (definidas como objetivo y auxiliares para scraping y parseo HTML/XML).
 
-## 3) Estructura de codigo (scr/)
+## 3) Estructura de codigo (src/)
 
 ### 3.1 CLI y orquestacion local
 
-- `scr/procurewatch/cli.py`
+- `src/procurewatch/cli.py`
   - Comandos base:
     - `doctor`
     - `normalize-boe`
@@ -93,12 +93,12 @@ python -m pip install -e ".[dev,data,db,graph,rag,frontend]"
     - `normalize-opentender`
     - `run-agent1`
     - `run-batch`
-- `scr/procurewatch/__main__.py`
+- `src/procurewatch/__main__.py`
   - Ejecuta `procurewatch` como entrada estandar.
 
 ### 3.2 Configuracion
 
-- `scr/procurewatch/settings.py`
+- `src/procurewatch/settings.py`
   - Variables de entorno:
     - `PROCUREWATCH_DATA_DIR`
     - `PROCUREWATCH_RAW_DATA_DIR`
@@ -119,44 +119,44 @@ python -m pip install -e ".[dev,data,db,graph,rag,frontend]"
 Estos modulos son codigo, no almacenamiento de datasets. Los datos reales y artefactos generados
 viven bajo `data/`.
 
-- `scr/procurewatch/data_sources/boe.py`
+- `src/procurewatch/data_sources/boe.py`
   - Parser del CSV BOE
   - Limpieza de fechas, CPV, importes y campos clave
   - Output principal: `contracts_boe*.parquet` y `data_quality_report.json`
-- `scr/procurewatch/data_sources/place.py`
+- `src/procurewatch/data_sources/place.py`
   - Manifest + descargas de PLACE.
-- `scr/procurewatch/data_sources/place_normalize.py`
+- `src/procurewatch/data_sources/place_normalize.py`
   - Parser de ZIP/Atom/XML de PLACE.
   - Output principal: `contracts_place*.parquet` y `contracts_place_quality.json`
-- `scr/procurewatch/data_sources/opentender.py`
+- `src/procurewatch/data_sources/opentender.py`
   - Parser de OCDS JSON (OpenTender)
   - Output principal: `contracts_opentender*.parquet` y calidad.
 
 ### 3.4 Pipeline de Agent1
 
-- `scr/procurewatch/agent1/pipeline.py`
+- `src/procurewatch/agent1/pipeline.py`
   - Ejecuta BOE + PLACE + OpenTender en un flujo unico.
   - Construye cobertura de claves (`contract_key_canon`) y exporta:
     - `agent1_contract_key_coverage.parquet`
     - `agent1_contract_key_coverage_preview.csv`
     - `agent1_run_report.json`
-- `scr/procurewatch/agent1/__init__.py`
+- `src/procurewatch/agent1/__init__.py`
   - Reexporta la API publica para mantener `from procurewatch.agent1 import run_agent1`.
 
 ### 3.5 Agent2
 
-- `scr/procurewatch/agent2/`
+- `src/procurewatch/agent2/`
   - Scaffold de schemas, reglas, scoring y estado para red flags.
 
 ### 3.6 Agent3
 
-- `scr/procurewatch/agent3/` (previsto)
+- `src/procurewatch/agent3/` (previsto)
   - Capa de grafos y relaciones desde el canonico o PostgreSQL.
   - Plan detallado en [Plan Agent3 grafos](../04_agentes/PLAN_AGENTE3_GRAFOS.md).
 
 ### 3.7 Batch orchestration
 
-- `scr/procurewatch/batch.py`
+- `src/procurewatch/batch.py`
   - `run_batch` para operación recurrente semanal/mensual.
   - Snapshot de fuentes por hash (`sha256`) para detectar cambios.
   - Estado persistido:
@@ -172,8 +172,8 @@ viven bajo `data/`.
 - `data/processed_sample/`: salidas de prueba.
 - `data/synthetic/`: datos de prueba/demos.
 
-Regla de separacion: `data/` guarda datasets y artefactos; `scr/procurewatch/data_sources/`
-guarda conectores/parsers; `scr/procurewatch/agentN/` guarda logica de agente.
+Regla de separacion: `data/` guarda datasets y artefactos; `src/procurewatch/data_sources/`
+guarda conectores/parsers; `src/procurewatch/agentN/` guarda logica de agente.
 
 ### 4.2 Formatos concretos
 
@@ -228,7 +228,7 @@ Decision corregida:
 Estructura objetivo de Agent4:
 
 ```text
-scr/procurewatch/agent4/
+src/procurewatch/agent4/
   state.py
   graph.py
   nodes.py

@@ -63,7 +63,7 @@ Fuera de alcance en `sebas`:
 Comando recomendado:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 $env:PROCUREWATCH_AGENT3_DEMO_DIR="data/processed/agent3_agent4_demo_2026_06_23"
 $env:PROCUREWATCH_AGENT4_CASE_CONTEXT="data/processed/agent3_agent4_demo_2026_06_23/agent4_case_context_integrated_demo.json"
 streamlit run frontend/agent3_demo.py
@@ -118,7 +118,7 @@ Flujo:
 4. Ejecutar validacion completa:
 
 ```powershell
-$env:PYTHONPATH="scr"
+$env:PYTHONPATH="src"
 python -m pytest tests
 python -m procurewatch doctor
 python -m procurewatch run-agent2 --input data/processed_sample/agent2_contracts_canonical.parquet --output-dir .tmp/agent2

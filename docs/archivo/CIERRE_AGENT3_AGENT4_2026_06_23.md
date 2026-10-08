@@ -88,7 +88,7 @@ Validacion enfocada ejecutada tras el cierre:
 
 ```powershell
 python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py
-python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py
+python -m ruff check --no-cache src\procurewatch\agent3 src\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py
 ```
 
 Resultado:
@@ -132,7 +132,7 @@ Validacion completa posterior:
 
 - `$env:PYTHONPATH='scr'; python -m pytest`
   - Resultado: 111 passed, 1 skipped.
-- `$env:PYTHONPATH='scr'; python -m ruff check frontend scr tests`
+- `$env:PYTHONPATH='scr'; python -m ruff check frontend src tests`
   - Resultado: All checks passed.
 
 ## Lectura para memoria o defensa

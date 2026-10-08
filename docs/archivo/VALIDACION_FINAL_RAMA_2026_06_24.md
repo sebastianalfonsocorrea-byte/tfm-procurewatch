@@ -15,7 +15,7 @@ detectadas son de entorno local: servicios opcionales sin configurar y cache de 
 ```powershell
 $env:PYTHONPATH='scr'; python -m procurewatch.cli doctor
 $env:PYTHONPATH='scr'; python -m pytest tests
-$env:PYTHONPATH='scr'; python -m ruff check api scr tests frontend
+$env:PYTHONPATH='scr'; python -m ruff check api src tests frontend
 $env:PYTHONPATH='scr'; python -m procurewatch.cli run-integrated-demo
 $env:PYTHONPATH='scr'; python -m procurewatch.cli validate-dashboard-demo
 git status -sb --untracked-files=all
@@ -27,7 +27,7 @@ git status -sb --untracked-files=all
 |---|---|---|
 | `doctor` | OK | Python, carpetas locales y modelos detectados; PostgreSQL, Neo4j, Qdrant y Ollama aparecen como servicios opcionales pendientes. |
 | `pytest tests` | OK | `111 passed, 1 skipped`. |
-| `ruff check api scr tests frontend` | OK | `All checks passed`; ruff no pudo escribir cache local por permiso denegado. |
+| `ruff check api src tests frontend` | OK | `All checks passed`; ruff no pudo escribir cache local por permiso denegado. |
 | `run-integrated-demo` | OK | `ready`; 3 contratos, 11 nodos, 13 aristas, `risk_score=0.5`, 2 red flags, 2 evidencias y 2 citas. |
 | `validate-dashboard-demo` | OK | `ready`; 3 contratos, 11 nodos, 13 aristas, 2 evidencias, 2 citas y 0 excepciones headless. |
 | `git status -sb --untracked-files=all` | OK con cambios ajenos | La rama queda `ahead 9` antes de este informe; hay cambios no relacionados fuera del hito. |

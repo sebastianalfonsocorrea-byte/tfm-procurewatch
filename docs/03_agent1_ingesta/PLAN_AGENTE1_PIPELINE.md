@@ -2,10 +2,10 @@
 
 Objetivo: dejar una base reproducible para el `agent1` que consuma varias fuentes de contratacion y entregue tablas limpias para contraste entre BOE, PLACE y OpenTender.
 
-Ubicacion de codigo: `scr/procurewatch/agent1/pipeline.py`, reexportado desde
-`scr/procurewatch/agent1/__init__.py` para conservar `from procurewatch.agent1 import run_agent1`.
+Ubicacion de codigo: `src/procurewatch/agent1/pipeline.py`, reexportado desde
+`src/procurewatch/agent1/__init__.py` para conservar `from procurewatch.agent1 import run_agent1`.
 
-Modelo analítico objetivo: `scr/procurewatch/agent1/analytical_schema.py`, documentado en
+Modelo analítico objetivo: `src/procurewatch/agent1/analytical_schema.py`, documentado en
 `docs/MODELO_DATOS_ANALITICO.md`.
 
 ## Estado al 31/05/2026
@@ -155,7 +155,7 @@ Para validacion de cambios locales:
 
 ```bash
 python -m unittest tests.test_agent1 tests.test_cli
-python -m py_compile scr/procurewatch/agent1/pipeline.py scr/procurewatch/data_sources/{boe,opentender,place,place_normalize}.py
+python -m py_compile src/procurewatch/agent1/pipeline.py src/procurewatch/data_sources/{boe,opentender,place,place_normalize}.py
 ```
 
 Para desarrollo rapido con muestras:
@@ -177,8 +177,8 @@ Regla operativa:
 - `data/processed`: resultado real de la corrida completa.
 - `data/synthetic/agent1_sample`: muestras reproducibles para tests de desarrollo.
 - `data/processed_sample`: salidas de prueba; nunca se usan como evidencia final del TFM.
-- `scr/procurewatch/data_sources`: conectores/parsers; no almacena datos.
-- `scr/procurewatch/agent1`: logica propia de Agent1.
+- `src/procurewatch/data_sources`: conectores/parsers; no almacena datos.
+- `src/procurewatch/agent1`: logica propia de Agent1.
 - No usar `--force-rebuild` salvo cambios de parser, cambios de fuente, auditoria o cierre de
   resultados.
 

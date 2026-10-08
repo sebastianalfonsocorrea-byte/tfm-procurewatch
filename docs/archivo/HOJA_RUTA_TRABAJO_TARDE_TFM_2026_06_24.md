@@ -59,9 +59,9 @@ Trabajo:
 
 Archivos probables:
 
-- `scr/procurewatch/agent1/pipeline.py`
-- `scr/procurewatch/agent1/analytical_dataset.py`
-- `scr/procurewatch/agent1/coverage_report.py`
+- `src/procurewatch/agent1/pipeline.py`
+- `src/procurewatch/agent1/analytical_dataset.py`
+- `src/procurewatch/agent1/coverage_report.py`
 - `tests/test_agent1.py`
 - `tests/test_agent1_analytical_dataset.py`
 
@@ -75,7 +75,7 @@ Validacion:
 
 ```bash
 python -m pytest tests/test_agent1.py tests/test_agent1_analytical_dataset.py tests/test_agent1_coverage_report.py
-python -m ruff check scr/procurewatch/agent1 tests/test_agent1.py tests/test_agent1_analytical_dataset.py
+python -m ruff check src/procurewatch/agent1 tests/test_agent1.py tests/test_agent1_analytical_dataset.py
 ```
 
 Decision de cierre:
@@ -99,8 +99,8 @@ Trabajo:
 
 Archivos probables:
 
-- `scr/procurewatch/agent1/pipeline.py`
-- `scr/procurewatch/agent1/coverage_report.py`
+- `src/procurewatch/agent1/pipeline.py`
+- `src/procurewatch/agent1/coverage_report.py`
 - `tests/test_agent1.py`
 
 Artefactos esperados:
@@ -136,10 +136,10 @@ Trabajo:
 
 Archivos probables:
 
-- `scr/procurewatch/agent2/pipeline.py`
-- `scr/procurewatch/agent2/mvp_pipeline.py`
-- `scr/procurewatch/agent2/scoring.py`
-- `scr/procurewatch/agent2/mvp_scoring.py`
+- `src/procurewatch/agent2/pipeline.py`
+- `src/procurewatch/agent2/mvp_pipeline.py`
+- `src/procurewatch/agent2/scoring.py`
+- `src/procurewatch/agent2/mvp_scoring.py`
 - `tests/test_agent2.py`
 
 Artefactos esperados:
@@ -151,7 +151,7 @@ Validacion:
 
 ```bash
 python -m pytest tests/test_agent2.py tests/test_agent3.py
-python -m ruff check scr/procurewatch/agent2 scr/procurewatch/agent3 tests/test_agent2.py tests/test_agent3.py
+python -m ruff check src/procurewatch/agent2 src/procurewatch/agent3 tests/test_agent2.py tests/test_agent3.py
 ```
 
 Decision de cierre:
@@ -175,8 +175,8 @@ Trabajo:
 
 Archivos probables:
 
-- `scr/procurewatch/batch.py`
-- `scr/procurewatch/cli.py`
+- `src/procurewatch/batch.py`
+- `src/procurewatch/cli.py`
 - `tests/test_batch.py`
 
 Artefactos esperados:
@@ -188,7 +188,7 @@ Validacion:
 
 ```bash
 python -m pytest tests/test_batch.py tests/test_cli.py
-python -m ruff check scr/procurewatch/batch.py scr/procurewatch/cli.py tests/test_batch.py tests/test_cli.py
+python -m ruff check src/procurewatch/batch.py src/procurewatch/cli.py tests/test_batch.py tests/test_cli.py
 ```
 
 Decision de cierre:
@@ -213,7 +213,7 @@ Trabajo:
 Archivos probables:
 
 - `data/synthetic/agent4_corpus/*`
-- `scr/procurewatch/agent4/*`
+- `src/procurewatch/agent4/*`
 - `tests/test_agent4.py`
 
 Artefactos esperados:
@@ -226,7 +226,7 @@ Validacion:
 
 ```bash
 python -m pytest tests/test_agent4.py
-python -m ruff check scr/procurewatch/agent4 tests/test_agent4.py
+python -m ruff check src/procurewatch/agent4 tests/test_agent4.py
 ```
 
 Decision de cierre:
@@ -296,7 +296,7 @@ streamlit run frontend/agent3_demo.py
 Validacion:
 
 ```bash
-python -m ruff check frontend scr tests
+python -m ruff check frontend src tests
 ```
 
 Decision de cierre:
@@ -351,7 +351,7 @@ Comandos:
 ```bash
 python -m procurewatch.cli doctor
 python -m pytest tests
-python -m ruff check api scr tests frontend
+python -m ruff check api src tests frontend
 git status -sb --untracked-files=all
 ```
 

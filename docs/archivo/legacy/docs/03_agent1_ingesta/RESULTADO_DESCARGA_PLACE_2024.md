@@ -74,7 +74,7 @@ contracts_boe_cpv71.parquet
 
 ## Resultado posterior 31/05/2026
 
-El parser incremental ya esta implementado en `scr/procurewatch/data_sources/place_normalize.py`.
+El parser incremental ya esta implementado en `src/procurewatch/data_sources/place_normalize.py`.
 
 Resultados observados:
 

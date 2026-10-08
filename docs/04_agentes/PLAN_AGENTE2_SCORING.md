@@ -13,11 +13,11 @@ Entrada actual:
 
 Codigo base:
 
-- `scr/procurewatch/agent2/schemas.py`
-- `scr/procurewatch/agent2/rules.py`
-- `scr/procurewatch/agent2/scoring.py`
-- `scr/procurewatch/agent2/pipeline.py`
-- `scr/procurewatch/agent2/state.py`
+- `src/procurewatch/agent2/schemas.py`
+- `src/procurewatch/agent2/rules.py`
+- `src/procurewatch/agent2/scoring.py`
+- `src/procurewatch/agent2/pipeline.py`
+- `src/procurewatch/agent2/state.py`
 
 Estado actualizado 23/06/2026:
 
@@ -43,8 +43,8 @@ Integracion `integration/multiagent`:
 - La separacion evita romper imports y consumidores existentes mientras se valida el encaje entre
   Agent1/2 y Agent3/4 en la rama de laboratorio.
 
-Regla de estructura: `data/` guarda datasets y artefactos; `scr/procurewatch/data_sources/`
-guarda conectores/parsers externos; `scr/procurewatch/agent2/` guarda la logica de scoring.
+Regla de estructura: `data/` guarda datasets y artefactos; `src/procurewatch/data_sources/`
+guarda conectores/parsers externos; `src/procurewatch/agent2/` guarda la logica de scoring.
 
 El dataset canonico tiene 51.720 filas y estado de calidad `ok`. La ausencia actual de
 intersecciones entre BOE/PLACE/OpenTender por `contract_key_canon` no bloquea Agent2, pero limita
@@ -139,11 +139,11 @@ Neo4j entra cuando haya que calcular patrones relacionales:
 Validacion:
 
 - `python -m pytest tests\test_agent2.py tests\test_agent4.py`
-- `python -m ruff check scr\procurewatch\agent2 scr\procurewatch\agent4 tests\test_agent2.py tests\test_agent4.py scr\procurewatch\cli.py`
+- `python -m ruff check src\procurewatch\agent2 src\procurewatch\agent4 tests\test_agent2.py tests\test_agent4.py src\procurewatch\cli.py`
 - `python -m pytest tests`: 122 pruebas superadas y 1 omitida en el entorno minimo por faltar
   SQLAlchemy para la integracion PostgreSQL opcional; con SQLAlchemy disponible se observan
   123 pruebas superadas sin omisiones.
-- `python -m ruff check api scr tests frontend`: sin errores.
+- `python -m ruff check api src tests frontend`: sin errores.
 
 ## Evaluacion de sensibilidad 15/07/2026
 

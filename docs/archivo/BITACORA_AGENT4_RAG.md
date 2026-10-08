@@ -13,7 +13,7 @@ Contexto:
 
 Estado comprobado del repo:
 
-- `scr/procurewatch/agent4/` contiene carga documental, chunking, retrieval local, embeddings,
+- `src/procurewatch/agent4/` contiene carga documental, chunking, retrieval local, embeddings,
   Qdrant store, indexacion, nodos, estado y grafo.
 - Existe corpus sintetico trazable en `data/synthetic/agent4_corpus/` con TXT, HTML y Markdown.
 - Comandos CLI disponibles:
@@ -66,7 +66,7 @@ Estado comprobado del repo:
 - Validacion tras Hito 6:
   - `python -m pytest tests\test_agent4.py`
   - Resultado: 31 tests pasados.
-  - `python -m ruff check scr\procurewatch\agent4 tests\test_agent4.py scr\procurewatch\cli.py`
+  - `python -m ruff check src\procurewatch\agent4 tests\test_agent4.py src\procurewatch\cli.py`
   - Resultado: OK.
   - `python -m pytest tests`
   - Resultado: 50 tests pasados y 5 fallos en Agent1/Batch por permisos de `TemporaryDirectory`
@@ -83,7 +83,7 @@ Estado comprobado del repo:
 - Validacion tras Hito 7:
   - `python -m pytest tests\test_agent4.py`
   - Resultado: 34 tests pasados.
-  - `python -m ruff check scr\procurewatch\agent4 tests\test_agent4.py scr\procurewatch\cli.py`
+  - `python -m ruff check src\procurewatch\agent4 tests\test_agent4.py src\procurewatch\cli.py`
   - Resultado: OK.
   - `python -m pytest tests`
   - Resultado: 53 tests pasados y 5 fallos en Agent1/Batch por permisos de `TemporaryDirectory`
@@ -97,7 +97,7 @@ Estado comprobado del repo:
   - Validacion enfocada:
     - `python -m pytest tests\test_agent4.py`
     - Resultado: 39 tests pasados.
-    - `python -m ruff check scr\procurewatch\agent4 tests\test_agent4.py`
+    - `python -m ruff check src\procurewatch\agent4 tests\test_agent4.py`
     - Resultado: OK.
 - Cierre integrado Agent3-Agent4:
   - Se crea [Cierre integrado Agent3-Agent4 2026-06-23](CIERRE_AGENT3_AGENT4_2026_06_23.md).
@@ -116,7 +116,7 @@ Estado comprobado del repo:
   - Validacion enfocada final:
     - `python -m pytest -p no:cacheprovider tests\test_agent3.py tests\test_agent4.py`
     - Resultado: 52 tests pasados.
-    - `python -m ruff check --no-cache scr\procurewatch\agent3 scr\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
+    - `python -m ruff check --no-cache src\procurewatch\agent3 src\procurewatch\agent4 tests\test_agent3.py tests\test_agent4.py`
     - Resultado: OK.
 
 Estado por hitos:

@@ -32,7 +32,7 @@ Agent1.
 Resumen base:
 
 - Configuracion Python instalable desde `pyproject.toml`.
-- Paquete inicial `procurewatch` bajo `scr/`.
+- Paquete inicial `procurewatch` bajo `src/`.
 - Comando de diagnostico `procurewatch doctor`.
 - Pruebas minimas para validar configuracion y CLI.
 - Documentacion inicial de setup y arquitectura.
@@ -50,17 +50,17 @@ docs/                Planificacion, memoria y documentacion metodologica.
 frontend/            Dashboard Streamlit y visualizaciones.
 models/              Artefactos de modelos locales o entrenados.
 notebooks/           Exploracion reproducible.
-scr/procurewatch/    Codigo Python importable del proyecto.
-scr/procurewatch/agent1/ Pipeline de ingesta/canonizacion.
-scr/procurewatch/agent2/ Red flags y scoring.
-scr/procurewatch/agent3/ Futuro analisis de grafos y relaciones.
-scr/procurewatch/agent4/ NLP/RAG/LangGraph.
-scr/procurewatch/data_sources/ Conectores/parsers de fuentes externas.
+src/procurewatch/    Codigo Python importable del proyecto.
+src/procurewatch/agent1/ Pipeline de ingesta/canonizacion.
+src/procurewatch/agent2/ Red flags y scoring.
+src/procurewatch/agent3/ Futuro analisis de grafos y relaciones.
+src/procurewatch/agent4/ NLP/RAG/LangGraph.
+src/procurewatch/data_sources/ Conectores/parsers de fuentes externas.
 tests/               Pruebas automatizadas.
 ```
 
-Regla de estructura: `data/` contiene datos y artefactos generados; `scr/procurewatch/data_sources/`
-contiene codigo para leer fuentes externas; `scr/procurewatch/agentN/` contiene la logica propia
+Regla de estructura: `data/` contiene datos y artefactos generados; `src/procurewatch/data_sources/`
+contiene codigo para leer fuentes externas; `src/procurewatch/agentN/` contiene la logica propia
 de cada agente.
 
 ## Documentacion operativa obligatoria para continuidad
@@ -71,7 +71,7 @@ de cada agente.
 - `docs/04_agentes/PLAN_AGENTE2_SCORING.md` (planteamiento de red flags y scoring).
 - `docs/04_agentes/PLAN_AGENTE3_GRAFOS.md` (grafos, Neo4j, NetworkX y relaciones).
 - `docs/04_agentes/PLAN_AGENTE4_RAG_LANGGRAPH.md` (estructura Agent4 con NLP/RAG/LangGraph).
-- `docs/04_agentes/SEGUIMIENTO_AGENTES.md` (seguimiento transversal de agentes).
+- `docs/archivo/SEGUIMIENTO_AGENTES.md` (seguimiento transversal de agentes).
 - `docs/01_arquitectura/PLAN_CAPA_DATOS_AGENTES.md` (PostgreSQL, Neo4j, Qdrant e IDs comunes).
 - `docs/03_agent1_ingesta/PLAN_INGESTA_BATCH_AGENT1.md` (batch semanal/mensual + actualización total).
 - `docs/01_arquitectura/ARQUITECTURA_BATCH_Y_GRAFOS.md` (arquitectura de updates y Neo4j).
@@ -183,7 +183,7 @@ El comando genera ademas:
 
 ```bash
 python -m unittest tests.test_agent1 tests.test_cli
-python -m py_compile scr/procurewatch/agent1/pipeline.py scr/procurewatch/data_sources/{boe,opentender,place,place_normalize}.py
+python -m py_compile src/procurewatch/agent1/pipeline.py src/procurewatch/data_sources/{boe,opentender,place,place_normalize}.py
 ```
 
 ## Cierre de sesion (31/05/2026)

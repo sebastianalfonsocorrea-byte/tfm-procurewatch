@@ -84,21 +84,21 @@ all = [
 procurewatch = "procurewatch.cli:main"
 
 [tool.setuptools.package-dir]
-"" = "scr"
+"" = "src"
 
 [tool.setuptools.packages.find]
-where = ["scr"]
+where = ["src"]
 include = ["procurewatch*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["scr"]
+pythonpath = ["src"]
 addopts = ["-p", "no:cacheprovider"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["api", "scr", "scripts", "tests"]
+src = ["api", "src", "scripts", "tests"]
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "UP"]

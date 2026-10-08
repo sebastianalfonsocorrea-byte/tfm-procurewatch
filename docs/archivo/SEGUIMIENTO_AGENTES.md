@@ -110,7 +110,7 @@ Trazabilidad.
   - Resultado: OK; servicios PostgreSQL, Neo4j, Qdrant y Ollama quedan como opcionales.
 - `$env:PYTHONPATH='scr'; python -m pytest`
   - Resultado: 111 passed, 1 skipped.
-- `$env:PYTHONPATH='scr'; python -m ruff check frontend scr tests`
+- `$env:PYTHONPATH='scr'; python -m ruff check frontend src tests`
   - Resultado: All checks passed.
 - `$env:PYTHONPATH='scr'; python -m procurewatch.cli run-integrated-demo`
   - Resultado: `ready`, 3 contratos, 11 nodos, 13 aristas, score 0.5, 2 evidencias y 2 citas.
@@ -125,7 +125,7 @@ Trazabilidad.
 - Resultados:
   - `doctor`: OK; PostgreSQL, Neo4j, Qdrant y Ollama quedan como servicios opcionales pendientes.
   - `pytest tests`: 111 passed, 1 skipped.
-  - `ruff check api scr tests frontend`: All checks passed; aviso local de cache no escribible.
+  - `ruff check api src tests frontend`: All checks passed; aviso local de cache no escribible.
   - `run-integrated-demo`: ready.
   - `validate-dashboard-demo`: ready.
 - Quedan cambios no relacionados fuera del hito en `.gitignore`, `docs/README.md`,
@@ -164,8 +164,8 @@ Decision de continuidad:
 
 - `data/` guarda datasets y artefactos generados; los artefactos de `data/processed` no se
   versionan y deben poder regenerarse.
-- `scr/procurewatch/data_sources/` guarda conectores y parsers de fuentes externas.
-- `scr/procurewatch/agentN/` guarda la logica propia de cada agente.
+- `src/procurewatch/data_sources/` guarda conectores y parsers de fuentes externas.
+- `src/procurewatch/agentN/` guarda la logica propia de cada agente.
 - Ningun agente debe afirmar fraude; todos priorizan revision humana con evidencia trazable.
 
 ## Bloqueos y cautelas
