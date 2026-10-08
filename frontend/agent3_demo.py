@@ -4,6 +4,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass
+from html import escape
 from pathlib import Path
 from typing import Any
 
@@ -41,10 +42,10 @@ DEFAULT_TEMPORAL_SCORES = (
 )
 
 NODE_TYPE_LABELS = {
-    "Buyer": "Comprador publico",
+    "Buyer": "Comprador público",
     "Supplier": "Empresa adjudicataria",
     "Contract": "Contrato",
-    "CPV": "Categoria CPV",
+    "CPV": "Categoría CPV",
     "Source": "Fuente de datos",
 }
 
@@ -57,20 +58,20 @@ EDGE_TYPE_LABELS = {
 
 FLAG_LABELS = {
     "risky_procedure": "Procedimiento con menor publicidad",
-    "awarded_above_estimate": "Adjudicacion sobre el valor estimado",
+    "awarded_above_estimate": "Adjudicación sobre el valor estimado",
     "missing_supplier": "Proveedor no informado",
     "single_bidder": "Baja concurrencia",
 }
 
 FLAG_EXPLANATIONS = {
     "risky_procedure": (
-        "El procedimiento reduce publicidad o competencia y eleva la prioridad de revision."
+        "El procedimiento reduce publicidad o competencia y eleva la prioridad de revisión."
     ),
     "awarded_above_estimate": (
         "El importe adjudicado supera el valor estimado registrado para el contrato."
     ),
-    "missing_supplier": "Falta una entidad clave para explicar la adjudicacion.",
-    "single_bidder": "La concurrencia limitada puede elevar la prioridad de revision.",
+    "missing_supplier": "Falta una entidad clave para explicar la adjudicación.",
+    "single_bidder": "La concurrencia limitada puede elevar la prioridad de revisión.",
 }
 
 RISK_LEVEL_LABELS = {
@@ -124,7 +125,7 @@ def main() -> None:
         _render_missing_artifacts(output_dir, missing)
         return
 
-    data = load_agent3_demo_data(output_dir)
+    data = _cached_demo_data(str(output_dir), _mtime_signature(output_dir))
     kpis = build_demo_kpis(data)
     contracts = _build_contract_table(data, case_context)
     temporal, temporal_error, temporal_paths = _load_temporal_data()
@@ -146,13 +147,13 @@ def main() -> None:
     ) = st.tabs(
         [
             "Resumen",
-            "Evolucion temporal",
+            "Evolución temporal",
             "Contratos priorizados",
             "Caso seleccionado",
             "Relaciones",
             "Evidencias",
             "Trazabilidad",
-            "Metodologia",
+            "Metodología",
         ]
     )
     with summary_tab:
@@ -171,6 +172,28 @@ def main() -> None:
         _render_traceability(data, case_context, output_dir, case_context_path, case_view)
     with method_tab:
         _render_methodology()
+
+
+@st.cache_data(show_spinner="Cargando artefactos de la demo...")
+def _cached_demo_data(output_dir: str, signature: tuple[float, ...]):
+    # signature only invalidates the cache when artefacts change on disk.
+    return load_agent3_demo_data(Path(output_dir))
+
+
+@st.cache_data(show_spinner=False)
+def _cached_temporal_evaluation(
+    canonical_path: str,
+    scores_path: str,
+    signature: tuple[float, ...],
+) -> TemporalEvaluation:
+    return load_temporal_evaluation(Path(canonical_path), Path(scores_path))
+
+
+def _mtime_signature(*paths: Path) -> tuple[float, ...]:
+    files: list[Path] = []
+    for path in paths:
+        files.extend(sorted(path.iterdir()) if path.is_dir() else [path])
+    return tuple(file.stat().st_mtime if file.exists() else 0.0 for file in files)
 
 
 def _render_data_sidebar() -> tuple[Path, Path | None]:
@@ -199,7 +222,7 @@ def _render_data_sidebar() -> tuple[Path, Path | None]:
     st.sidebar.markdown(
         """
         <div class="pw-sidebar-note">
-            <strong>Modo defensa:</strong> abre primero Resumen y Evolucion temporal; despues
+            <strong>Modo defensa:</strong> abre primero Resumen y Evolución temporal; después
             revisa Caso seleccionado, Relaciones y Evidencias.
         </div>
         """,
@@ -284,7 +307,7 @@ def _render_analysis_sidebar(
     only_case_neighborhood = st.sidebar.toggle("Solo entorno del contrato", value=True)
     st.sidebar.markdown("#### Capturas recomendadas")
     st.sidebar.caption(
-        "Resumen · Evolucion temporal · Caso seleccionado · Relaciones · Evidencias"
+        "Resumen · Evolución temporal · Caso seleccionado · Relaciones · Evidencias"
     )
 
     return DashboardFilters(
@@ -306,11 +329,11 @@ def _render_header() -> None:
                 <p class="pw-eyebrow">Demo integrada TFM</p>
                 <h1>ProcureWatch Analytics</h1>
                 <p class="pw-hero-text">
-                    Priorizacion explicable de contratos publicos combinando scoring,
+                    Priorización explicable de contratos públicos combinando scoring,
                     relaciones de red y evidencia documental trazable.
                 </p>
             </div>
-            <div class="pw-hero-badge">Revision humana, no veredicto de fraude</div>
+            <div class="pw-hero-badge">Revisión humana, no veredicto de fraude</div>
         </section>
         """,
         unsafe_allow_html=True,
@@ -318,15 +341,15 @@ def _render_header() -> None:
     st.markdown(
         """
         <div class="pw-callout">
-            <strong>Que estas viendo:</strong> la demo sintetica/offline reconstruye el caso
-            <code>PW-2024-0001</code>. La pestana Evolucion temporal usa, de forma separada, la
-            evaluacion real de Agent2 sobre 3.437 contratos para mostrar volumen y riesgo por mes.
+            <strong>Qué estás viendo:</strong> la demo sintética/offline reconstruye el caso
+            <code>PW-2024-0001</code>. La pestaña Evolución temporal usa, de forma separada, la
+            evaluación real de Agent2 sobre 3.437 contratos para mostrar volumen y riesgo por mes.
         </div>
         """,
         unsafe_allow_html=True,
     )
     st.caption(
-        "El sistema ayuda a priorizar revision humana y no declara fraude; las evidencias sirven "
+        "El sistema ayuda a priorizar revisión humana y no declara fraude; las evidencias sirven "
         "para explicar por que un caso merece ser revisado."
     )
 
@@ -347,9 +370,9 @@ def _render_decision_strip(case_view: dict[str, Any]) -> None:
         st.markdown(
             f"""
             <div class="pw-reading">
-                <strong>Lectura principal:</strong> {priority.lower()} con {flags} senales
+                <strong>Lectura principal:</strong> {escape(priority.lower())} con {flags} señales
                 explicables y {evidences} evidencias documentales asociadas. Esta salida ayuda a
-                decidir que revisar primero; no prueba fraude ni sustituye auditoria.
+                decidir qué revisar primero; no prueba fraude ni sustituye auditoría.
             </div>
             """,
             unsafe_allow_html=True,
@@ -358,7 +381,7 @@ def _render_decision_strip(case_view: dict[str, Any]) -> None:
         st.markdown(
             """
             <div class="pw-reading">
-                <strong>Lectura principal:</strong> el contrato tiene metricas relacionales, pero
+                <strong>Lectura principal:</strong> el contrato tiene métricas relacionales, pero
                 la ficha cargada no contiene scoring documental completo para este caso.
             </div>
             """,
@@ -375,7 +398,7 @@ def _render_summary(
     st.subheader("Resumen ejecutivo")
     st.write(
         "Esta vista resume la demo de extremo a extremo. La idea es que el tribunal pueda seguir "
-        "el camino del dato sin abrir codigo: contrato canonico, prioridad Agent2, grafo Agent3, "
+        "el camino del dato sin abrir código: contrato canónico, prioridad Agent2, grafo Agent3, "
         "evidencia Agent4 y trazabilidad final."
     )
     _render_kpis(kpis, contracts, case_view)
@@ -383,9 +406,9 @@ def _render_summary(
 
     left, right = st.columns([1.2, 1])
     with left:
-        st.markdown("#### Contratos con mayor interes de revision")
+        st.markdown("#### Contratos con mayor interés de revisión")
         st.caption(
-            "Ordenados por una combinacion de score Agent2, senales relacionales y disponibilidad "
+            "Ordenados por una combinación de score Agent2, señales relacionales y disponibilidad "
             "de ficha documental."
         )
         ranking = _display_contract_columns(contracts).head(5)
@@ -394,7 +417,7 @@ def _render_summary(
         st.markdown("#### Caso activo")
         _render_case_snapshot(case_view)
 
-    st.subheader("Distribucion del lote de demo")
+    st.subheader("Distribución del lote de demo")
     _render_distribution_charts(data, contracts)
 
 
@@ -405,7 +428,11 @@ def _load_temporal_data(
     )
     scores_path = Path(os.getenv("PROCUREWATCH_AGENT2_TEMPORAL_SCORES", DEFAULT_TEMPORAL_SCORES))
     try:
-        temporal = load_temporal_evaluation(canonical_path, scores_path)
+        temporal = _cached_temporal_evaluation(
+            str(canonical_path),
+            str(scores_path),
+            _mtime_signature(canonical_path, scores_path),
+        )
     except (FileNotFoundError, ValueError, OSError) as exc:
         return None, str(exc), (canonical_path, scores_path)
     return temporal, None, (canonical_path, scores_path)
@@ -416,26 +443,26 @@ def _render_temporal_evolution(
     error: str | None,
     paths: tuple[Path, Path],
 ) -> None:
-    st.subheader("Evolucion temporal de contratos y riesgo")
+    st.subheader("Evolución temporal de contratos y riesgo")
     st.write(
-        "Esta vista cruza el canonico evaluado con los scores base de Agent2. Las barras muestran "
-        "contratos con fecha de publicacion valida y la linea representa el riesgo medio mensual "
+        "Esta vista cruza el canónico evaluado con los scores base de Agent2. Las barras muestran "
+        "contratos con fecha de publicación válida y la línea representa el riesgo medio mensual "
         "en escala 0-100. No se imputan fechas ausentes."
     )
     if temporal is None:
         st.warning(
-            "La serie temporal no esta disponible. Comprueba los artefactos de Agent2. "
+            "La serie temporal no está disponible. Comprueba los artefactos de Agent2. "
             f"Detalle: {error or 'error no especificado'}"
         )
         st.caption(f"Canonico: `{paths[0]}` · Scores: `{paths[1]}`")
         return
     if temporal.monthly.empty:
-        st.info("No hay contratos con fecha de publicacion y score validos para representar.")
+        st.info("No hay contratos con fecha de publicación y score válidos para representar.")
         return
 
     columns = st.columns(4)
     columns[0].metric("Contratos evaluados", _format_int(temporal.evaluated_contracts))
-    columns[1].metric("Con fecha valida", _format_int(temporal.dated_contracts))
+    columns[1].metric("Con fecha válida", _format_int(temporal.dated_contracts))
     columns[2].metric("Meses cubiertos", _format_int(temporal.month_count))
     columns[3].metric("Fechas no validas", _format_int(temporal.invalid_date_contracts))
 
@@ -469,7 +496,7 @@ def _render_temporal_evolution(
         hovermode="x unified",
         bargap=0.18,
     )
-    figure.update_xaxes(title_text="Mes de publicacion", tickformat="%b\n%Y")
+    figure.update_xaxes(title_text="Mes de publicación", tickformat="%b\n%Y")
     figure.update_yaxes(title_text="Contratos", rangemode="tozero", secondary_y=False)
     figure.update_yaxes(
         title_text="Riesgo medio Agent2 (0-100)",
@@ -478,8 +505,8 @@ def _render_temporal_evolution(
     )
     st.plotly_chart(figure, width="stretch")
     st.caption(
-        "Serie calculada sobre los artefactos versionados de la evaluacion base de Agent2. "
-        f"Se excluyen {temporal.invalid_date_contracts} contratos sin fecha de publicacion valida"
+        "Serie calculada sobre los artefactos versionados de la evaluación base de Agent2. "
+        f"Se excluyen {temporal.invalid_date_contracts} contratos sin fecha de publicación válida"
         f" y {temporal.invalid_score_contracts} sin score numerico."
     )
 
@@ -505,7 +532,7 @@ def _render_kpis(
         column.metric(label, _format_int(value))
     st.caption(
         "Los KPIs proceden de los artefactos regenerados por `run-integrated-demo`; la muestra es "
-        "pequena y sintetica para defensa reproducible."
+        "pequeña y sintética para defensa reproducible."
     )
 
 
@@ -516,7 +543,7 @@ def _render_agent_flow(case_view: dict[str, Any]) -> None:
     items = [
         ("Agent1", "Normaliza contratos y conserva trazabilidad de fuente", True),
         ("Agent2", "Calcula prioridad y red flags explicables", has_agent2),
-        ("Agent3", "Construye red, comunidades y metricas relacionales", has_agent3),
+        ("Agent3", "Construye red, comunidades y métricas relacionales", has_agent3),
         ("Agent4", "Recupera evidencia documental y citas", has_agent4),
     ]
     columns = st.columns(len(items))
@@ -562,13 +589,13 @@ def _render_distribution_charts(data, contracts: pd.DataFrame) -> None:
             st.info("No hay relaciones para representar.")
         else:
             edge_counts = edge_counts.copy()
-            edge_counts["Tipo de relacion"] = edge_counts["edge_type"].map(_edge_type_label)
+            edge_counts["Tipo de relación"] = edge_counts["edge_type"].map(_edge_type_label)
             st.plotly_chart(
                 px.bar(
                     edge_counts,
-                    x="Tipo de relacion",
+                    x="Tipo de relación",
                     y="edges",
-                    color="Tipo de relacion",
+                    color="Tipo de relación",
                     labels={"edges": "Total"},
                     color_discrete_sequence=["#0f766e", "#9333ea", "#b45309", "#475569"],
                 ),
@@ -629,10 +656,10 @@ def _render_top_case_cards(contracts: pd.DataFrame, selected_contract: str) -> N
             f"""
             <div class="{css_class}">
                 <div class="pw-card-kicker">{'Caso activo' if selected else 'Caso priorizado'}</div>
-                <div class="pw-card-title">{row.get('id_contrato', 'n/a')}</div>
-                <div class="pw-card-subtitle">{row.get('titulo', 'Sin titulo')}</div>
-                <div class="pw-card-line"><strong>Prioridad:</strong> {priority}</div>
-                <div class="pw-card-line"><strong>Motivo:</strong> {reason}</div>
+                <div class="pw-card-title">{escape(str(row.get('id_contrato', 'n/a')))}</div>
+                <div class="pw-card-subtitle">{escape(str(row.get('titulo', 'Sin título')))}</div>
+                <div class="pw-card-line"><strong>Prioridad:</strong> {escape(str(priority))}</div>
+                <div class="pw-card-line"><strong>Motivo:</strong> {escape(str(reason))}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -642,8 +669,8 @@ def _render_top_case_cards(contracts: pd.DataFrame, selected_contract: str) -> N
 def _render_contract_ranking(contracts: pd.DataFrame, selected_contract: str) -> None:
     st.subheader("Contratos priorizados")
     st.write(
-        "La tabla combina score Agent2, senales relacionales de Agent3 y cobertura documental de "
-        "Agent4. Es una cola de revision, no una lista de fraude."
+        "La tabla combina score Agent2, señales relacionales de Agent3 y cobertura documental de "
+        "Agent4. Es una cola de revisión, no una lista de fraude."
     )
     _render_top_case_cards(contracts, selected_contract)
 
@@ -655,10 +682,10 @@ def _render_contract_ranking(contracts: pd.DataFrame, selected_contract: str) ->
     )
     st.dataframe(display, width="stretch", hide_index=True)
 
-    st.markdown("#### Lectura de senales")
+    st.markdown("#### Lectura de señales")
     st.caption(
         "Estas columnas muestran por que un contrato sube en prioridad: recurrencia, peso de la "
-        "relacion e importancia en la red."
+        "relación e importancia en la red."
     )
     signal_rows = contracts[
         [
@@ -674,12 +701,12 @@ def _render_contract_ranking(contracts: pd.DataFrame, selected_contract: str) ->
             "id_contrato": "Contrato",
             "motivo_revision": "Motivo principal",
             "recurrencia_comprador_proveedor": "Contratos comprador-proveedor",
-            "peso_relacion": "Peso de esa relacion",
+            "peso_relacion": "Peso de esa relación",
             "importancia_red": "Importancia en la red",
             "tamano_comunidad": "Entidades en comunidad",
         }
     )
-    signal_rows["Peso de esa relacion"] = signal_rows["Peso de esa relacion"].map(_format_percent)
+    signal_rows["Peso de esa relación"] = signal_rows["Peso de esa relación"].map(_format_percent)
     signal_rows["Importancia en la red"] = signal_rows["Importancia en la red"].map(_format_metric)
     st.dataframe(signal_rows, width="stretch", hide_index=True)
 
@@ -694,7 +721,7 @@ def _render_case(case_view: dict[str, Any]) -> None:
         st.warning(
             "La ficha documental cargada corresponde a "
             f"{case_view['case_context_contract']}. Para este contrato se muestran solo "
-            "datos canonicos y metricas de red."
+            "datos canonicos y métricas de red."
         )
 
     columns = st.columns(4)
@@ -708,7 +735,7 @@ def _render_case(case_view: dict[str, Any]) -> None:
 
     left, right = st.columns([1.1, 1])
     with left:
-        st.markdown("#### Identificacion")
+        st.markdown("#### Identificación")
         st.dataframe(_contract_context_rows(case_view), width="stretch", hide_index=True)
     with right:
         st.markdown("#### Lectura ejecutiva")
@@ -731,7 +758,7 @@ def _render_case(case_view: dict[str, Any]) -> None:
         if rows:
             st.dataframe(rows, width="stretch", hide_index=True)
         else:
-            st.info("No hay metricas relacionales disponibles para este contrato.")
+            st.info("No hay métricas relacionales disponibles para este contrato.")
 
     warnings = case_view.get("warnings", [])
     if warnings:
@@ -749,18 +776,19 @@ def _render_case_explainer(case_view: dict[str, Any]) -> None:
         <div class="pw-case-explainer">
             <div>
                 <span class="pw-badge">Agent2</span>
-                <strong>{flags}</strong>
-                <p>Reglas deterministas convierten datos del contrato en prioridad de revision.</p>
+                <strong>{escape(flags)}</strong>
+                <p>Reglas deterministas convierten datos del contrato en prioridad de revisión.</p>
             </div>
             <div>
                 <span class="pw-badge">Agent3</span>
-                <strong>{recurrence} contratos comprador-proveedor; peso {share}</strong>
-                <p>La red muestra recurrencia, comunidad y posicion del contrato.</p>
+                <strong>{escape(recurrence)} contratos comprador-proveedor;
+                peso {escape(share)}</strong>
+                <p>La red muestra recurrencia, comunidad y posición del contrato.</p>
             </div>
             <div>
                 <span class="pw-badge">Agent4</span>
                 <strong>{evidences} evidencias citadas</strong>
-                <p>Los documentos recuperados apoyan la explicacion sin emitir veredicto.</p>
+                <p>Los documentos recuperados apoyan la explicación sin emitir veredicto.</p>
             </div>
         </div>
         """,
@@ -770,18 +798,18 @@ def _render_case_explainer(case_view: dict[str, Any]) -> None:
 
 def _render_case_review_plan(case_view: dict[str, Any]) -> None:
     actions = _case_review_plan(case_view)
-    st.markdown("#### Plan de revision del caso")
+    st.markdown("#### Plan de revisión del caso")
     st.caption(
-        "Secuencia sugerida para analizar el expediente con las senales disponibles. Es una "
-        "priorizacion operativa, no una conclusion juridica."
+        "Secuencia sugerida para analizar el expediente con las señales disponibles. Es una "
+        "priorización operativa, no una conclusión jurídica."
     )
     columns = st.columns(len(actions))
     for column, action in zip(columns, actions, strict=False):
         column.markdown(
             f"""
             <div class="pw-review-step">
-                <strong>{action['title']}</strong>
-                <p>{action['text']}</p>
+                <strong>{escape(action['title'])}</strong>
+                <p>{escape(action['text'])}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -792,15 +820,15 @@ def _case_review_plan(case_view: dict[str, Any]) -> list[dict[str, str]]:
     actions = [
         {
             "title": "Procedimiento",
-            "text": "Contrastar el tipo de procedimiento con el objeto, importe y justificacion.",
+            "text": "Contrastar el tipo de procedimiento con el objeto, importe y justificación.",
         },
         {
             "title": "Importe",
-            "text": "Revisar la relacion entre valor estimado, adjudicacion y desviaciones.",
+            "text": "Revisar la relación entre valor estimado, adjudicación y desviaciones.",
         },
         {
-            "title": "Relacion",
-            "text": "Analizar recurrencia comprador-adjudicatario y posicion en la comunidad.",
+            "title": "Relación",
+            "text": "Analizar recurrencia comprador-adjudicatario y posición en la comunidad.",
         },
     ]
     if case_view.get("evidences"):
@@ -816,7 +844,7 @@ def _case_review_plan(case_view: dict[str, Any]) -> list[dict[str, str]]:
 def _render_case_snapshot(case_view: dict[str, Any]) -> None:
     fields = [
         ("Contrato", case_view.get("contract_key")),
-        ("Titulo", case_view.get("title")),
+        ("Título", case_view.get("title")),
         ("Comprador", case_view.get("buyer_name")),
         ("Adjudicatario", case_view.get("supplier_name")),
         ("Procedimiento", case_view.get("procedure")),
@@ -922,8 +950,8 @@ def _render_network_summary(
     st.markdown(
         f"""
         <div class="pw-callout">
-            <strong>Lectura del grafo:</strong> {'; '.join(summary)}.
-            <br><span>{type_text}</span>
+            <strong>Lectura del grafo:</strong> {escape('; '.join(summary))}.
+            <br><span>{escape(type_text)}</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1059,7 +1087,7 @@ def _network_edge_table(data, edges: pd.DataFrame) -> pd.DataFrame:
     )
     return table.rename(
         columns={
-            "edge_type": "Relacion",
+            "edge_type": "Relación",
             "contract_key_canon": "Contrato asociado",
             "source_node_id": "Origen",
             "target_node_id": "Destino",
@@ -1106,7 +1134,7 @@ def _render_evidences(case_view: dict[str, Any]) -> None:
 
     st.write(
         "Agent4 recupera fragmentos documentales relacionados con el contrato. Cada evidencia "
-        "mantiene identificadores para poder rastrear de que documento y chunk sale."
+        "mantiene identificadores para poder rastrear de qué documento y chunk sale."
     )
     for index, evidence in enumerate(evidences, start=1):
         with st.container(border=True):
@@ -1120,10 +1148,10 @@ def _render_evidences(case_view: dict[str, Any]) -> None:
                 st.markdown(
                     f"""
                     <div class="pw-mini-card">
-                        <div><strong>Tipo:</strong> {document_type}</div>
-                        <div><strong>Fuente:</strong> {source}</div>
-                        <div><strong>Contrato:</strong> {contract_key}</div>
-                        <div><strong>Relevancia:</strong> {relevance}</div>
+                        <div><strong>Tipo:</strong> {escape(str(document_type))}</div>
+                        <div><strong>Fuente:</strong> {escape(str(source))}</div>
+                        <div><strong>Contrato:</strong> {escape(str(contract_key))}</div>
+                        <div><strong>Relevancia:</strong> {escape(str(relevance))}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1155,7 +1183,7 @@ def _render_traceability(
 ) -> None:
     st.subheader("Trazabilidad y reproduccion")
     st.write(
-        "Esta vista mantiene la parte tecnica en un sitio separado para no ensuciar la narrativa "
+        "Esta vista mantiene la parte técnica en un sitio separado para no ensuciar la narrativa "
         "principal. Aqui se ve como reproducir la demo y que artefactos alimentan cada vista."
     )
     st.download_button(
@@ -1191,7 +1219,7 @@ def _render_traceability(
         with st.expander("Resumen de red Agent3", expanded=False):
             st.json(data.network_summary)
     with right:
-        with st.expander("Metricas del contrato seleccionado", expanded=False):
+        with st.expander("Métricas del contrato seleccionado", expanded=False):
             st.json(case_view.get("agent3_metrics", {}))
         with st.expander("Payload Agent4 completo", expanded=False):
             if case_context:
@@ -1219,7 +1247,7 @@ def _case_markdown_summary(case_view: dict[str, Any]) -> str:
         "",
         "- Recurrencia comprador-proveedor: "
         f"{_format_metric(metrics.get('buyer_supplier_recurrence'))}",
-        f"- Peso de la relacion: {_format_percent(metrics.get('buyer_supplier_contract_share'))}",
+        f"- Peso de la relación: {_format_percent(metrics.get('buyer_supplier_contract_share'))}",
         f"- Comunidad: {_format_metric(metrics.get('community_id'))}",
         f"- Importancia en red: {_format_metric(metrics.get('contract_betweenness_centrality'))}",
         "",
@@ -1240,9 +1268,9 @@ def _case_markdown_summary(case_view: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "## Frontera metodologica",
+            "## Frontera metodológica",
             "",
-            "ProcureWatch prioriza revision humana. No declara fraude, no sustituye una auditoria "
+            "ProcureWatch prioriza revisión humana. No declara fraude, no sustituye una auditoría "
             "y no representa una plataforma productiva.",
             "",
         ]
@@ -1251,39 +1279,39 @@ def _case_markdown_summary(case_view: dict[str, Any]) -> str:
 
 
 def _render_methodology() -> None:
-    st.subheader("Metodologia de la demo")
+    st.subheader("Metodología de la demo")
     st.write(
-        "ProcureWatch organiza el analisis como una cadena de agentes. Cada bloque produce una "
+        "ProcureWatch organiza el análisis como una cadena de agentes. Cada bloque produce una "
         "salida trazable que alimenta la siguiente vista del dashboard."
     )
     rows = [
         {
             "Bloque": "Agent1",
-            "Que aporta": "Contrato canonico y trazabilidad de fuente.",
-            "Donde se ve": "Identificacion del caso y trazabilidad.",
+            "Qué aporta": "Contrato canónico y trazabilidad de fuente.",
+            "Dónde se ve": "Identificación del caso y trazabilidad.",
         },
         {
             "Bloque": "Agent2",
-            "Que aporta": "Score, prioridad y red flags deterministas.",
-            "Donde se ve": "Resumen, ranking y caso seleccionado.",
+            "Qué aporta": "Score, prioridad y red flags deterministas.",
+            "Dónde se ve": "Resumen, ranking y caso seleccionado.",
         },
         {
             "Bloque": "Agent3",
-            "Que aporta": "Grafo, comunidades y metricas relacionales.",
-            "Donde se ve": "Relaciones y senales relacionales.",
+            "Qué aporta": "Grafo, comunidades y métricas relacionales.",
+            "Dónde se ve": "Relaciones y señales relacionales.",
         },
         {
             "Bloque": "Agent4",
-            "Que aporta": "Evidencias documentales, citas y warnings.",
-            "Donde se ve": "Evidencias y ficha del caso.",
+            "Qué aporta": "Evidencias documentales, citas y warnings.",
+            "Dónde se ve": "Evidencias y ficha del caso.",
         },
     ]
     st.dataframe(rows, width="stretch", hide_index=True)
     st.markdown(
         """
         <div class="pw-callout">
-            <strong>Frontera metodologica:</strong> la demo prioriza revision humana. No declara
-            fraude, no sustituye una auditoria y no representa una plataforma productiva.
+            <strong>Frontera metodológica:</strong> la demo prioriza revisión humana. No declara
+            fraude, no sustituye una auditoría y no representa una plataforma productiva.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1294,18 +1322,18 @@ def _render_methodology() -> None:
         st.markdown(
             """
             - Demo integrada offline regenerable.
-            - Evolucion temporal sobre la evaluacion real de Agent2.
+            - Evolución temporal sobre la evaluación real de Agent2.
             - Ranking de contratos y ficha explicable.
             - Red de relaciones comprador-proveedor-contrato.
             - Evidencias documentales con citas trazables.
-            - Validacion headless del dashboard.
+            - Validación headless del dashboard.
             """
         )
     with right:
         st.markdown("#### Limitaciones declaradas")
         st.markdown(
             """
-            - Muestra sintetica reducida para defensa reproducible.
+            - Muestra sintética reducida para defensa reproducible.
             - La serie temporal excluye fechas ausentes sin imputarlas.
             - Matching BOE/PLACE/OpenTender todavia imperfecto.
             - Servicios PostgreSQL, Neo4j, Qdrant y Ollama opcionales.
@@ -1474,8 +1502,8 @@ def _contract_context_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
         ("Valor estimado", _format_money(case_view.get("estimated_value"))),
         ("Valor adjudicado", _format_money(case_view.get("awarded_value"))),
         ("Codigos CPV", case_view.get("cpv_codes")),
-        ("Fecha de publicacion", case_view.get("publication_date")),
-        ("Fecha de adjudicacion", case_view.get("award_date")),
+        ("Fecha de publicación", case_view.get("publication_date")),
+        ("Fecha de adjudicación", case_view.get("award_date")),
         ("Fuente", case_view.get("source")),
         ("Registro de origen", case_view.get("source_record_id")),
     ]
@@ -1491,7 +1519,7 @@ def _agent2_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
             {
                 "Senal": FLAG_LABELS.get(str(flag), str(flag)),
                 "Dato usado": _agent2_flag_value(str(flag), evidence),
-                "Lectura": FLAG_EXPLANATIONS.get(str(flag), "Senal para priorizar revision."),
+                "Lectura": FLAG_EXPLANATIONS.get(str(flag), "Senal para priorizar revisión."),
             }
         )
     return rows
@@ -1503,11 +1531,11 @@ def _agent3_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
         (
             "buyer_supplier_recurrence",
             "Contratos comprador-proveedor",
-            "Numero de contratos que conectan al mismo comprador y adjudicatario.",
+            "Número de contratos que conectan al mismo comprador y adjudicatario.",
         ),
         (
             "buyer_supplier_contract_share",
-            "Peso de la relacion",
+            "Peso de la relación",
             "Proporcion de contratos del comprador conectados con este adjudicatario.",
         ),
         (
@@ -1525,7 +1553,7 @@ def _agent3_signal_rows(case_view: dict[str, Any]) -> list[dict[str, str]]:
             "Tamano de comunidad",
             "Entidades agrupadas alrededor del caso.",
         ),
-        ("cpv_count", "Categorias CPV", "Numero de codigos CPV vinculados al contrato."),
+        ("cpv_count", "Categorias CPV", "Número de codigos CPV vinculados al contrato."),
     ]
     rows = []
     for key, label, reading in metric_specs:
@@ -1586,14 +1614,14 @@ def _review_reason(
         return _flag_list_label(red_flags)
     try:
         if float(recurrence or 0) >= 2:
-            return "Relacion recurrente entre comprador y adjudicatario"
+            return "Relación recurrente entre comprador y adjudicatario"
         if float(share or 0) >= 0.75:
-            return "Alta concentracion comprador-adjudicatario"
+            return "Alta concentración comprador-adjudicatario"
         if float(centrality or 0) >= 0.25:
             return "Contrato relevante dentro de la red"
     except (TypeError, ValueError):
         pass
-    return "Sin senales destacadas en esta muestra"
+    return "Sin señales destacadas en esta muestra"
 
 
 def _flag_list_label(flags: list[Any]) -> str:
@@ -1724,7 +1752,7 @@ def _load_case_context(path: Path) -> dict[str, Any]:
 def _render_missing_artifacts(output_dir: Path, missing: list[Path]) -> None:
     st.error("Faltan artefactos para construir la demo.")
     st.write(
-        "La demo se puede regenerar desde codigo. Ejecuta el comando siguiente y vuelve a abrir "
+        "La demo se puede regenerar desde código. Ejecuta el comando siguiente y vuelve a abrir "
         "el dashboard."
     )
     st.write(f"Carpeta revisada: `{output_dir}`")
@@ -1832,8 +1860,8 @@ def _artifact_label(value: object) -> str:
     labels = {
         "nodes": "Nodos de red",
         "edges": "Relaciones",
-        "contract_metrics": "Metricas por contrato",
-        "entity_metrics": "Metricas por entidad",
+        "contract_metrics": "Métricas por contrato",
+        "entity_metrics": "Métricas por entidad",
         "communities": "Comunidades",
         "network_summary": "Resumen de red",
         "agent2_features": "Features para scoring/RAG",

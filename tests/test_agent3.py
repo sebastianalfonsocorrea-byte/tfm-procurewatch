@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import io
 import json
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -399,6 +400,17 @@ class Agent3Tests(unittest.TestCase):
         self.assertEqual(loader.call_args.kwargs["uri"], "bolt://neo4j-test:7687")
         self.assertEqual(loader.call_args.kwargs["user"], "neo4j")
         self.assertEqual(loader.call_args.kwargs["password"], "secret")
+
+    def test_cli_load_neo4j_requires_password(self) -> None:
+        with (
+            patch.dict("os.environ", {"PROCUREWATCH_NEO4J_PASSWORD": ""}),
+            patch("procurewatch.agent3.neo4j_store.load_graph_to_neo4j") as loader,
+            redirect_stderr(io.StringIO()),
+        ):
+            exit_code = main(["agent3-load-neo4j"])
+
+        self.assertEqual(exit_code, 2)
+        loader.assert_not_called()
 
 
 def _contracts() -> list[dict[str, object]]:

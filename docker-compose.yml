@@ -26,7 +26,7 @@ services:
     container_name: procurewatch-neo4j
     restart: unless-stopped
     environment:
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-procurewatch123}
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:?Define NEO4J_PASSWORD en .env}
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
@@ -41,7 +41,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "cypher-shell -u ${NEO4J_USER:-neo4j} -p ${NEO4J_PASSWORD:-procurewatch123} 'RETURN 1' || exit 1"
+          "cypher-shell -u ${NEO4J_USER:-neo4j} -p ${NEO4J_PASSWORD:?Define NEO4J_PASSWORD en .env} 'RETURN 1' || exit 1"
         ]
       interval: 15s
       timeout: 10s

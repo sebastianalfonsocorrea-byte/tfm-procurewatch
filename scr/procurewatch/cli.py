@@ -1148,7 +1148,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0 if report["status"] in {"pass", "warning"} else 1
     if args.command == "agent3-load-neo4j":
         from .agent3.neo4j_store import (
-            DEFAULT_NEO4J_PASSWORD,
             DEFAULT_NEO4J_URI,
             DEFAULT_NEO4J_USER,
             load_graph_to_neo4j,
@@ -1157,7 +1156,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         settings = Settings.from_env()
         uri = args.uri or settings.neo4j_uri or DEFAULT_NEO4J_URI
         user = args.user or settings.neo4j_user or DEFAULT_NEO4J_USER
-        password = args.password or settings.neo4j_password or DEFAULT_NEO4J_PASSWORD
+        password = args.password or settings.neo4j_password
+        if not password:
+            print(
+                "Falta la contraseña de Neo4j: usa --password o define "
+                "PROCUREWATCH_NEO4J_PASSWORD en .env.",
+                file=sys.stderr,
+            )
+            return 2
         report = load_graph_to_neo4j(
             nodes_path=args.nodes,
             edges_path=args.edges,

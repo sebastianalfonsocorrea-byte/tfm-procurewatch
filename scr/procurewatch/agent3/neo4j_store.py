@@ -7,7 +7,6 @@ from typing import Any
 
 DEFAULT_NEO4J_URI = "bolt://localhost:7687"
 DEFAULT_NEO4J_USER = "neo4j"
-DEFAULT_NEO4J_PASSWORD = "procurewatch123"
 
 NODE_LABELS = ("Buyer", "Supplier", "Contract", "CPV", "Source")
 EDGE_TYPES = ("PUBLISHED", "AWARDED_TO", "HAS_CPV", "FROM_SOURCE")
@@ -19,7 +18,7 @@ def load_graph_to_neo4j(
     edges_path: Path = Path("data/processed/agent3_edges.parquet"),
     uri: str = DEFAULT_NEO4J_URI,
     user: str = DEFAULT_NEO4J_USER,
-    password: str = DEFAULT_NEO4J_PASSWORD,
+    password: str,
     database: str | None = None,
 ) -> dict[str, Any]:
     import pandas as pd
