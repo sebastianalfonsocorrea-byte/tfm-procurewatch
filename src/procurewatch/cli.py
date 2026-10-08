@@ -927,6 +927,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
         print("Agente 1 ejecutado")
+        for warning in reports.get("warnings", []):
+            print(f"- Aviso: {warning}")
         print(f"- Cobertura BOE/PLACE/OpenTender: {reports['coverage']}")
         print(f"- Entrega: {args.output_dir}")
         print(f"- Reporte agente: {reports['agent1_run_report_path']}")

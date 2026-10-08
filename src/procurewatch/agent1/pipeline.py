@@ -40,8 +40,9 @@ def run_agent1(
     from ..data_sources import opentender as opentender_source
     from ..data_sources import place_normalize as place_source
 
+    skipped_sources: dict[str, str] = {}
     if not boe_input.exists():
-        raise FileNotFoundError(f"No existe BOE input: {boe_input}")
+        skipped_sources["boe"] = f"No existe BOE input: {boe_input}"
     if buyer_catalog_path is not None and not buyer_catalog_path.exists():
         raise FileNotFoundError(f"No existe buyer catalog input: {buyer_catalog_path}")
     if not place_inputs and not place_download:
@@ -70,7 +71,9 @@ def run_agent1(
         if opentender_download_report.get("downloaded"):
             downloaded_opentender_inputs = [effective_open_tender_input]
     if not effective_open_tender_input.exists():
-        raise FileNotFoundError(f"No existe OpenTender input: {effective_open_tender_input}")
+        skipped_sources["opentender"] = (
+            f"No existe OpenTender input: {effective_open_tender_input}"
+        )
 
     if place_download:
         manifest = load_manifest(DEFAULT_MANIFEST)
@@ -93,10 +96,14 @@ def run_agent1(
             raise FileNotFoundError(f"No existe PLACE input: {path}")
 
     input_artifacts = {
-        "boe": _input_artifact_metadata(
+        "boe": None
+        if "boe" in skipped_sources
+        else _input_artifact_metadata(
             boe_input, compute_sha=force_rebuild or limit_boe is not None
         ),
-        "opentender": _input_artifact_metadata(
+        "opentender": None
+        if "opentender" in skipped_sources
+        else _input_artifact_metadata(
             effective_open_tender_input,
             compute_sha=force_rebuild or limit_ot is not None,
         ),
@@ -119,6 +126,7 @@ def run_agent1(
         "cpv_prefix": cpv_prefix,
         "limits": {"boe": limit_boe, "place": limit_place, "opentender": limit_ot},
         "force_rebuild": force_rebuild,
+        "skipped_sources": skipped_sources,
         "run_at_utc": datetime.now(UTC).isoformat(),
         "input_artifacts": input_artifacts,
         "parser_versions": {
@@ -134,10 +142,12 @@ def run_agent1(
     from ..data_sources.place_normalize import normalize_place_archives
 
     boe_report_path = output_dir / "data_quality_report.json"
-    boe_cached = _can_reuse_boe(
+    boe_cached = "boe" not in skipped_sources and _can_reuse_boe(
         output_dir, input_artifacts["boe"], boe_report_path, limit_boe, force_rebuild
     )
-    if boe_cached:
+    if "boe" in skipped_sources:
+        reports["boe"] = _skipped_source_report("boe", skipped_sources["boe"])
+    elif boe_cached:
         reports["boe"] = _cached_report(boe_report_path, source="boe")
         _hydrate_artifact_from_report(input_artifacts["boe"], reports["boe"])
     else:
@@ -168,7 +178,7 @@ def run_agent1(
         )
 
     opentender_report_path = output_dir / f"contracts_opentender_{year}_quality.json"
-    opentender_cached = _can_reuse_opentender(
+    opentender_cached = "opentender" not in skipped_sources and _can_reuse_opentender(
         output_dir,
         input_artifacts["opentender"],
         opentender_report_path,
@@ -177,7 +187,11 @@ def run_agent1(
         limit_ot,
         force_rebuild,
     )
-    if opentender_cached:
+    if "opentender" in skipped_sources:
+        reports["opentender"] = _skipped_source_report(
+            "opentender", skipped_sources["opentender"]
+        )
+    elif opentender_cached:
         reports["opentender"] = _cached_report(opentender_report_path, source="opentender")
         _hydrate_artifact_from_report(input_artifacts["opentender"], reports["opentender"])
     else:
@@ -203,12 +217,14 @@ def run_agent1(
         output_dir=output_dir,
         cpv_prefix=cpv_prefix,
         year=year,
+        skip_sources=set(skipped_sources),
     )
     canonical = build_agent2_canonical_dataset(
         output_dir=output_dir,
         cpv_prefix=cpv_prefix,
         year=year,
         source_snapshot_id=source_snapshot_id,
+        skip_sources=set(skipped_sources),
     )
     from .analytical_dataset import build_analytical_datasets
 
@@ -231,6 +247,11 @@ def run_agent1(
         "year": year,
     }
     reports["agent1_run_report_path"] = str(output_dir / "agent1_run_report.json")
+    reports["skipped_sources"] = skipped_sources
+    reports["warnings"] = [
+        f"Fuente {source} omitida: {reason}. El canónico se construye con las demás fuentes."
+        for source, reason in skipped_sources.items()
+    ]
     reports["coverage"] = coverage
     reports["canonical_agent2"] = canonical
     reports["analytical_datasets"] = analytical
@@ -260,17 +281,13 @@ def build_source_coverage(
     output_dir: Path,
     cpv_prefix: str,
     year: int | None = None,
+    skip_sources: set[str] | None = None,
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
-    boe_path = (
-        boe_award_lines_path
-        if boe_award_lines_path.exists()
-        else output_dir / "contracts_boe_cpv71.parquet"
+    boe_path, place_path, op_path = _source_output_paths(
+        output_dir, cpv_prefix=cpv_prefix, year=year, skip_sources=skip_sources
     )
-    place_path = output_dir / "contracts_place_cpv71.parquet"
-    op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
     boe_df = _read_parquet_columns(
         boe_path,
@@ -465,17 +482,13 @@ def build_agent2_canonical_dataset(
     cpv_prefix: str,
     year: int | None = None,
     source_snapshot_id: str | None = None,
+    skip_sources: set[str] | None = None,
 ) -> dict[str, Any]:
     import pandas as pd
 
-    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
-    boe_path = (
-        boe_award_lines_path
-        if boe_award_lines_path.exists()
-        else output_dir / "contracts_boe_cpv71.parquet"
+    boe_path, place_path, op_path = _source_output_paths(
+        output_dir, cpv_prefix=cpv_prefix, year=year, skip_sources=skip_sources
     )
-    place_path = output_dir / "contracts_place_cpv71.parquet"
-    op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
 
     boe_columns = [
         "contract_id",
@@ -1117,13 +1130,15 @@ def _build_matching_diagnostics(
     *,
     source_frames: dict[str, Any],
     exact_intersections: dict[str, int],
-    source_paths: dict[str, Path],
+    source_paths: dict[str, Path | None],
 ) -> tuple[dict[str, Any], Any]:
     import pandas as pd
 
     warnings = []
     for source, path in source_paths.items():
-        if not path.exists():
+        if path is None:
+            warnings.append(f"Fuente {source} omitida en esta ejecución.")
+        elif not path.exists():
             warnings.append(f"No existe dataset procesado de {source}: {path}")
         elif source_frames[source].empty:
             warnings.append(f"Dataset procesado de {source} sin filas para diagnostico.")
@@ -1529,10 +1544,41 @@ def _build_universe_rows_from_sets(
     return rows
 
 
-def _read_parquet_columns(path: Path, columns: list[str]) -> Any:
+def _source_output_paths(
+    output_dir: Path,
+    *,
+    cpv_prefix: str,
+    year: int | None,
+    skip_sources: set[str] | None,
+) -> tuple[Path | None, Path | None, Path | None]:
+    """Processed parquet per source; None for sources skipped in this run.
+
+    Skipped sources must not reuse parquet files left in output_dir by previous runs.
+    """
+    skip = skip_sources or set()
+    boe_award_lines_path = output_dir / "contracts_boe_award_lines_cpv71.parquet"
+    boe_path = (
+        boe_award_lines_path
+        if boe_award_lines_path.exists()
+        else output_dir / "contracts_boe_cpv71.parquet"
+    )
+    place_path = output_dir / "contracts_place_cpv71.parquet"
+    op_path = output_dir / f"contracts_opentender_{year or 'all'}_cpv{cpv_prefix}.parquet"
+    return (
+        None if "boe" in skip else boe_path,
+        None if "place" in skip else place_path,
+        None if "opentender" in skip else op_path,
+    )
+
+
+def _skipped_source_report(source: str, reason: str) -> dict[str, Any]:
+    return {"source": source, "status": "skipped", "reason": reason, "rows": 0}
+
+
+def _read_parquet_columns(path: Path | None, columns: list[str]) -> Any:
     import pandas as pd
 
-    if not path.exists():
+    if path is None or not path.exists():
         return pd.DataFrame()
     try:
         import pyarrow.parquet as pq
@@ -1721,12 +1767,12 @@ def _build_processed_snapshot_id(
     output_dir: Path,
     cpv_prefix: str,
     year: int | None,
-    paths: list[Path],
+    paths: list[Path | None],
 ) -> str:
     artifacts = [
         _path_snapshot_payload(path)
         for path in paths
-        if path.exists()
+        if path is not None and path.exists()
     ]
     payload = {
         "agent": "agent1",

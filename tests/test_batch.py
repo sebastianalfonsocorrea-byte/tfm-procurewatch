@@ -149,8 +149,10 @@ class BatchTests(unittest.TestCase):
             self.assertFalse(result["agent1_executed"])
             self.assertCountEqual(
                 [item["source_id"] for item in result["missing_required_inputs"]],
-                ["boe_raw", "opentender_raw"],
+                ["place_inputs"],
             )
+            # BOE and OpenTender are reported as warnings, not as blocking inputs.
+            self.assertTrue(any("BOE raw" in warning for warning in result["warnings"]))
             self.assertTrue(Path(result["batch_manifest_path"]).exists())
             payload = json.loads(Path(result["batch_manifest_path"]).read_text(encoding="utf-8"))
             self.assertEqual(payload["status"], "blocked_missing_inputs")

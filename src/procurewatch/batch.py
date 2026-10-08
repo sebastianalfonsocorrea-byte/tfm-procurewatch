@@ -63,16 +63,22 @@ def run_batch(
                 core_snapshots[0],
                 label="BOE raw",
                 required=True,
-                blocking=True,
+                blocking=False,
             ),
             _health_check_from_snapshot(
                 core_snapshots[1],
                 label="OpenTender raw",
                 required=True,
-                blocking=True,
+                blocking=False,
             ),
         ]
     )
+    # BOE and OpenTender are expected sources, but Agent1 can build the canonical without them.
+    for check in health_checks:
+        if not check["exists"]:
+            check["status"] = "warning"
+            check["message"] = "No existe en ruta local; Agent1 continuara sin esta fuente."
+            warnings.append(f"Falta {check['label']}: Agent1 se ejecutara sin esta fuente.")
 
     place_targets: list[Any] = []
     if not manifest_path.exists():
@@ -146,6 +152,26 @@ def run_batch(
         elif not snapshot["exists"]:
             warnings.append(f"Falta PLACE local {target.id} y --place-download no esta activado.")
         health_checks.append(health_check)
+
+    local_place_datasets = [
+        target
+        for target in place_targets
+        if target.kind == "dataset" and target.output_path.exists()
+    ]
+    if not place_download and not local_place_datasets:
+        # PLACE is the only source Agent1 cannot run without.
+        health_checks.append(
+            {
+                "source_id": "place_inputs",
+                "label": "PLACE datasets",
+                "path": str(raw_dir / "place"),
+                "required": True,
+                "blocking": True,
+                "exists": False,
+                "status": "missing",
+                "message": "No hay datasets PLACE locales y --place-download no esta activado.",
+            }
+        )
 
     datos_gob_snapshots = _snapshot_directory(prefix="datos_gob", base_dir=datos_gob_dir)
     health_checks.append(

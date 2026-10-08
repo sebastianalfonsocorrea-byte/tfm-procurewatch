@@ -91,6 +91,35 @@ class Agent1Tests(unittest.TestCase):
                     place_download=False,
                 )
 
+    def test_run_agent1_continues_without_boe_and_opentender(self) -> None:
+        import pandas as pd
+
+        place_input = Path(
+            "data/synthetic/agent1_sample/PlataformasAgregadasSinMenores_2024_sample.zip"
+        )
+        with TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            processed = workspace / "processed"
+            processed.mkdir()
+            # Stale output from a previous run must not leak into the new canonical.
+            pd.DataFrame(
+                [{"source_record_id": "OLD-1", "buyer_name": "Antiguo", "contract_title": "x"}]
+            ).to_parquet(processed / "contracts_opentender_2024_cpv71.parquet", index=False)
+
+            report = run_agent1(
+                boe_input=workspace / "missing_boe.csv",
+                open_tender_input=workspace / "missing_opentender.zip",
+                place_inputs=[place_input],
+                output_dir=processed,
+            )
+
+            canonical = pd.read_parquet(report["canonical_agent2"]["path"])
+            self.assertEqual(set(report["skipped_sources"]), {"boe", "opentender"})
+            self.assertEqual(report["boe"]["status"], "skipped")
+            self.assertEqual(len(report["warnings"]), 2)
+            self.assertGreater(len(canonical), 0)
+            self.assertEqual(set(canonical["source"].astype(str)), {"place"})
+
     def test_agent1_builds_coverage_canonical_dataset_and_quality_summary(self) -> None:
         import pandas as pd
 
