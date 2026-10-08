@@ -158,6 +158,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=Path("data/processed/agent3_agent2_features.parquet"),
     )
     agent4_case_context_parser.add_argument(
+        "--agent2-scores-path",
+        type=Path,
+        default=Path("data/processed/agent2_risk_scores.parquet"),
+        help="Scores de run-agent2; sin ellos se usa el score local (sin RF-03/RF-04).",
+    )
+    agent4_case_context_parser.add_argument(
         "--corpus-index",
         type=Path,
         default=Path("data/synthetic/agent4_corpus/agent4_corpus_index.json"),
@@ -725,6 +731,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             question=args.question,
             canonical_path=args.canonical_path,
             agent3_features_path=args.agent3_features_path,
+            agent2_scores_path=args.agent2_scores_path,
             corpus_index=args.corpus_index,
             output_path=args.output,
             use_services=args.use_services,

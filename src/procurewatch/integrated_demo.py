@@ -113,18 +113,25 @@ def run_integrated_demo(
     question: str = DEMO_QUESTION,
     corpus_index: Path = DEMO_CORPUS_INDEX,
 ) -> dict[str, Any]:
+    from .agent2 import run_agent2
     from .agent3 import run_agent3
     from .agent4 import run_agent4_case_context
 
     output_dir.mkdir(parents=True, exist_ok=True)
     canonical_path = write_demo_canonical(output_dir)
     agent3_report = run_agent3(input_path=canonical_path, output_dir=output_dir)
+    agent2_report = run_agent2(
+        input_path=canonical_path,
+        output_dir=output_dir,
+        agent3_features_path=output_dir / "agent3_agent2_features.parquet",
+    )
     case_context_path = output_dir / DEMO_CASE_CONTEXT_FILENAME
     state = run_agent4_case_context(
         contract_key_canon=contract_key_canon,
         question=question,
         canonical_path=canonical_path,
         agent3_features_path=output_dir / "agent3_agent2_features.parquet",
+        agent2_scores_path=Path(agent2_report["outputs"]["risk_scores"]),
         corpus_index=corpus_index,
         output_path=case_context_path,
     )

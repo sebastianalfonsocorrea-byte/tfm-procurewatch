@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from .state import Agent4State
 
 DEFAULT_AGENT2_CANONICAL_PATH = Path("data/processed/agent2_contracts_canonical.parquet")
 DEFAULT_AGENT3_FEATURES_PATH = Path("data/processed/agent3_agent2_features.parquet")
+DEFAULT_AGENT2_SCORES_PATH = Path("data/processed/agent2_risk_scores.parquet")
 DEFAULT_CASE_CONTEXT_OUTPUT_PATH = Path("data/processed/agent4_case_context.json")
 
 
@@ -22,6 +24,7 @@ def run_agent4_case_context(
     question: str = "evidencia documental",
     canonical_path: Path = DEFAULT_AGENT2_CANONICAL_PATH,
     agent3_features_path: Path = DEFAULT_AGENT3_FEATURES_PATH,
+    agent2_scores_path: Path = DEFAULT_AGENT2_SCORES_PATH,
     corpus_index: Path = DEFAULT_SYNTHETIC_CORPUS_INDEX,
     output_path: Path = DEFAULT_CASE_CONTEXT_OUTPUT_PATH,
     use_services: bool = False,
@@ -38,8 +41,11 @@ def run_agent4_case_context(
         canonical_path=canonical_path,
         contract_key_canon=contract_key_canon,
     )
-    agent2_contract = agent2_contract_from_record(contract_context)
-    agent2_score = asdict(score_contract(agent2_contract))
+    agent2_score, agent2_warnings = load_agent2_score_for_contract(
+        agent2_scores_path=agent2_scores_path,
+        contract_context=contract_context,
+    )
+    warnings.extend(agent2_warnings)
     agent3_metrics, agent3_warnings = load_agent3_metrics_for_contract(
         agent3_features_path=agent3_features_path,
         contract_key_canon=contract_key_canon,
@@ -85,6 +91,81 @@ def load_contract_context_from_canonical(
         dataset_name="canonico Agent2",
     )
     return record, warnings
+
+
+def load_agent2_score_for_contract(
+    *,
+    agent2_scores_path: Path,
+    contract_context: dict[str, object],
+) -> tuple[dict[str, object], list[str]]:
+    """Return the batch Agent2 score so the case file matches the contract ranking.
+
+    RF-03/RF-04 depend on every buyer-supplier pair in the batch, so they only exist in the
+    run_agent2 outputs. Without them, fall back to the contract-local score and say so.
+    """
+    contract_key = _text_value(contract_context, "contract_key_canon")
+    local_score = asdict(score_contract(agent2_contract_from_record(contract_context)))
+    fallback_warning = (
+        f"No hay score de lote Agent2 para {contract_key} en {agent2_scores_path}; se usa el "
+        "score local del contrato, que no incluye RF-03/RF-04."
+    )
+    if not agent2_scores_path.exists():
+        return {**local_score, "score_scope": "contract_local"}, [fallback_warning]
+
+    scores = _read_required_parquet(agent2_scores_path, missing_message=fallback_warning)
+    try:
+        record, warnings = _select_record_by_contract_key(
+            scores,
+            contract_key_canon=contract_key,
+            dataset_name="scores Agent2",
+        )
+    except ValueError:
+        return {**local_score, "score_scope": "contract_local"}, [fallback_warning]
+
+    red_flags = _json_list(record.get("top_flags"))
+    flag_texts = _flag_evidence_texts(
+        agent2_scores_path.with_name("agent2_risk_flags.parquet"),
+        contract_key,
+    )
+    evidence = dict(local_score["evidence"])
+    if flag_texts:
+        evidence["flag_evidence_text"] = flag_texts
+    return {
+        "contract_key_canon": contract_key,
+        "risk_score": _float_value(record, "risk_score"),
+        "risk_level": _text_value(record, "risk_level"),
+        "red_flags": red_flags,
+        "data_quality_flags": _json_list(record.get("data_quality_flags")),
+        "flags_count": len(red_flags),
+        "top_flags": red_flags[:3],
+        "evidence": evidence,
+        "score_version": _text_value(record, "score_version"),
+        "source_snapshot_id": _text_value(record, "source_snapshot_id"),
+        "score_scope": "agent2_batch",
+    }, warnings
+
+
+def _flag_evidence_texts(flags_path: Path, contract_key: str) -> dict[str, str]:
+    if not flags_path.exists():
+        return {}
+    import pandas as pd
+
+    columns = ["contract_key_canon", "flag_code", "evidence_text"]
+    flags = pd.read_parquet(flags_path, columns=columns)
+    matches = flags[flags["contract_key_canon"].astype("string").str.strip() == contract_key]
+    return {str(row.flag_code): str(row.evidence_text) for row in matches.itertuples()}
+
+
+def _json_list(value: object) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    try:
+        parsed = json.loads(str(value))
+    except json.JSONDecodeError:
+        return []
+    return [str(item) for item in parsed] if isinstance(parsed, list) else []
 
 
 def load_agent3_metrics_for_contract(
@@ -223,9 +304,11 @@ def _float_value(record: dict[str, object], key: str) -> float | None:
 
 __all__ = [
     "DEFAULT_AGENT2_CANONICAL_PATH",
+    "DEFAULT_AGENT2_SCORES_PATH",
     "DEFAULT_AGENT3_FEATURES_PATH",
     "DEFAULT_CASE_CONTEXT_OUTPUT_PATH",
     "agent2_contract_from_record",
+    "load_agent2_score_for_contract",
     "load_agent3_metrics_for_contract",
     "load_contract_context_from_canonical",
     "run_agent4_case_context",

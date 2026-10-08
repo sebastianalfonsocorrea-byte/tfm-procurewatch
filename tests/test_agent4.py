@@ -819,6 +819,43 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(case_context["agent2_score"]["risk_score"], 0.25)
         self.assertEqual(case_context["agent2_score"]["red_flags"], ["missing_supplier"])
 
+    def test_agent4_case_context_uses_agent2_batch_score_with_pair_rules(self) -> None:
+        import pandas as pd
+
+        from procurewatch.agent2 import run_agent2
+
+        temp = _test_workspace("case-context-batch-score")
+        canonical_path = temp / "canonical.parquet"
+        base = {
+            "source": "boe",
+            "buyer_name": "Ayuntamiento Alfa",
+            "supplier_name": "Proveedor Recurrente",
+            "procedure": "abierto",
+            "estimated_value_eur": 100.0,
+            "awarded_value_eur": 95.0,
+        }
+        pd.DataFrame(
+            [
+                {**base, "contract_key_canon": "PW-1", "source_record_id": "BOE-1"},
+                {**base, "contract_key_canon": "PW-2", "source_record_id": "BOE-2"},
+            ]
+        ).to_parquet(canonical_path, index=False)
+        agent2_report = run_agent2(input_path=canonical_path, output_dir=temp)
+
+        state = run_agent4_case_context(
+            contract_key_canon="PW-1",
+            canonical_path=canonical_path,
+            agent3_features_path=temp / "missing_agent3.parquet",
+            agent2_scores_path=Path(agent2_report["outputs"]["risk_scores"]),
+            output_path=temp / "case_context.json",
+        )
+
+        score = state["agent2_score"]
+        self.assertEqual(score["score_scope"], "agent2_batch")
+        self.assertIn("RF-03", score["red_flags"])
+        self.assertEqual(score["risk_score"], 40.0)
+        self.assertIn("RF-03", score["evidence"]["flag_evidence_text"])
+
     def test_agent4_case_context_integrates_agent2_agent3_and_persists_output(self) -> None:
         import pandas as pd
 
@@ -866,6 +903,7 @@ class Agent4Tests(unittest.TestCase):
             question="evidencia documental",
             canonical_path=canonical_path,
             agent3_features_path=agent3_features_path,
+            agent2_scores_path=temp / "missing_agent2_scores.parquet",
             output_path=output_path,
             retrieval_limit=3,
         )
@@ -874,6 +912,8 @@ class Agent4Tests(unittest.TestCase):
         self.assertEqual(state["agent2_score"]["risk_score"], 25.0)
         self.assertEqual(state["agent2_score"]["red_flags"], ["RF-05"])
         self.assertEqual(state["agent2_score"]["data_quality_flags"], ["DQ-01"])
+        self.assertEqual(state["agent2_score"]["score_scope"], "contract_local")
+        self.assertTrue(any("RF-03/RF-04" in warning for warning in state["warnings"]))
         self.assertEqual(state["agent3_metrics"]["supplier_degree"], 3)
         self.assertGreaterEqual(len(state["retrieved_context"]), 1)
         self.assertEqual(payload["agent2_score"]["risk_score"], 25.0)

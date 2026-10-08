@@ -211,6 +211,12 @@ Artefactos de continuidad:
 
 Siguiente trabajo: mejorar matching entre fuentes. La cobertura existe, pero las intersecciones BOE/PLACE/OpenTender siguen en 0 con la clave actual.
 
+## Limitaciones
+
+El prototipo prioriza revisión humana y no declara fraude. No hay verdad de referencia, los
+umbrales no están calibrados y el RAG se evalúa sobre un corpus sintético: ver
+[docs/LIMITACIONES.md](docs/LIMITACIONES.md).
+
 ## Evaluacion reproducible de Agent2
 
 La muestra versionada de 3.437 contratos permite ejecutar RF-01 a RF-06 y comparar la sensibilidad

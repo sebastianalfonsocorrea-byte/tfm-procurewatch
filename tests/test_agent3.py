@@ -76,8 +76,11 @@ class Agent3Tests(unittest.TestCase):
         self.assertGreater(report["summary"]["agent3_nodes"], 0)
         self.assertGreater(report["summary"]["agent3_edges"], 0)
         self.assertGreater(report["summary"]["agent3_communities"], 0)
-        self.assertEqual(report["summary"]["agent2_risk_score"], 45.0)
-        self.assertIn("RF-02", report["summary"]["agent2_red_flags"])
+        self.assertEqual(report["summary"]["agent2_risk_score"], 65.0)
+        self.assertEqual(
+            set(report["summary"]["agent2_red_flags"]),
+            {"RF-03", "RF-04", "RF-05"},
+        )
         self.assertGreaterEqual(report["summary"]["agent4_evidences"], 1)
         self.assertGreaterEqual(report["summary"]["agent4_citations"], 1)
         self.assertTrue((temp_path / "agent2_contracts_canonical_demo.parquet").exists())
@@ -97,7 +100,7 @@ class Agent3Tests(unittest.TestCase):
         self.assertEqual(report["kpis"]["contracts"], 3)
         self.assertGreater(report["kpis"]["nodes"], 0)
         self.assertGreater(report["kpis"]["edges"], 0)
-        self.assertEqual(report["case_summary"]["risk_score"], 45.0)
+        self.assertEqual(report["case_summary"]["risk_score"], 65.0)
         self.assertGreaterEqual(report["case_summary"]["evidences_count"], 1)
         self.assertGreaterEqual(report["case_summary"]["citations_count"], 1)
         self.assertTrue(report["streamlit_headless"]["executed"])

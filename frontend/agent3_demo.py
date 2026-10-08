@@ -1586,7 +1586,8 @@ def _agent2_flag_value(flag: str, evidence: dict[str, Any]) -> str:
         estimated = _format_money(evidence.get("estimated_value_eur"))
         awarded = _format_money(evidence.get("awarded_value_eur"))
         return f"Estimado {estimated}; adjudicado {awarded}"
-    return "Ver evidencia Agent2"
+    flag_texts = _dict_value(evidence.get("flag_evidence_text"))
+    return str(flag_texts.get(flag) or "Ver evidencia Agent2")
 
 
 def _agent2_score_for_contract(payload: dict[str, Any], contract_key: str) -> dict[str, Any]:

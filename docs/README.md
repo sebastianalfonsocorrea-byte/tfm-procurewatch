@@ -3,6 +3,10 @@
 Este directorio esta ordenado por area para que las nuevas sesiones puedan encontrar rapido el
 contexto tecnico, la planificacion y la trazabilidad.
 
+## Limitaciones
+
+- [Limitaciones del prototipo](LIMITACIONES.md): qué no está validado y cómo leer los resultados.
+
 ## 00_vision
 
 Documentos de vision global, stack, cronograma y explicacion del proyecto.
@@ -68,6 +72,7 @@ histórico, pero no describen necesariamente el estado actual del código.
 
 Para entrar en contexto desde cero:
 
+0. [Limitaciones del prototipo](LIMITACIONES.md)
 1. [Planificacion TFM](00_vision/PLANIFICACION_TFM.md)
 2. [Stack tecnico del proyecto](00_vision/STACK_TECNICO_PROYECTO.md)
 3. [Plan Agent1 pipeline](03_agent1_ingesta/PLAN_AGENTE1_PIPELINE.md)
